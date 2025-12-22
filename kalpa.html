@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kalpa - Organismo V7 (Opacidad Fix + Escala Color)</title>
+    <title>Kalpa - Organismo V8 (Curva Perfecta)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- ========================================== -->
@@ -68,7 +68,7 @@
         varying vec3 vPos;
         varying float vDist;
 
-        // --- RUIDO 3D (Mantenemos el ruido solo para el COLOR, no para la forma) ---
+        // --- RUIDO 3D ---
         vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
         vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
         vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
@@ -358,16 +358,14 @@
             <input type="range" id="input-breath" min="0" max="2.0" step="0.1" value="0.5">
         </div>
 
-        <!-- CONTROL DE SATURACIÓN -->
+        <!-- CONTROL DE SATURACIÓN CORREGIDO (Max 2.0) -->
         <div class="config-item">
             <div class="config-label"><span>Saturación Color</span><span id="val-color" class="config-val">1.2</span></div>
-            <input type="range" id="input-color" min="0.0" max="3.0" step="0.1" value="1.2">
+            <input type="range" id="input-color" min="0.0" max="2.0" step="0.1" value="1.2">
         </div>
 
-        <!-- NUEVO: CONTROL DE ESCALA DE COLOR -->
         <div class="config-item">
             <div class="config-label"><span>Tamaño Colores</span><span id="val-scale" class="config-val">0.05</span></div>
-            <!-- Rango pequeño para escala fina -->
             <input type="range" id="input-scale" min="0.005" max="0.15" step="0.005" value="0.05">
         </div>
 
@@ -591,7 +589,7 @@
             current: {},
             
             init() {
-                const saved = localStorage.getItem('kalpa_bio_config_v7');
+                const saved = localStorage.getItem('kalpa_bio_config_v8');
                 if (saved) {
                     this.current = { ...this.defaults, ...JSON.parse(saved) };
                     if(this.current.audioReactivity === undefined) this.current.audioReactivity = 1.0;
@@ -669,7 +667,7 @@
             },
 
             save() {
-                localStorage.setItem('kalpa_bio_config_v7', JSON.stringify(this.current));
+                localStorage.setItem('kalpa_bio_config_v8', JSON.stringify(this.current));
             },
 
             applyToWorld() {
@@ -768,25 +766,39 @@
             maxZ = currentGridZ + SEGMENT_LENGTH;
         }
 
-        function createSegmentAt(zPosition) {
-            const points = [];
-            const pointsCount = 150; 
-            const turns = ConfigManager.current.springDensity; 
-            const anglePerZ = (turns * Math.PI * 2) / SEGMENT_LENGTH;
-
-            for (let i = 0; i <= pointsCount; i++) {
-                const t = i / pointsCount;
-                const z = zPosition - (t * SEGMENT_LENGTH); 
-                const angle = z * anglePerZ;
-                const x = Math.cos(angle) * SEGMENT_RADIUS;
-                const y = Math.sin(angle) * SEGMENT_RADIUS;
-                points.push(new THREE.Vector3(x, y, z));
+        // --- CLASE SPIRAL CURVE (NUEVO) ---
+        // Curva matemática exacta para eliminar separaciones y polígonos
+        class SpiralCurve extends THREE.Curve {
+            constructor(startZ, length, radius, turns) {
+                super();
+                this.startZ = startZ;
+                this.length = length;
+                this.radius = radius;
+                this.turns = turns;
             }
-
-            const curve = new THREE.CatmullRomCurve3(points);
             
-            // AUMENTADA LA RESOLUCIÓN GEOMÉTRICA PARA EVITAR LOOK POLIGONAL
-            const geometry = new THREE.TubeGeometry(curve, 300, SEGMENT_RADIUS * 0.4, 32, false);
+            getPoint(t, optionalTarget = new THREE.Vector3()) {
+                const z = this.startZ - (t * this.length);
+                // Usar Z global para el ángulo asegura continuidad perfecta entre segmentos
+                // Angle = Z * (Turns * 2PI / Length)
+                const angle = z * (this.turns * Math.PI * 2 / this.length);
+                
+                const x = Math.cos(angle) * this.radius;
+                const y = Math.sin(angle) * this.radius;
+                
+                return optionalTarget.set(x, y, z);
+            }
+        }
+
+        function createSegmentAt(zPosition) {
+            const turns = ConfigManager.current.springDensity; 
+            
+            // Usamos la nueva clase matemática en lugar de CatmullRom
+            const curve = new SpiralCurve(zPosition, SEGMENT_LENGTH, SEGMENT_RADIUS, turns);
+            
+            // AUMENTADA LA RESOLUCIÓN GEOMÉTRICA (400 segmentos, 64 radiales)
+            // Esto elimina el look "poligonal" y las micro-separaciones
+            const geometry = new THREE.TubeGeometry(curve, 400, SEGMENT_RADIUS * 0.4, 64, false);
 
             const material = new THREE.ShaderMaterial({
                 uniforms: {
