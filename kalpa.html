@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kalpa - Organismo V8 (Curva Perfecta)</title>
+    <title>Kalpa - Organismo V11 (Config Guardable)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- ========================================== -->
     <!-- SHADERS: ORGANISMO VIVO -->
     <!-- ========================================== -->
 
-    <!-- Vertex Shader: Geometría Dinámica (LIMPIO) -->
+    <!-- Vertex Shader: Geometría Dinámica -->
     <script type="x-shader/x-vertex" id="vertexshader">
         varying vec2 vUv;
         varying vec3 vNormal;
@@ -37,7 +37,6 @@
             float breath = sin(uTime * 1.5) * uBreathIntensity * 5.0;
             
             // 3. Modificación de Vértice
-            // Solo respiración + grosor base + golpe de audio
             vec3 newPos = position + normal * (breath + uTubeThickness + uAudioDisplace);
 
             vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
@@ -130,8 +129,6 @@
             vec3 normal = normalize(vNormal);
 
             float timeFactor = uTime * uSpeed * 0.2; 
-            
-            // Usamos uColorScale para controlar el tamaño del patrón de colores
             vec3 posScaled = vPos * uColorScale;
             
             vec3 posAnimated1 = posScaled - vec3(timeFactor, 0.0, 0.0);
@@ -142,8 +139,6 @@
             float fluid = n1 * 0.6 + n2 * 0.4;
 
             vec3 baseColor = spectralPalette(fluid * 0.8 + timeFactor * 0.5);
-            
-            // Saturación
             vec3 color = pow(baseColor, vec3(2.0 - uColorSaturation)); 
 
             float fresnelBase = pow(1.0 - abs(dot(normal, viewDir)), 2.5);
@@ -181,52 +176,6 @@
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); letter-spacing: 1px;
             mix-blend-mode: screen;
         }
-
-        /* --- AUDIO UI --- */
-        #audio-controls {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            z-index: 100; display: flex; flex-direction: column; align-items: center; gap: 10px;
-            pointer-events: auto;
-        }
-        
-        .upload-btn {
-            background: rgba(10, 20, 40, 0.6);
-            border: 1px solid var(--primary-glow);
-            color: var(--primary-glow);
-            padding: 10px 20px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 12px;
-            letter-spacing: 2px;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            box-shadow: 0 0 10px rgba(77, 219, 255, 0.2);
-            backdrop-filter: blur(5px);
-        }
-        .upload-btn:hover {
-            background: var(--primary-glow);
-            color: #000;
-            box-shadow: 0 0 20px var(--primary-glow);
-        }
-
-        #file-input { display: none; }
-        
-        #audio-status {
-            font-size: 10px; color: rgba(255,255,255,0.7); opacity: 0; transition: opacity 0.5s;
-            text-align: center;
-        }
-
-        #play-controls {
-            display: none; /* Se muestra al cargar audio */
-            gap: 15px;
-            align-items: center;
-        }
-
-        .control-icon {
-            font-size: 24px; color: white; cursor: pointer; transition: transform 0.2s;
-            filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));
-        }
-        .control-icon:hover { transform: scale(1.2); color: var(--primary-glow); }
 
         /* --- UI PANEL --- */
         #config-toggle {
@@ -266,11 +215,47 @@
 
         .btn-reset {
             width: 100%; padding: 8px; margin-top: 10px;
-            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.2);
-            color: #aaa; font-size: 0.8rem; cursor: pointer; border-radius: 4px;
+            background: rgba(255, 68, 68, 0.15); border: 1px solid rgba(255,68,68,0.4);
+            color: #ffadad; font-size: 0.8rem; cursor: pointer; border-radius: 4px;
             transition: all 0.2s;
         }
-        .btn-reset:hover { background: rgba(255, 68, 68, 0.2); border-color: rgba(255, 68, 68, 0.5); color: #ffadad; }
+        .btn-reset:hover { background: rgba(255, 68, 68, 0.3); border-color: rgba(255, 68, 68, 0.8); }
+
+        .btn-save {
+            width: 100%; padding: 8px; margin-top: 20px;
+            background: rgba(77, 219, 255, 0.15); border: 1px solid rgba(77,219,255,0.4);
+            color: #b3ecff; font-size: 0.8rem; cursor: pointer; border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .btn-save:hover { background: rgba(77, 219, 255, 0.3); border-color: rgba(77, 219, 255, 0.8); }
+
+        /* --- AUDIO UI --- */
+        .upload-section {
+            margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 15px; text-align: center;
+        }
+        .upload-btn {
+            background: rgba(77, 219, 255, 0.15); border: 1px solid var(--primary-glow);
+            color: var(--primary-glow); padding: 8px 15px; border-radius: 20px;
+            cursor: pointer; font-size: 11px; letter-spacing: 1px;
+            transition: all 0.3s ease; text-transform: uppercase;
+            display: inline-block; width: 80%;
+        }
+        .upload-btn:hover { background: var(--primary-glow); color: #000; box-shadow: 0 0 15px var(--primary-glow); }
+        #file-input { display: none; }
+        #audio-status { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 8px; font-style: italic; }
+
+        #play-controls {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            z-index: 100; display: none; gap: 20px; align-items: center;
+            background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(5px);
+        }
+        .control-icon {
+            font-size: 24px; color: white; cursor: pointer; transition: transform 0.2s;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));
+        }
+        .control-icon:hover { transform: scale(1.2); color: var(--primary-glow); }
 
         /* --- VISUALIZADOR --- */
         #visualizer-canvas {
@@ -280,16 +265,13 @@
 
         #touch-controls {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            width: 100%; height: 100%; pointer-events: none; z-index: 999;
-            display: none; 
+            width: 100%; height: 100%; pointer-events: none; z-index: 999; display: none; 
         }
         #joystick-container {
-            position: absolute; bottom: 50px; left: 50px;
-            width: 120px; height: 120px;
+            position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px;
             background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 60%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            pointer-events: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; pointer-events: auto;
         }
         #joystick-knob {
             width: 40px; height: 40px; background-color: rgba(255, 255, 255, 0.2);
@@ -298,8 +280,7 @@
             transition: transform 0.05s; backdrop-filter: blur(2px);
         }
         #hyperspace-btn {
-            position: absolute; bottom: 50px; right: 50px;
-            width: 80px; height: 80px; border-radius: 50%;
+            position: absolute; bottom: 50px; right: 50px; width: 80px; height: 80px; border-radius: 50%;
             border: 1px solid rgba(255, 255, 255, 0.1);
             background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(0,0,0,0) 60%);
             pointer-events: auto; display: flex; justify-content: center; align-items: center;
@@ -313,23 +294,14 @@
 
     <div id="debug-info">
         KALPA AUDIO-REACTIVO<br>
-        <span style="color:rgba(255,255,255,0.4)">WASD: Mover | Q/E: Mirar Arriba/Abajo | Espacio: Acelerar</span>
+        <span style="color:rgba(255,255,255,0.4)">WASD: Mover | Q/E: Pitch | 3: Estereograma | 9/0: Foco</span>
     </div>
 
-    <!-- AUDIO CONTROLS -->
+    <!-- AUDIO PLAY CONTROLS -->
     <canvas id="visualizer-canvas"></canvas>
-    <div id="audio-controls">
-        <label for="file-input" class="upload-btn">
-            <i class="fas fa-music"></i> Subir Audio
-        </label>
-        <input type="file" id="file-input" accept="audio/*">
-        
-        <div id="audio-status">Esperando archivo...</div>
-        
-        <div id="play-controls">
-            <i class="fas fa-play control-icon" id="btn-play"></i>
-            <i class="fas fa-pause control-icon" id="btn-pause" style="display:none"></i>
-        </div>
+    <div id="play-controls">
+        <i class="fas fa-play control-icon" id="btn-play"></i>
+        <i class="fas fa-pause control-icon" id="btn-pause" style="display:none"></i>
     </div>
 
     <!-- BOTÓN Y PANEL DE CONFIGURACIÓN -->
@@ -337,8 +309,17 @@
     
     <div id="config-panel">
         <h3 style="color:var(--primary-glow); text-align:center; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
-            Biometría
+            Kalpa Config
         </h3>
+
+        <!-- SECCIÓN DE CARGA DE AUDIO -->
+        <div class="upload-section">
+            <label for="file-input" class="upload-btn">
+                <i class="fas fa-music"></i> Subir MP3
+            </label>
+            <input type="file" id="file-input" accept="audio/*">
+            <div id="audio-status">Sin audio cargado</div>
+        </div>
 
         <div class="config-item" style="background: rgba(77, 219, 255, 0.1); padding: 10px; border-radius: 8px;">
             <div class="config-label"><span style="color:white">Compresión (Vueltas)</span><span id="val-density" class="config-val">3.0</span></div>
@@ -354,19 +335,18 @@
         </div>
 
         <div class="config-item">
-            <div class="config-label"><span>Vida (Respiración)</span><span id="val-breath" class="config-val">0.5</span></div>
-            <input type="range" id="input-breath" min="0" max="2.0" step="0.1" value="0.5">
-        </div>
-
-        <!-- CONTROL DE SATURACIÓN CORREGIDO (Max 2.0) -->
-        <div class="config-item">
-            <div class="config-label"><span>Saturación Color</span><span id="val-color" class="config-val">1.2</span></div>
-            <input type="range" id="input-color" min="0.0" max="2.0" step="0.1" value="1.2">
+            <div class="config-label"><span>Vida (Respiración)</span><span id="val-breath" class="config-val">0.1</span></div>
+            <input type="range" id="input-breath" min="0" max="2.0" step="0.1" value="0.1">
         </div>
 
         <div class="config-item">
-            <div class="config-label"><span>Tamaño Colores</span><span id="val-scale" class="config-val">0.05</span></div>
-            <input type="range" id="input-scale" min="0.005" max="0.15" step="0.005" value="0.05">
+            <div class="config-label"><span>Saturación Color</span><span id="val-color" class="config-val">1.1</span></div>
+            <input type="range" id="input-color" min="0.0" max="2.0" step="0.1" value="1.1">
+        </div>
+
+        <div class="config-item">
+            <div class="config-label"><span>Tamaño Colores</span><span id="val-scale" class="config-val">0.005</span></div>
+            <input type="range" id="input-scale" min="0.001" max="0.15" step="0.001" value="0.005">
         </div>
 
         <div class="config-item">
@@ -380,8 +360,8 @@
         </div>
 
         <div class="config-item">
-            <div class="config-label"><span>Opacidad Piel</span><span id="val-opacity" class="config-val">0.15</span></div>
-            <input type="range" id="input-opacity" min="0" max="1.0" step="0.01" value="0.15">
+            <div class="config-label"><span>Opacidad Piel</span><span id="val-opacity" class="config-val">0.18</span></div>
+            <input type="range" id="input-opacity" min="0" max="1.0" step="0.01" value="0.18">
         </div>
 
         <div class="config-item">
@@ -389,6 +369,7 @@
             <input type="range" id="input-fresnel" min="0" max="2.0" step="0.05" value="0.55">
         </div>
 
+        <button class="btn-save" id="btn-save-json">Guardar Configuración (.json)</button>
         <button class="btn-reset" id="btn-reset">Reiniciar Organismo</button>
     </div>
 
@@ -402,168 +383,102 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
-        // --- SISTEMA DE AUDIO (NUEVO) ---
+        // --- VARIABLES GLOBALES ---
+        let stereoMode = false;
+        let stereoSeparation = 2.5; 
+        let stereoFocus = 150.0;
+
+        // --- SISTEMA DE AUDIO ---
         const AudioSystem = {
-            context: null,
-            analyser: null,
-            source: null,
-            dataArray: null,
-            isPlaying: false,
-            // Bandas de frecuencia normalizadas (0.0 a 1.0)
-            lows: 0,
-            mids: 0,
-            highs: 0,
-            volume: 0,
-            reactivity: 1.0, // Multiplicador general controlable por usuario
+            context: null, analyser: null, source: null, dataArray: null, isPlaying: false,
+            lows: 0, mids: 0, highs: 0, volume: 0, reactivity: 1.0,
 
             init() {
                 const fileInput = document.getElementById('file-input');
                 const playBtn = document.getElementById('btn-play');
                 const pauseBtn = document.getElementById('btn-pause');
-
                 fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
                 playBtn.addEventListener('click', () => this.play());
                 pauseBtn.addEventListener('click', () => this.pause());
             },
-
             setupContext() {
                 if (!this.context) {
                     this.context = new (window.AudioContext || window.webkitAudioContext)();
                     this.analyser = this.context.createAnalyser();
-                    this.analyser.fftSize = 512; // Resolución de análisis
+                    this.analyser.fftSize = 512;
                     this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
                 }
-                if (this.context.state === 'suspended') {
-                    this.context.resume();
-                }
+                if (this.context.state === 'suspended') this.context.resume();
             },
-
             handleFileSelect(e) {
                 const file = e.target.files[0];
                 if (!file) return;
-
                 const status = document.getElementById('audio-status');
-                status.style.opacity = 1;
-                status.innerText = "Cargando: " + file.name;
-
+                status.innerText = "Decodificando...";
                 this.setupContext();
-
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     this.context.decodeAudioData(ev.target.result, (buffer) => {
-                        this.stop(); // Detener anterior si existe
-                        
-                        this.buffer = buffer; // Guardamos el buffer decodificado
-                        this.play();
-                        
-                        status.innerText = "Reproduciendo: " + file.name;
+                        this.stop(); this.buffer = buffer; this.play();
+                        status.innerText = "Listo: " + file.name;
                         document.getElementById('play-controls').style.display = 'flex';
-                        document.querySelector('.upload-btn').style.display = 'none'; // Ocultar boton subida para limpiar UI
-                    }, (err) => {
-                        console.error(err);
-                        status.innerText = "Error al decodificar audio";
-                    });
+                    }, (err) => { console.error(err); status.innerText = "Error de audio"; });
                 };
                 reader.readAsArrayBuffer(file);
             },
-
             play() {
                 if (!this.buffer) return;
                 this.setupContext();
-                
-                // Si estaba pausado pero tenemos buffer, recreamos la fuente
-                // (Web Audio API requiere recrear source node cada vez)
                 this.source = this.context.createBufferSource();
                 this.source.buffer = this.buffer;
                 this.source.connect(this.analyser);
                 this.analyser.connect(this.context.destination);
-                
                 this.source.start(0);
                 this.isPlaying = true;
-
                 document.getElementById('btn-play').style.display = 'none';
                 document.getElementById('btn-pause').style.display = 'block';
             },
-
             pause() {
-                if (this.source) {
-                    this.source.stop();
-                    this.isPlaying = false;
-                }
+                if (this.source) { this.source.stop(); this.isPlaying = false; }
                 document.getElementById('btn-play').style.display = 'block';
                 document.getElementById('btn-pause').style.display = 'none';
             },
-
             stop() {
-                if (this.source) {
-                    try { this.source.stop(); } catch(e){}
-                    this.source = null;
-                }
+                if (this.source) { try { this.source.stop(); } catch(e){} this.source = null; }
                 this.isPlaying = false;
             },
-
             update() {
                 if (!this.isPlaying || !this.analyser) {
-                    // Decay suave a cero si no suena nada
-                    this.lows *= 0.95;
-                    this.mids *= 0.95;
-                    this.highs *= 0.95;
-                    this.volume *= 0.95;
+                    this.lows *= 0.95; this.mids *= 0.95; this.highs *= 0.95; this.volume *= 0.95;
                     return;
                 }
-
                 this.analyser.getByteFrequencyData(this.dataArray);
-
-                // Calcular bandas promedio
                 let lowSum = 0, midSum = 0, highSum = 0;
-                const binCount = this.analyser.frequencyBinCount; // 256
-                
-                // Bajos: Primeros 10%
+                const binCount = this.analyser.frequencyBinCount; 
                 const lowLimit = Math.floor(binCount * 0.1);
-                // Medios: 10% a 50%
                 const midLimit = Math.floor(binCount * 0.5);
-
                 for (let i = 0; i < binCount; i++) {
-                    const val = this.dataArray[i] / 255.0; // Normalizar 0-1
-                    if (i < lowLimit) lowSum += val;
-                    else if (i < midLimit) midSum += val;
-                    else highSum += val;
+                    const val = this.dataArray[i] / 255.0; 
+                    if (i < lowLimit) lowSum += val; else if (i < midLimit) midSum += val; else highSum += val;
                 }
-
-                // Promediar y suavizar (Smoothing)
-                const targetLows = lowSum / lowLimit;
-                const targetMids = midSum / (midLimit - lowLimit);
-                const targetHighs = highSum / (binCount - midLimit);
-
-                // Interpolación lineal para suavidad (Lerp)
-                this.lows += (targetLows - this.lows) * 0.2;
-                this.mids += (targetMids - this.mids) * 0.2;
-                this.highs += (targetHighs - this.highs) * 0.2;
-                
-                // Volumen general
+                this.lows += (lowSum/lowLimit - this.lows) * 0.2;
+                this.mids += (midSum/(midLimit-lowLimit) - this.mids) * 0.2;
+                this.highs += (highSum/(binCount-midLimit) - this.highs) * 0.2;
                 this.volume = (this.lows + this.mids + this.highs) / 3.0;
-
-                // Dibujar visualizador simple
                 this.drawVisualizer();
             },
-
             drawVisualizer() {
                 const canvas = document.getElementById('visualizer-canvas');
                 const ctx = canvas.getContext('2d');
                 canvas.width = 300; canvas.height = 50;
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
                 const barWidth = (canvas.width / this.analyser.frequencyBinCount) * 2.5;
                 let x = 0;
-                
                 for(let i = 0; i < this.analyser.frequencyBinCount; i++) {
                     const barHeight = (this.dataArray[i] / 255) * canvas.height;
-                    
-                    // Color basado en intensidad
                     const r = barHeight + (25 * (i/this.analyser.frequencyBinCount));
                     const g = 250 * (i/this.analyser.frequencyBinCount);
                     const b = 255;
-
                     ctx.fillStyle = `rgb(${r},${g},${b})`;
                     ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
                     x += barWidth + 1;
@@ -571,37 +486,52 @@
             }
         };
 
-
         // --- GESTOR DE CONFIGURACIÓN ---
         const ConfigManager = {
+            // NUEVA CONFIGURACIÓN BASAL V11
             defaults: {
                 speed: 1.0,
-                opacityBase: 0.15,
+                opacityBase: 0.18,
                 fresnelIntensity: 0.55,
-                colorSaturation: 1.2,
-                colorScale: 0.05,
-                breathIntensity: 0.5,
+                colorSaturation: 1.10,
+                colorScale: 0.005,
+                breathIntensity: 0.1,
                 waveFrequency: 0.05,
-                tubeThickness: 0.0,
+                tubeThickness: 0.00,
                 springDensity: 3.0,
                 audioReactivity: 1.0 
             },
             current: {},
             
             init() {
-                const saved = localStorage.getItem('kalpa_bio_config_v8');
+                // Actualizado a v11 para forzar la nueva configuración por defecto
+                const saved = localStorage.getItem('kalpa_bio_config_v11');
                 if (saved) {
                     this.current = { ...this.defaults, ...JSON.parse(saved) };
-                    if(this.current.audioReactivity === undefined) this.current.audioReactivity = 1.0;
                 } else {
                     this.current = { ...this.defaults };
                 }
+                
                 this.bindUI();
                 this.updateUI();
                 
-                document.getElementById('config-toggle').addEventListener('click', () => {
-                    document.getElementById('config-panel').classList.toggle('open');
+                const toggleBtn = document.getElementById('config-toggle');
+                const configPanel = document.getElementById('config-panel');
+
+                toggleBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); 
+                    configPanel.classList.toggle('open');
                 });
+
+                document.addEventListener('click', (e) => {
+                    if (configPanel.classList.contains('open')) {
+                        if (!configPanel.contains(e.target) && e.target !== toggleBtn) {
+                            configPanel.classList.remove('open');
+                        }
+                    }
+                });
+
+                configPanel.addEventListener('click', (e) => { e.stopPropagation(); });
 
                 document.getElementById('btn-reset').addEventListener('click', () => {
                     this.current = { ...this.defaults };
@@ -610,24 +540,26 @@
                     this.applyToWorld();
                     rebuildWorld(); 
                 });
+
+                // Funcionalidad Botón Guardar JSON
+                document.getElementById('btn-save-json').addEventListener('click', () => {
+                    this.downloadConfig();
+                });
             },
 
             bindUI() {
                 const bind = (id, key, requiresRebuild = false) => {
                     const el = document.getElementById(id);
-                    if (!el) return; // Safety check
+                    if (!el) return;
                     const valEl = document.getElementById(id.replace('input-', 'val-'));
                     el.addEventListener('input', (e) => {
                         const val = parseFloat(e.target.value);
                         this.current[key] = val;
-                        
                         if(valEl) {
-                            if(key === 'colorScale' || key === 'waveFrequency') valEl.innerText = val.toFixed(3);
+                            if(key === 'colorScale') valEl.innerText = val.toFixed(3);
                             else valEl.innerText = val.toFixed(2);
                         }
-                        
                         this.save();
-                        
                         if (requiresRebuild) rebuildWorld();
                         else this.applyToWorld();
                     });
@@ -636,10 +568,9 @@
                 bind('input-opacity', 'opacityBase');
                 bind('input-fresnel', 'fresnelIntensity');
                 bind('input-breath', 'breathIntensity');
-                // bind('input-wavefreq', 'waveFrequency'); 
                 bind('input-thickness', 'tubeThickness');
                 bind('input-color', 'colorSaturation');
-                bind('input-scale', 'colorScale'); // NUEVO: Vinculamos el slider
+                bind('input-scale', 'colorScale');
                 bind('input-density', 'springDensity', true);
                 bind('input-audioreact', 'audioReactivity'); 
             },
@@ -661,18 +592,26 @@
                 update('input-breath', 'breathIntensity');
                 update('input-thickness', 'tubeThickness');
                 update('input-color', 'colorSaturation');
-                update('input-scale', 'colorScale'); // NUEVO
+                update('input-scale', 'colorScale');
                 update('input-density', 'springDensity');
                 update('input-audioreact', 'audioReactivity');
             },
 
             save() {
-                localStorage.setItem('kalpa_bio_config_v8', JSON.stringify(this.current));
+                localStorage.setItem('kalpa_bio_config_v11', JSON.stringify(this.current));
             },
 
-            applyToWorld() {
-                // Aplicamos solo los valores BASE. La modulación de audio se hace en animate()
-            }
+            downloadConfig() {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.current, null, 2));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "kalpa_config.json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            },
+
+            applyToWorld() {}
         };
 
         // --- MOTOR INFINITO ---
@@ -723,7 +662,7 @@
             document.addEventListener('keydown', onKeyDown);
             document.addEventListener('keyup', onKeyUp);
             document.addEventListener('mousedown', (e) => {
-                if (e.target.closest('#config-panel') || e.target.closest('#config-toggle') || e.target.closest('#audio-controls')) return;
+                if (e.target.closest('#config-panel') || e.target.closest('#config-toggle')) return;
                 isMouseDown = true;
             });
             document.addEventListener('mouseup', () => isMouseDown = false);
@@ -766,8 +705,6 @@
             maxZ = currentGridZ + SEGMENT_LENGTH;
         }
 
-        // --- CLASE SPIRAL CURVE (NUEVO) ---
-        // Curva matemática exacta para eliminar separaciones y polígonos
         class SpiralCurve extends THREE.Curve {
             constructor(startZ, length, radius, turns) {
                 super();
@@ -776,28 +713,18 @@
                 this.radius = radius;
                 this.turns = turns;
             }
-            
             getPoint(t, optionalTarget = new THREE.Vector3()) {
                 const z = this.startZ - (t * this.length);
-                // Usar Z global para el ángulo asegura continuidad perfecta entre segmentos
-                // Angle = Z * (Turns * 2PI / Length)
                 const angle = z * (this.turns * Math.PI * 2 / this.length);
-                
                 const x = Math.cos(angle) * this.radius;
                 const y = Math.sin(angle) * this.radius;
-                
                 return optionalTarget.set(x, y, z);
             }
         }
 
         function createSegmentAt(zPosition) {
             const turns = ConfigManager.current.springDensity; 
-            
-            // Usamos la nueva clase matemática en lugar de CatmullRom
             const curve = new SpiralCurve(zPosition, SEGMENT_LENGTH, SEGMENT_RADIUS, turns);
-            
-            // AUMENTADA LA RESOLUCIÓN GEOMÉTRICA (400 segmentos, 64 radiales)
-            // Esto elimina el look "poligonal" y las micro-separaciones
             const geometry = new THREE.TubeGeometry(curve, 400, SEGMENT_RADIUS * 0.4, 64, false);
 
             const material = new THREE.ShaderMaterial({
@@ -809,7 +736,6 @@
                     uColorSaturation: { value: ConfigManager.current.colorSaturation },
                     uColorScale: { value: ConfigManager.current.colorScale },
                     uBreathIntensity: { value: ConfigManager.current.breathIntensity },
-                    uWaveFrequency: { value: ConfigManager.current.waveFrequency },
                     uTubeThickness: { value: ConfigManager.current.tubeThickness },
                     uAudioDisplace: { value: 0.0 } 
                 },
@@ -856,36 +782,23 @@
 
         function animate() {
             requestAnimationFrame(animate);
-
             const dt = clock.getDelta();
             const time = clock.getElapsedTime();
 
-            // 1. ACTUALIZAR AUDIO
             AudioSystem.update();
-
-            // 2. MAPEO AUDIO -> VISUALES (ORGÁNICO)
             const r = ConfigManager.current.audioReactivity;
-            
             const audioThickness = ConfigManager.current.tubeThickness + (AudioSystem.lows * 15.0 * r);
             const audioBreath = ConfigManager.current.breathIntensity + (AudioSystem.mids * 1.5 * r);
             const audioDisplace = AudioSystem.lows * 10.0 * r; 
-            
-            // Afectamos el color con los agudos
             const audioFresnel = ConfigManager.current.fresnelIntensity + (AudioSystem.highs * 1.0 * r);
             const audioSat = ConfigManager.current.colorSaturation + (AudioSystem.highs * 0.5 * r);
-
             const audioSpeedBoost = AudioSystem.volume * 200.0 * r;
 
             activeSegments.forEach(mesh => {
                 if (mesh.material.uniforms) {
                     mesh.material.uniforms.uTime.value = time;
-                    
-                    // --- FIX OPACIDAD: Actualizar valor cada frame ---
                     mesh.material.uniforms.uOpacityBase.value = ConfigManager.current.opacityBase;
-                    
-                    // --- FIX ESCALA COLOR: Actualizar valor cada frame ---
                     mesh.material.uniforms.uColorScale.value = ConfigManager.current.colorScale;
-
                     mesh.material.uniforms.uTubeThickness.value = audioThickness;
                     mesh.material.uniforms.uBreathIntensity.value = audioBreath;
                     mesh.material.uniforms.uFresnelIntensity.value = audioFresnel;
@@ -895,7 +808,6 @@
                 }
             });
 
-            // --- MOVIMIENTO ---
             let targetSpeed = isTurbo ? TURBO_SPEED : NORMAL_SPEED;
             targetSpeed += audioSpeedBoost;
 
@@ -903,11 +815,8 @@
             else if (moveBackward) currentSpeed += (-targetSpeed - currentSpeed) * 0.05;
             else currentSpeed += (0 - currentSpeed) * 0.05;
 
-            // ROTACIÓN PITCH
             if (rotateLeft) pitch += 2.0 * dt;  
             if (rotateRight) pitch -= 2.0 * dt; 
-
-            // Roll se mantiene en 0 o se endereza solo
             roll += (0 - roll) * 0.05;
 
             const forward = new THREE.Vector3(0, 0, -1).applyEuler(camera.rotation);
@@ -929,10 +838,38 @@
 
             updateProceduralGeneration();
 
-            renderer.render(scene, camera);
+            if (stereoMode) {
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                renderer.setScissorTest(true);
+                renderer.setScissor(0, 0, width / 2, height);
+                renderer.setViewport(0, 0, width / 2, height);
+                const originalPos = camera.position.clone();
+                const originalQuat = camera.quaternion.clone(); 
+                const vectorRight = new THREE.Vector3(1, 0, 0).applyQuaternion(originalQuat);
+                const vectorForward = new THREE.Vector3(0, 0, -1).applyQuaternion(originalQuat);
+                const focusPoint = originalPos.clone().add(vectorForward.multiplyScalar(stereoFocus));
+                camera.position.sub(vectorRight.clone().multiplyScalar(stereoSeparation / 2));
+                camera.lookAt(focusPoint);
+                renderer.render(scene, camera);
+
+                renderer.setScissor(width / 2, 0, width / 2, height);
+                renderer.setViewport(width / 2, 0, width / 2, height);
+                camera.position.copy(originalPos);
+                camera.quaternion.copy(originalQuat); 
+                camera.position.add(vectorRight.clone().multiplyScalar(stereoSeparation / 2));
+                camera.lookAt(focusPoint);
+                renderer.render(scene, camera);
+
+                renderer.setScissorTest(false);
+                camera.position.copy(originalPos);
+                camera.quaternion.copy(originalQuat);
+            } else {
+                renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+                renderer.render(scene, camera);
+            }
         }
 
-        // --- INPUTS ---
         function onKeyDown(e) {
             switch(e.code) {
                 case 'KeyW': moveForward = true; break;
@@ -943,7 +880,10 @@
                 case 'KeyE': rotateRight = true; break; 
                 case 'KeyZ': moveUp = true; break;   
                 case 'KeyX': moveDown = true; break; 
-                case 'Space': isTurbo = true; break; 
+                case 'Space': isTurbo = true; break;
+                case 'Digit3': stereoMode = !stereoMode; onWindowResize(); break;
+                case 'Digit9': stereoFocus = Math.max(10, stereoFocus - 10); break;
+                case 'Digit0': stereoFocus += 10; break;
             }
         }
 
@@ -972,11 +912,11 @@
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
+            if (stereoMode) camera.aspect = (window.innerWidth / 2) / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- TOUCH CONTROLS ---
         function initTouchControls() {
             joystickContainer.addEventListener('touchstart', (e) => {
                 e.preventDefault();
