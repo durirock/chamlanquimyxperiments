@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Eneagramator Quest</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons (Vanilla JS version) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #020617; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #0891b2; border-radius: 2px; }
+        .bg-radial-gradient { background: radial-gradient(circle at center, #1e293b 0%, #020617 100%); }
+        
+        /* Animaciones para modales */
+        @keyframes fadeInZoom { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .animate-in { animation: fadeInZoom 0.3s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- FIX: Wrapper para Iconos Lucide en entorno CDN ---
+        // La librería global 'lucide' devuelve definiciones de datos, no componentes React.
+        // Creamos un componente genérico para renderizarlos.
+        const LucideIcon = ({ name, size = 24, className, ...props }) => {
+            const iconData = lucide.icons[name];
+            if (!iconData) return null;
+
+            return (
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={size}
+                    height={size}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={className}
+                    {...props}
+                >
+                    {iconData.map(([tag, attrs], i) => (
+                        React.createElement(tag, { ...attrs, key: i })
+                    ))}
+                </svg>
+            );
+        };
+
+        // Mapeamos manualmente los iconos usados a componentes React
+        const Play = (props) => <LucideIcon name="Play" {...props} />;
+        const Pause = (props) => <LucideIcon name="Pause" {...props} />;
+        const Trash2 = (props) => <LucideIcon name="Trash2" {...props} />;
+        const Zap = (props) => <LucideIcon name="Zap" {...props} />;
+        const Settings = (props) => <LucideIcon name="Settings" {...props} />;
+        const AlertCircle = (props) => <LucideIcon name="AlertCircle" {...props} />;
+        const CheckCircle = (props) => <LucideIcon name="CheckCircle" {...props} />;
+        const MapIcon = (props) => <LucideIcon name="Map" {...props} />; // Renombrado para evitar conflicto con Map nativo
+        const RotateCcw = (props) => <LucideIcon name="RotateCcw" {...props} />;
+        const Plus = (props) => <LucideIcon name="Plus" {...props} />;
+        const User = (props) => <LucideIcon name="User" {...props} />;
+        const Target = (props) => <LucideIcon name="Target" {...props} />;
+        const List = (props) => <LucideIcon name="List" {...props} />;
+        const Clock = (props) => <LucideIcon name="Clock" {...props} />;
+        const Fingerprint = (props) => <LucideIcon name="Fingerprint" {...props} />;
+        const Gift = (props) => <LucideIcon name="Gift" {...props} />;
+        const Award = (props) => <LucideIcon name="Award" {...props} />;
+        const History = (props) => <LucideIcon name="History" {...props} />;
+
+        /**
+         * MOTOR DE AUDIO SINTÉTICO
+         */
+        const AudioEngine = {
+            ctx: null,
+            masterGain: null,
+            isMuted: false,
+            
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                    this.masterGain = this.ctx.createGain();
+                    this.masterGain.gain.value = 0.4;
+                    this.masterGain.connect(this.ctx.destination);
+                }
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+            },
+
+            playTone(freq, type = 'sine', duration = 0.5, vol = 0.2, pan = 0) {
+                if (!this.ctx || this.isMuted) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const panner = this.ctx.createStereoPanner();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(0, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(vol, this.ctx.currentTime + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                
+                panner.pan.value = pan;
+
+                osc.connect(gain);
+                gain.connect(panner);
+                panner.connect(this.masterGain);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+
+            playAmbientDrone() {
+                if (!this.ctx || this.isMuted) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(55, this.ctx.currentTime); 
+                gain.gain.setValueAtTime(0.02, this.ctx.currentTime);
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                osc.start();
+                return { osc, gain }; 
+            },
+
+            playShock() {
+                this.init();
+                this.playTone(110, 'sawtooth', 1.0, 0.3, -0.5);
+                this.playTone(112, 'sawtooth', 1.0, 0.3, 0.5); 
+            },
+
+            playSuccess() {
+                this.init();
+                this.playTone(440, 'triangle', 0.6, 0.2, 0);   
+                setTimeout(() => this.playTone(554, 'triangle', 0.6, 0.2, -0.3), 100); 
+                setTimeout(() => this.playTone(659, 'triangle', 0.8, 0.2, 0.3), 200);  
+            },
+            
+            playVictory() {
+                this.init();
+                [440, 554, 659, 880, 1108, 1318].forEach((freq, i) => {
+                    setTimeout(() => this.playTone(freq, 'triangle', 0.8, 0.3), i * 150);
+                });
+            },
+
+            playStep(stepNumber) {
+                this.init();
+                const freqs = [0, 261.63, 293.66, 311.13, 349.23, 392.00, 415.30, 466.16, 523.25, 622.25];
+                const freq = freqs[stepNumber] || 440;
+                this.playTone(freq, 'sine', 0.8, 0.3);
+            },
+
+            playLongPressConfirm() {
+                this.init();
+                this.playTone(880, 'square', 0.1, 0.1);
+                setTimeout(() => this.playTone(1760, 'square', 0.2, 0.1), 100);
+            }
+        };
+
+        function EneagramatorQuest() {
+            // --- ESTADO ---
+            const [users, setUsers] = useState(() => JSON.parse(localStorage.getItem('enea_users')) || [{ id: 'Viajero', xp: 0, level: 1 }]);
+            const [tasks, setTasks] = useState(() => JSON.parse(localStorage.getItem('enea_tasks')) || {}); 
+            const [playlist, setPlaylist] = useState(() => JSON.parse(localStorage.getItem('enea_playlist')) || []);
+            const [quickTasks, setQuickTasks] = useState(() => JSON.parse(localStorage.getItem('enea_quicktasks')) || []);
+            const [logs, setLogs] = useState(() => JSON.parse(localStorage.getItem('enea_logs')) || []);
+            
+            const [campaignObjective, setCampaignObjective] = useState('');
+            const [isCampaignActive, setIsCampaignActive] = useState(false);
+            const [currentStepIndex, setCurrentStepIndex] = useState(0);
+            const [timer, setTimer] = useState(0); 
+            const [globalTimer, setGlobalTimer] = useState(0);
+            const [isPaused, setIsPaused] = useState(false);
+            
+            // UI States
+            const [showConfig, setShowConfig] = useState(false);
+            const [shockModal, setShockModal] = useState(false);
+            const [taskModal, setTaskModal] = useState({ isOpen: false, nodeId: null });
+            const [newCampaignModal, setNewCampaignModal] = useState(false);
+            const [quickTaskInput, setQuickTaskInput] = useState("");
+            const [victoryModal, setVictoryModal] = useState(null); 
+            const [showLogs, setShowLogs] = useState(false);
+
+            // Refs
+            const canvasRef = useRef(null);
+            const containerRef = useRef(null);
+            const droneRef = useRef(null);
+            const rotationRef = useRef(0); 
+            
+            // Refs para Long Press
+            const longPressTimerRef = useRef(null);
+            const isDraggingRef = useRef(false);
+            const startPosRef = useRef({ x: 0, y: 0 });
+
+            // --- PERSISTENCIA ---
+            useEffect(() => {
+                localStorage.setItem('enea_users', JSON.stringify(users));
+                localStorage.setItem('enea_tasks', JSON.stringify(tasks));
+                localStorage.setItem('enea_playlist', JSON.stringify(playlist));
+                localStorage.setItem('enea_quicktasks', JSON.stringify(quickTasks));
+                localStorage.setItem('enea_logs', JSON.stringify(logs));
+            }, [users, tasks, playlist, quickTasks, logs]);
+
+            // --- AUDIO INICIAL ---
+            useEffect(() => {
+                const startAudio = () => {
+                    AudioEngine.init();
+                    if (!droneRef.current) droneRef.current = AudioEngine.playAmbientDrone();
+                    window.removeEventListener('click', startAudio);
+                };
+                window.addEventListener('click', startAudio);
+                return () => { if (droneRef.current) try { droneRef.current.osc.stop(); } catch(e){} };
+            }, []);
+
+            // --- NODOS ---
+            const nodes = useMemo(() => {
+                const n = [];
+                n.push({ id: 0, x: 0, y: 0, color: '#FFD700', label: '10' }); 
+                const symmetryMap = { 9: -90, 1: -55, 2: -15, 3: 35, 4: 75, 5: 105, 6: 145, 7: 195, 8: 235 };
+                for (let i = 1; i <= 9; i++) {
+                    const angleRad = (symmetryMap[i] * Math.PI) / 180;
+                    n.push({ id: i, angle: angleRad, type: (i % 3 === 0) ? 'law3' : 'law7' });
+                }
+                return n;
+            }, []);
+
+            // --- HIT TESTING ---
+            const getNodeAtPosition = (clientX, clientY) => {
+                const canvas = canvasRef.current;
+                if (!canvas) return null;
+
+                const rect = canvas.getBoundingClientRect();
+                const x = clientX - rect.left;
+                const y = clientY - rect.top;
+                
+                const cx = canvas.width / 2;
+                const cy = canvas.height / 2;
+                const radius = Math.min(cx, cy) * 0.75;
+                
+                const currentRotation = rotationRef.current;
+
+                for (const node of nodes) {
+                    let nodeX, nodeY;
+                    if (node.id === 0) {
+                        nodeX = cx; 
+                        nodeY = cy;
+                    } else {
+                        const a = node.angle + currentRotation;
+                        nodeX = cx + Math.cos(a) * radius;
+                        nodeY = cy + Math.sin(a) * radius;
+                    }
+
+                    const dist = Math.sqrt(Math.pow(x - nodeX, 2) + Math.pow(y - nodeY, 2));
+                    const hitRadius = 35; 
+
+                    if (dist < hitRadius) {
+                        return node.id;
+                    }
+                }
+                return null;
+            };
+
+            // --- INTERACCIÓN POINTER ---
+            const handlePointerDown = (e) => {
+                if (e.button && e.button !== 0) return;
+
+                const nodeId = getNodeAtPosition(e.clientX, e.clientY);
+                if (nodeId === null) return;
+
+                isDraggingRef.current = false;
+                startPosRef.current = { x: e.clientX, y: e.clientY };
+
+                longPressTimerRef.current = setTimeout(() => {
+                    handleLongPressAction(nodeId);
+                    longPressTimerRef.current = null; 
+                }, 800); 
+            };
+
+            const handlePointerMove = (e) => {
+                if (longPressTimerRef.current) {
+                    const dist = Math.sqrt(Math.pow(e.clientX - startPosRef.current.x, 2) + Math.pow(e.clientY - startPosRef.current.y, 2));
+                    if (dist > 10) {
+                        clearTimeout(longPressTimerRef.current);
+                        longPressTimerRef.current = null;
+                        isDraggingRef.current = true;
+                    }
+                }
+            };
+
+            const handlePointerUp = (e) => {
+                if (longPressTimerRef.current) {
+                    clearTimeout(longPressTimerRef.current);
+                    longPressTimerRef.current = null;
+                    
+                    if (!isDraggingRef.current) {
+                        const nodeId = getNodeAtPosition(e.clientX, e.clientY);
+                        if (nodeId !== null) {
+                            handleShortPressAction(nodeId);
+                        }
+                    }
+                }
+            };
+
+            const handleShortPressAction = (nodeId) => {
+                if (isCampaignActive) return; 
+                AudioEngine.playStep(nodeId);
+                openTaskEditor(nodeId);
+            };
+
+            const handleLongPressAction = (nodeId) => {
+                AudioEngine.playLongPressConfirm();
+                setPlaylist(prev => [...prev, nodeId]);
+                if (navigator.vibrate) navigator.vibrate(50);
+            };
+
+            // --- CANVAS RENDER LOOP ---
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                let animationFrameId;
+
+                const render = () => {
+                    if (!canvas || !containerRef.current) return;
+                    canvas.width = containerRef.current.clientWidth;
+                    canvas.height = containerRef.current.clientHeight;
+                    const cx = canvas.width / 2;
+                    const cy = canvas.height / 2;
+                    const radius = Math.min(cx, cy) * 0.75;
+
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    if (!isPaused) {
+                        rotationRef.current += 0.0005;
+                    }
+                    const rotation = rotationRef.current;
+
+                    const getPos = (node) => {
+                        if (node.id === 0) return { x: cx, y: cy };
+                        const a = node.angle + rotation;
+                        return { x: cx + Math.cos(a) * radius, y: cy + Math.sin(a) * radius };
+                    };
+
+                    // Líneas base
+                    ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; ctx.stroke();
+
+                    // Ley del 3
+                    const p9 = getPos(nodes[9]), p3 = getPos(nodes[3]), p6 = getPos(nodes[6]);
+                    ctx.beginPath(); ctx.moveTo(p9.x, p9.y); ctx.lineTo(p3.x, p3.y); ctx.lineTo(p6.x, p6.y); ctx.closePath();
+                    ctx.strokeStyle = 'rgba(0, 255, 255, 0.2)'; ctx.stroke();
+
+                    // Hexagrama
+                    const seq = [1, 4, 2, 8, 5, 7];
+                    ctx.beginPath(); ctx.moveTo(getPos(nodes[1]).x, getPos(nodes[1]).y);
+                    for (let i = 1; i < seq.length; i++) ctx.lineTo(getPos(nodes[seq[i]]).x, getPos(nodes[seq[i]]).y);
+                    ctx.closePath(); ctx.strokeStyle = 'rgba(255, 0, 255, 0.2)'; ctx.stroke();
+
+                    // RUTA ACTIVA (Playlist)
+                    if (playlist.length > 1) {
+                        ctx.beginPath();
+                        for (let i = 0; i < playlist.length - 1; i++) {
+                            const pA = getPos(nodes[playlist[i]]);
+                            const pB = getPos(nodes[playlist[i+1]]);
+                            ctx.moveTo(pA.x, pA.y); ctx.lineTo(pB.x, pB.y);
+                        }
+                        // COLOR RUTA: CELESTE ELÉCTRICO INTENSO
+                        ctx.lineWidth = 3; ctx.strokeStyle = '#00F0FF'; ctx.shadowBlur = 15; ctx.shadowColor = '#00F0FF'; ctx.stroke();
+                        ctx.shadowBlur = 0;
+                    }
+
+                    // NODOS
+                    nodes.forEach(node => {
+                        const p = getPos(node);
+                        const isActiveStep = isCampaignActive && playlist[currentStepIndex] === node.id;
+                        const isCompleted = isCampaignActive && playlist.indexOf(node.id) < currentStepIndex && playlist.includes(node.id);
+                        const hasTask = !!tasks[node.id];
+                        const isInPlaylist = playlist.includes(node.id);
+                        const isReward = node.id === 0;
+                        const hasReward = isReward && tasks[0] && tasks[0].title;
+
+                        let size = node.id === 0 ? 25 : 18;
+                        if (isActiveStep) size = 24;
+
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+
+                        // LÓGICA DE COLOR
+                        if (isActiveStep) {
+                            ctx.fillStyle = '#FFD700'; 
+                            ctx.shadowBlur = 25; ctx.shadowColor = '#FFD700';
+                            ctx.fill();
+                        } else if (isCompleted) {
+                            ctx.fillStyle = '#00FF00';
+                            ctx.shadowBlur = 15; ctx.shadowColor = '#00FF00';
+                            ctx.fill();
+                        } else if (isInPlaylist) {
+                            ctx.fillStyle = '#00F0FF';
+                            ctx.shadowBlur = 15; ctx.shadowColor = '#00F0FF';
+                            ctx.fill();
+                            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                        } else if (isReward && hasReward) {
+                            ctx.fillStyle = '#FFD700';
+                            ctx.shadowBlur = 10; ctx.shadowColor = '#FFD700';
+                            ctx.fill();
+                        } else if (hasTask) {
+                            ctx.fillStyle = '#D946EF'; 
+                            ctx.shadowBlur = 15; ctx.shadowColor = '#D946EF';
+                            ctx.fill();
+                            ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
+                        } else {
+                            ctx.fillStyle = 'rgba(0,0,0,0.8)'; 
+                            ctx.strokeStyle = '#555'; ctx.lineWidth = 2;
+                            ctx.fill(); ctx.stroke();
+                        }
+                        ctx.shadowBlur = 0;
+
+                        ctx.fillStyle = (isActiveStep || isCompleted || isInPlaylist || hasTask || (isReward && hasReward)) ? '#000' : '#fff';
+                        if (!hasTask && !isActiveStep && !isCompleted && !isInPlaylist && !(isReward && hasReward)) ctx.fillStyle = '#777';
+                        
+                        ctx.font = 'bold 12px Montserrat';
+                        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        ctx.fillText(node.id, p.x, p.y);
+                    });
+
+                    animationFrameId = requestAnimationFrame(render);
+                };
+                render();
+                return () => cancelAnimationFrame(animationFrameId);
+            }, [nodes, tasks, playlist, isCampaignActive, currentStepIndex, isPaused]);
+
+            // --- TIMERS ---
+            useEffect(() => {
+                let interval = null;
+                if (isCampaignActive && !isPaused) {
+                    interval = setInterval(() => {
+                        if (timer > 0) setTimer(t => t - 1);
+                        if (globalTimer > 0) setGlobalTimer(t => t - 1);
+                        
+                        if (timer === 0 && !isPaused) {
+                            AudioEngine.playTone(150, 'sawtooth', 0.5);
+                            setIsPaused(true);
+                        }
+                    }, 1000);
+                }
+                return () => clearInterval(interval);
+            }, [isCampaignActive, isPaused, timer, globalTimer]);
+
+            // --- LÓGICA DE NEGOCIO ---
+            const handleStartNewCampaign = () => { setNewCampaignModal(true); };
+            const confirmNewCampaign = (objective) => {
+                setCampaignObjective(objective);
+                setPlaylist([]); 
+                setIsCampaignActive(false);
+                setNewCampaignModal(false);
+            };
+            const openTaskEditor = (nodeId) => { setTaskModal({ isOpen: true, nodeId }); };
+            const saveTask = (nodeId, taskData) => {
+                setTasks(prev => ({ ...prev, [nodeId]: taskData }));
+                if (!users.find(u => u.id === taskData.user)) {
+                    setUsers(prev => [...prev, { id: taskData.user, xp: 0, level: 1 }]);
+                }
+                setTaskModal({ isOpen: false, nodeId: null });
+            };
+            const startCampaign = () => {
+                if (playlist.length === 0) return alert("Ruta vacía.");
+                let totalSec = 0;
+                playlist.forEach(id => {
+                    const t = tasks[id]?.time || 25;
+                    totalSec += t * 60;
+                });
+                setGlobalTimer(totalSec);
+                setIsCampaignActive(true);
+                setCurrentStepIndex(0);
+                loadStep(0);
+                AudioEngine.playSuccess();
+            };
+            const loadStep = (index) => {
+                const nodeId = playlist[index];
+                const task = tasks[nodeId];
+                const duration = task && task.time ? task.time * 60 : 25 * 60; 
+                setTimer(duration);
+                setIsPaused(false);
+                if (nodeId === 3 || nodeId === 6) {
+                    setTimeout(() => { setIsPaused(true); setShockModal(true); AudioEngine.playShock(); }, 500); 
+                }
+            };
+            const nextStep = () => {
+                const nodeId = playlist[currentStepIndex];
+                const task = tasks[nodeId];
+                if (task) {
+                    const userIdx = users.findIndex(u => u.id === task.user);
+                    if (userIdx >= 0) {
+                        const newUsers = [...users];
+                        newUsers[userIdx].xp += (task.xp || 10);
+                        setUsers(newUsers);
+                    }
+                }
+                AudioEngine.playSuccess();
+                if (currentStepIndex < playlist.length - 1) {
+                    const nextIdx = currentStepIndex + 1;
+                    setCurrentStepIndex(nextIdx);
+                    loadStep(nextIdx);
+                } else {
+                    finishCampaign();
+                }
+            };
+            const finishCampaign = () => {
+                setIsCampaignActive(false);
+                AudioEngine.playVictory();
+                const rewardName = tasks[0]?.title || "Misión Cumplida";
+                let sessionXP = 0;
+                const userXPBreakdown = {};
+                playlist.forEach(nodeId => {
+                    const t = tasks[nodeId];
+                    if(t) {
+                        sessionXP += (t.xp || 0);
+                        userXPBreakdown[t.user] = (userXPBreakdown[t.user] || 0) + (t.xp || 0);
+                    }
+                });
+                const newLog = {
+                    date: new Date().toLocaleString(),
+                    objective: campaignObjective || "Misión Libre",
+                    totalXP: sessionXP,
+                    reward: rewardName
+                };
+                setLogs([newLog, ...logs]);
+                const newTasks = {...tasks};
+                playlist.forEach(id => delete newTasks[id]);
+                setTasks(newTasks);
+                setPlaylist([]);
+                setCampaignObjective('');
+                setVictoryModal({ rewardName, totalXP: sessionXP, userXP: userXPBreakdown });
+            };
+            const addQuickTask = () => {
+                if (!quickTaskInput.trim()) return;
+                setQuickTasks([...quickTasks, { id: Date.now(), title: quickTaskInput }]);
+                setQuickTaskInput("");
+            };
+            const deleteQuickTask = (id) => { setQuickTasks(quickTasks.filter(t => t.id !== id)); };
+            const totalUserXP = useMemo(() => { return users.reduce((acc, curr) => acc + curr.xp, 0); }, [users]);
+            const fmtTime = (s) => {
+                const m = Math.floor(s / 60);
+                const sec = s % 60;
+                return `${m}:${sec.toString().padStart(2, '0')}`;
+            };
+
+            return (
+                <div className="flex flex-col h-screen bg-gray-900 text-cyan-400 font-sans overflow-hidden selection:bg-cyan-900">
+                    {/* HEADER */}
+                    <header className="flex justify-between items-center p-3 border-b border-cyan-900 bg-black/50 backdrop-blur-md z-10 h-16">
+                        <div className="flex items-center gap-2">
+                            <Zap className="text-yellow-400 fill-yellow-400 animate-pulse" />
+                            <div>
+                                <h1 className="text-xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 font-serif">ENEAGRAMATOR</h1>
+                                <p className="text-[10px] text-gray-500 tracking-widest uppercase">{campaignObjective || "SIN OBJETIVO"}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div className="flex flex-col items-end">
+                                <span className="text-[10px] text-gray-400 uppercase tracking-wider flex items-center gap-1"><Award size={10}/> Voluntad Total</span>
+                                <span className="text-cyan-300 font-bold font-mono">{totalUserXP} PV</span>
+                            </div>
+                            {isCampaignActive && (
+                                <div className="hidden md:flex flex-col items-center bg-black/40 px-4 py-1 rounded border border-cyan-900/50">
+                                    <span className="text-[10px] text-gray-400 uppercase tracking-wider">Tiempo Misión</span>
+                                    <span className={`font-mono font-bold ${globalTimer < 300 ? 'text-red-500 animate-pulse' : 'text-cyan-300'}`}>
+                                        {Math.floor(globalTimer / 3600)}:
+                                        {Math.floor((globalTimer % 3600) / 60).toString().padStart(2,'0')}:
+                                        {(globalTimer % 60).toString().padStart(2,'0')}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={handleStartNewCampaign} className="bg-cyan-700 hover:bg-cyan-600 text-white px-3 py-1 rounded text-xs font-bold uppercase tracking-wide flex items-center gap-1"><Target size={14}/> Nueva Campaña</button>
+                            <button onClick={() => setShowLogs(!showLogs)} className="p-2 hover:bg-cyan-900/50 rounded transition text-gray-400 hover:text-white"><History size={18}/></button>
+                            <button onClick={() => setShowConfig(!showConfig)} className="p-2 hover:bg-cyan-900/50 rounded transition"><Settings size={18}/></button>
+                        </div>
+                    </header>
+
+                    {/* MAIN */}
+                    <main className="flex-1 relative flex flex-col md:flex-row overflow-hidden">
+                        {/* SIDEBAR */}
+                        <div className="md:w-80 w-full p-4 border-r border-cyan-900 bg-black/40 flex flex-col gap-4 overflow-y-auto z-20 shadow-2xl">
+                            {/* Misión Actual */}
+                            <div className="bg-cyan-900/20 border border-cyan-500/30 p-4 rounded-xl shadow-[0_0_15px_rgba(0,255,255,0.1)] shrink-0">
+                                <div className="flex justify-between items-start mb-2">
+                                    <h2 className="text-xs uppercase tracking-wider text-gray-400 flex items-center gap-1"><Clock size={12}/> Paso Actual</h2>
+                                    {isCampaignActive && <span className="text-xs font-mono text-yellow-500">Punto {playlist[currentStepIndex]}</span>}
+                                </div>
+                                {isCampaignActive ? (
+                                    <div>
+                                        <div className="text-4xl font-bold text-white mb-1 font-mono tracking-tighter">{fmtTime(timer)}</div>
+                                        <p className="text-sm text-cyan-300 truncate font-semibold">{tasks[playlist[currentStepIndex]]?.title || "Reflexión / Pausa"}</p>
+                                        <div className="flex items-center gap-2 mt-1 text-xs text-purple-400"><User size={10}/> {tasks[playlist[currentStepIndex]]?.user || "Sistema"}</div>
+                                        <div className="flex gap-2 mt-3">
+                                            <button onClick={() => setIsPaused(!isPaused)} className="flex-1 bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-400 py-2 rounded flex justify-center items-center gap-1 transition text-xs font-bold uppercase">
+                                                {isPaused ? <Play size={14}/> : <Pause size={14}/>}
+                                            </button>
+                                            <button onClick={nextStep} className="flex-1 bg-green-600/20 hover:bg-green-600/40 text-green-400 py-2 rounded flex justify-center items-center gap-1 transition text-xs font-bold uppercase"><CheckCircle size={14}/></button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-gray-500 italic text-sm py-2 text-center">Esperando órdenes...</div>
+                                )}
+                            </div>
+
+                            {/* Banco de Tareas */}
+                            <div className="flex-1 flex flex-col min-h-[200px] border-t border-cyan-900/30 pt-4">
+                                <h3 className="font-bold text-gray-400 text-xs uppercase tracking-widest mb-2 flex items-center gap-2"><List size={14}/> Banco de Tareas</h3>
+                                <div className="flex gap-2 mb-2">
+                                    <input type="text" value={quickTaskInput} onChange={(e) => setQuickTaskInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addQuickTask()} placeholder="Capturar tarea..." className="flex-1 bg-black/50 border border-cyan-900 rounded px-2 py-1 text-sm text-cyan-100 placeholder-gray-600 focus:outline-none focus:border-cyan-500" />
+                                    <button onClick={addQuickTask} className="bg-cyan-800 hover:bg-cyan-700 text-white p-1 rounded"><Plus size={18}/></button>
+                                </div>
+                                <div className="flex-1 bg-black/20 rounded border border-gray-800 overflow-y-auto custom-scrollbar p-1 space-y-1">
+                                    {quickTasks.map(qt => (
+                                        <div key={qt.id} className="group flex justify-between items-center bg-gray-900/80 p-2 rounded border border-transparent hover:border-cyan-700 transition">
+                                            <span className="text-xs text-gray-300 truncate select-none">{qt.title}</span>
+                                            <button onClick={() => deleteQuickTask(qt.id)} className="text-red-500 hover:text-red-400"><Trash2 size={12}/></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Ruta de Vuelo */}
+                            <div className="mt-2 shrink-0">
+                                <div className="flex justify-between items-center mb-1">
+                                    <h3 className="font-bold text-purple-400 text-xs uppercase flex items-center gap-1"><MapIcon size={14}/> Ruta</h3>
+                                    <button onClick={() => setPlaylist([])} className="text-[10px] text-red-400 hover:text-red-300 flex items-center"><RotateCcw size={10}/> Borrar</button>
+                                </div>
+                                <div className="flex gap-1 overflow-x-auto pb-2 custom-scrollbar snap-x">
+                                    {playlist.length === 0 && <div className="text-xs text-gray-600 w-full text-center border border-dashed border-gray-800 rounded p-2">Ruta vacía</div>}
+                                    {playlist.map((nodeId, idx) => {
+                                        const isActive = isCampaignActive && idx === currentStepIndex;
+                                        const hasTask = !!tasks[nodeId];
+                                        return (
+                                            <div key={idx} className={`snap-center shrink-0 w-16 h-16 flex flex-col items-center justify-center rounded border transition-all cursor-pointer ${isActive ? 'bg-yellow-500/20 border-yellow-500 shadow-[0_0_10px_orange]' : ''} ${!isActive && hasTask ? 'bg-purple-900/30 border-purple-500 shadow-[0_0_5px_purple]' : ''} ${!isActive && !hasTask ? 'bg-transparent border-gray-700 border-dashed opacity-50' : ''}`} onClick={() => openTaskEditor(nodeId)}>
+                                                <span className={`text-sm font-bold ${isActive ? 'text-yellow-400' : 'text-gray-400'}`}>{nodeId}</span>
+                                                <div className={`w-2 h-2 rounded-full mt-1 ${hasTask ? 'bg-cyan-400' : 'bg-transparent border border-gray-600'}`}></div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                                {!isCampaignActive && playlist.length > 0 && (
+                                    <button onClick={startCampaign} className="w-full mt-2 bg-gradient-to-r from-cyan-700 to-purple-800 hover:from-cyan-600 hover:to-purple-700 text-white font-bold py-2 rounded shadow-lg transition text-xs uppercase tracking-widest flex justify-center items-center gap-2"><Play size={14} /> Iniciar Misión</button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* VISUALIZER (CANVAS) */}
+                        <div ref={containerRef} className="flex-1 relative bg-radial-gradient from-gray-800 to-black cursor-crosshair overflow-hidden touch-none" onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} onContextMenu={(e) => e.preventDefault()}>
+                            <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full pointer-events-none" />
+                            <div className="absolute top-4 left-4 text-[10px] text-gray-500 pointer-events-none">
+                                <p className="flex items-center gap-1"><Fingerprint size={10}/> Clic corto: Editar Tarea</p>
+                                <p className="flex items-center gap-1"><Clock size={10}/> Mantener: Añadir a Ruta</p>
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* MODAL: NUEVA CAMPAÑA */}
+                    {newCampaignModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                            <div className="bg-gray-900 border border-cyan-500 p-6 rounded-lg w-full max-w-sm shadow-2xl animate-in">
+                                <h3 className="text-xl font-bold text-cyan-400 mb-4 font-serif">Nueva Mega Quest</h3>
+                                <input autoFocus type="text" placeholder="Objetivo Principal" className="w-full bg-black/50 border border-gray-700 rounded p-2 text-white mb-4 focus:border-cyan-500 outline-none" onKeyDown={(e) => { if (e.key === 'Enter') confirmNewCampaign(e.target.value); }} />
+                                <div className="flex justify-end gap-2">
+                                    <button onClick={() => setNewCampaignModal(false)} className="text-gray-500 hover:text-white px-3 py-1">Cancelar</button>
+                                    <button onClick={() => confirmNewCampaign(document.querySelector('input').value)} className="bg-cyan-600 text-white px-4 py-2 rounded font-bold">Planificar</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL: EDITOR DE TAREA */}
+                    {taskModal.isOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                            <div className="bg-gray-900 border border-purple-500 p-6 rounded-lg w-full max-w-sm shadow-[0_0_30px_rgba(168,85,247,0.2)] animate-in">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-bold text-white flex items-center gap-2"><span className="bg-cyan-900 text-cyan-300 px-2 rounded text-sm">{taskModal.nodeId === 0 ? <Gift size={14}/> : `Punto ${taskModal.nodeId}`}</span>{taskModal.nodeId === 0 ? "RECOMPENSA FINAL" : "Asignar Misión"}</h3>
+                                    <button onClick={() => setTaskModal({isOpen:false, nodeId:null})} className="text-gray-500 hover:text-white"><Trash2 size={16}/></button>
+                                </div>
+                                <form onSubmit={(e) => { e.preventDefault(); const formData = new FormData(e.target); saveTask(taskModal.nodeId, { title: formData.get('title'), user: formData.get('user'), time: parseInt(formData.get('time')), xp: parseInt(formData.get('xp')), completed: false }); }}>
+                                    {quickTasks.length > 0 && (
+                                        <div className="mb-4">
+                                            <label className="text-[10px] uppercase text-gray-500 block mb-1">Cargar del Banco</label>
+                                            <select className="w-full bg-gray-800 text-gray-300 text-xs p-2 rounded border border-gray-700" onChange={(e) => { if(e.target.value) { const input = document.getElementById('task-title-input'); if(input) input.value = e.target.value; } }}>
+                                                <option value="">-- Seleccionar rápida --</option>
+                                                {quickTasks.map(qt => <option key={qt.id} value={qt.title}>{qt.title}</option>)}
+                                            </select>
+                                        </div>
+                                    )}
+                                    <div className="mb-3">
+                                        <label className="text-[10px] uppercase text-purple-400 block mb-1">{taskModal.nodeId === 0 ? "Descripción del Premio" : "Tarea"}</label>
+                                        <input id="task-title-input" name="title" required defaultValue={tasks[taskModal.nodeId]?.title || ''} className="w-full bg-black/50 border border-gray-600 rounded p-2 text-white focus:border-purple-500 outline-none" />
+                                    </div>
+                                    {taskModal.nodeId !== 0 && (
+                                        <>
+                                            <div className="flex gap-2 mb-3">
+                                                <div className="flex-1"><label className="text-[10px] uppercase text-green-400 block mb-1">Minutos</label><input name="time" type="number" defaultValue={tasks[taskModal.nodeId]?.time || 25} className="w-full bg-black/50 border border-gray-600 rounded p-2 text-white text-center focus:border-green-500 outline-none" /></div>
+                                                <div className="flex-1"><label className="text-[10px] uppercase text-yellow-400 block mb-1">PV (XP)</label><input name="xp" type="number" defaultValue={tasks[taskModal.nodeId]?.xp || 50} className="w-full bg-black/50 border border-gray-600 rounded p-2 text-white text-center focus:border-yellow-500 outline-none" /></div>
+                                            </div>
+                                            <div className="mb-6"><label className="text-[10px] uppercase text-blue-400 block mb-1">Responsable</label><input name="user" list="users-list" required defaultValue={tasks[taskModal.nodeId]?.user || users[0].id} className="w-full bg-black/50 border border-gray-600 rounded p-2 text-white focus:border-blue-500 outline-none" /><datalist id="users-list">{users.map(u => <option key={u.id} value={u.id} />)}</datalist></div>
+                                        </>
+                                    )}
+                                    {taskModal.nodeId === 0 && <div className="mb-6 bg-yellow-900/20 p-2 rounded border border-yellow-700"><p className="text-xs text-yellow-500 text-center">Define aquí qué ganarás al completar la Mega Quest.</p><input type="hidden" name="user" value="Todos" /><input type="hidden" name="time" value="0" /><input type="hidden" name="xp" value="1000" /></div>}
+                                    <div className="flex justify-end gap-2">
+                                        <button type="button" onClick={() => setTaskModal({isOpen:false, nodeId:null})} className="px-4 py-2 text-gray-400 text-xs uppercase hover:text-white">Cancelar</button>
+                                        <button type="submit" className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded font-bold uppercase tracking-wider text-xs">{taskModal.nodeId === 0 ? "Definir Premio" : "Asignar"}</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL: SHOCK (3 & 6) */}
+                    {shockModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md">
+                            <div className="text-center p-8 max-w-lg border-y-4 border-red-600 bg-gray-900/50 animate-in">
+                                <AlertCircle size={80} className="mx-auto text-red-500 mb-6 animate-pulse" />
+                                <h2 className="text-4xl font-black text-white mb-2 font-serif tracking-widest">ALERTA CONSCIENTE</h2>
+                                <div className="h-1 w-24 bg-red-600 mx-auto mb-6"></div>
+                                <p className="text-gray-300 text-xl mb-8 font-light">"El hombre mecánico ha llegado a un intervalo. <br/><strong className="text-white font-bold">Detente. Obsérvate.</strong>"</p>
+                                <button onClick={() => { setShockModal(false); setIsPaused(false); AudioEngine.playSuccess(); }} className="bg-red-700 hover:bg-red-600 text-white font-bold py-4 px-10 rounded-full transition transform hover:scale-105 uppercase tracking-widest border border-red-500 shadow-[0_0_30px_red]">Recuperar Voluntad</button>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* MODAL: VICTORIA FINAL */}
+                    {victoryModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in">
+                            <div className="bg-gradient-to-br from-yellow-900/80 to-black border-2 border-yellow-500 p-8 rounded-2xl w-full max-w-lg shadow-[0_0_60px_rgba(255,215,0,0.5)] text-center relative overflow-hidden">
+                                <Award size={80} className="mx-auto text-yellow-400 mb-4 animate-bounce" />
+                                <h2 className="text-4xl font-black text-white mb-2 font-serif tracking-widest">¡MISIÓN CUMPLIDA!</h2>
+                                <div className="h-1 w-32 bg-yellow-500 mx-auto mb-6"></div>
+                                <h3 className="text-2xl text-yellow-200 mb-6 font-bold">{victoryModal.rewardName}</h3>
+                                <div className="bg-black/50 p-4 rounded-xl mb-6">
+                                    <p className="text-gray-400 text-xs uppercase tracking-widest mb-2">Total Voluntad Ganada</p>
+                                    <p className="text-4xl font-mono text-white font-bold">{victoryModal.totalXP} PV</p>
+                                </div>
+                                <div className="text-left bg-black/30 p-4 rounded-xl mb-8 max-h-40 overflow-y-auto custom-scrollbar">
+                                    <h4 className="text-xs text-gray-500 uppercase mb-2 border-b border-gray-700 pb-1">Reparto de Botín</h4>
+                                    {Object.entries(victoryModal.userXP).map(([user, xp]) => (
+                                        <div key={user} className="flex justify-between text-sm py-1">
+                                            <span className="text-cyan-300 font-bold">{user}</span>
+                                            <span className="text-yellow-400">+{xp} PV</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button onClick={() => setVictoryModal(null)} className="bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-3 px-8 rounded-full transition transform hover:scale-105 uppercase tracking-widest shadow-lg">Cerrar Ciclo</button>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* MODAL: BITÁCORA */}
+                    {showLogs && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                            <div className="bg-gray-900 border border-gray-700 p-6 rounded-lg w-full max-w-2xl h-3/4 flex flex-col shadow-2xl animate-in">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-xl font-bold text-gray-200 flex items-center gap-2"><History/> Bitácora de Viajes</h3>
+                                    <button onClick={() => setShowLogs(false)} className="text-gray-500 hover:text-white"><Trash2 size={20}/></button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
+                                    {logs.length === 0 && <p className="text-gray-600 text-center mt-10">Sin registros aún.</p>}
+                                    {logs.map((log, idx) => (
+                                        <div key={idx} className="bg-black/40 p-3 rounded border-l-4 border-green-500">
+                                            <div className="flex justify-between">
+                                                <span className="font-bold text-green-400">{log.objective}</span>
+                                                <span className="text-xs text-gray-500">{log.date}</span>
+                                            </div>
+                                            <div className="flex justify-between mt-1 text-sm">
+                                                <span className="text-gray-400">Recompensa: {log.reward}</span>
+                                                <span className="text-yellow-500 font-mono">+{log.totalXP} PV</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<EneagramatorQuest />);
+    </script>
+</body>
+</html>
