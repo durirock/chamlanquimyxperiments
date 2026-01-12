@@ -19,7 +19,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        body { margin: 0; overflow: hidden; background-color: #020617; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        /* Uso de dvh para evitar problemas con barras de navegador móvil */
+        body { margin: 0; overflow: hidden; background-color: #020617; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; height: 100dvh; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #0891b2; border-radius: 2px; }
@@ -272,11 +273,11 @@
             const [quickTaskInput, setQuickTaskInput] = useState("");
             const [victoryModal, setVictoryModal] = useState(null); 
             const [showLogs, setShowLogs] = useState(false);
-            const [showUsersModal, setShowUsersModal] = useState(false); // Nuevo modal para usuarios
+            const [showUsersModal, setShowUsersModal] = useState(false); 
             const [timerEndModal, setTimerEndModal] = useState(false);
             const [nodeSelectorModal, setNodeSelectorModal] = useState(null);
             const [expandedLogId, setExpandedLogId] = useState(null);
-            const [newUserName, setNewUserName] = useState(""); // Input para nuevo usuario
+            const [newUserName, setNewUserName] = useState("");
 
             // Refs
             const canvasRef = useRef(null);
@@ -361,7 +362,6 @@
                     try {
                         const imported = JSON.parse(e.target.result);
                         if(Array.isArray(imported)) {
-                            // Merge simple evitando duplicados por ID
                             const merged = [...users];
                             imported.forEach(impUser => {
                                 if(!merged.find(u => u.id === impUser.id)) {
@@ -403,16 +403,15 @@
                     }
                 } catch (error) {
                     console.error("Error al entrar en PiP:", error);
-                    // Silently fail or minimal feedback as auto-pip might be blocked
                 }
             };
 
             const getTimerColor = (current, total) => {
                 if (total === 0) return '#ffffff';
                 const percentage = (current / total) * 100;
-                if (percentage > 50) return '#22c55e'; // Green 500
-                if (percentage > 20) return '#f97316'; // Orange 500
-                return '#ef4444'; // Red 500
+                if (percentage > 50) return '#22c55e'; 
+                if (percentage > 20) return '#f97316'; 
+                return '#ef4444'; 
             };
 
             const drawPiP = () => {
@@ -487,7 +486,7 @@
                 
                 // Ajuste para HDPI
                 const dpr = window.devicePixelRatio || 1;
-                const logicalX = x; // Las coordenadas del mouse ya son lógicas
+                const logicalX = x; 
                 const logicalY = y;
                 
                 const cx = (canvas.width / dpr) / 2;
@@ -579,7 +578,6 @@
                 const render = () => {
                     if (!canvas || !containerRef.current) return;
                     
-                    // Manejo de DPI para móviles
                     const dpr = window.devicePixelRatio || 1;
                     const rect = containerRef.current.getBoundingClientRect();
                     
@@ -587,7 +585,6 @@
                     canvas.height = rect.height * dpr;
                     ctx.scale(dpr, dpr);
                     
-                    // Nota: Usamos dimensiones lógicas para cálculos, no físicas
                     const width = rect.width;
                     const height = rect.height;
                     const cx = width / 2;
@@ -701,7 +698,6 @@
                             ctx.fill(); ctx.stroke();
                         }
                         
-                        // EFECTO VIVO PARA 3, 6, 9
                         if (lightsOn && isLaw3 && !isActiveStep && !isCompleted && !isInPlaylist && !hasTask) {
                              const pulse = (Math.sin(Date.now() / 500) + 1) / 2; 
                              const alpha = 0.3 + (pulse * 0.4);
@@ -714,7 +710,6 @@
                              ctx.shadowColor = '#22d3ee';
                         }
                         
-                        // BORDES MORADOS PARA HEXADA
                         if(isHexad && !isActiveStep && !isInPlaylist && !hasTask) {
                             ctx.strokeStyle = '#E879F9'; 
                             ctx.lineWidth = 2;
@@ -723,7 +718,6 @@
                         
                         ctx.shadowBlur = 0;
 
-                        // TEXTO
                         ctx.fillStyle = (isActiveStep || isCompleted || isInPlaylist || hasTask || (isReward && hasReward)) ? '#000' : '#fff';
                         
                         if (!hasTask && !isActiveStep && !isCompleted && !isInPlaylist && !(isReward && hasReward)) {
@@ -771,7 +765,19 @@
                 setIsCircuitClosed(false);
                 setQuestCompleted(false); 
                 setNewCampaignModal(false);
+                // Reset rotation
+                rotationRef.current = 0;
             };
+            
+            const handleContinueVictory = () => {
+                setVictoryModal(null);
+                setPlaylist([]);
+                setIsCampaignActive(false);
+                setIsCircuitClosed(false);
+                setQuestCompleted(false);
+                rotationRef.current = 0; // RESET ROTACIÓN A 0
+            };
+
             const openTaskEditor = (nodeId, prefillTitle = "", quickTaskId = null) => { 
                 setTaskModal({ isOpen: true, nodeId, prefillTitle, quickTaskId }); 
             };
@@ -799,7 +805,6 @@
                 setCurrentStepIndex(0);
                 loadStep(0);
                 AudioEngine.playSuccess();
-                // Intento automático de PiP
                 togglePiP();
             };
             const loadStep = (index) => {
@@ -911,7 +916,7 @@
             };
 
             return (
-                <div className="flex flex-col h-screen bg-gray-900 text-cyan-400 font-sans overflow-hidden selection:bg-cyan-900">
+                <div className="flex flex-col h-[100dvh] bg-gray-900 text-cyan-400 font-sans overflow-hidden selection:bg-cyan-900">
                     {/* ELEMENTOS OCULTOS PARA PIP */}
                     <video ref={pipVideoRef} className="hidden" autoPlay muted></video>
                     <canvas ref={pipCanvasRef} width="400" height="300" className="hidden"></canvas>
@@ -953,10 +958,10 @@
                     </header>
 
                     {/* MAIN - Layout Flex optimizado para móvil */}
-                    <main className="flex-1 relative flex flex-col md:flex-row overflow-hidden">
+                    <main className="flex-1 relative flex flex-col md:flex-row landscape:flex-row overflow-hidden">
                         
-                        {/* VISUALIZER (CANVAS) - ARRIBA EN MÓVIL (ORDER-1) */}
-                        <div ref={containerRef} className="flex-1 relative bg-radial-gradient from-gray-800 to-black cursor-crosshair overflow-hidden touch-none order-1 md:order-2 min-h-[40vh]" onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} onContextMenu={(e) => e.preventDefault()}>
+                        {/* VISUALIZER (CANVAS) - ARRIBA EN MÓVIL PORTRAIT, DERECHA EN LANDSCAPE */}
+                        <div ref={containerRef} className="flex-1 relative bg-radial-gradient from-gray-800 to-black cursor-crosshair overflow-hidden touch-none order-1 md:order-2 landscape:order-2 min-h-[40vh]" onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} onContextMenu={(e) => e.preventDefault()}>
                             <canvas ref={canvasRef} className="absolute top-0 left-0 w-full h-full pointer-events-none" />
                             <div className="absolute top-4 left-4 pointer-events-none">
                                 <button 
@@ -969,8 +974,8 @@
                             </div>
                         </div>
 
-                        {/* SIDEBAR - ABAJO EN MÓVIL (ORDER-2) */}
-                        <div className="md:w-80 w-full p-4 border-r border-cyan-900 bg-black/40 flex flex-col gap-4 overflow-y-auto z-20 shadow-2xl order-2 md:order-1 h-1/2 md:h-auto border-t md:border-t-0 border-cyan-900/50">
+                        {/* SIDEBAR - ABAJO EN MÓVIL PORTRAIT, IZQUIERDA EN LANDSCAPE */}
+                        <div className="w-full md:w-80 landscape:w-80 p-4 border-r border-cyan-900 bg-black/40 flex flex-col gap-4 overflow-y-auto z-20 shadow-2xl order-2 md:order-1 landscape:order-1 h-1/2 md:h-auto landscape:h-auto border-t md:border-t-0 landscape:border-t-0 border-cyan-900/50 pb-20 md:pb-4">
                             {/* Misión Actual */}
                             <div className="bg-cyan-900/20 border border-cyan-500/30 p-4 rounded-xl shadow-[0_0_15px_rgba(0,255,255,0.1)] shrink-0">
                                 <div className="flex justify-between items-start mb-2">
@@ -1282,7 +1287,7 @@
                                     <p className="text-gray-400 text-[10px] uppercase tracking-widest mb-1">Total Voluntad Ganada</p>
                                     <p className="text-2xl font-mono text-white font-bold">{victoryModal.totalXP} PV</p>
                                 </div>
-                                <button onClick={() => setVictoryModal(null)} className="bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-2 px-6 rounded-full transition transform hover:scale-105 uppercase tracking-widest shadow-lg text-xs">Continuar</button>
+                                <button onClick={handleContinueVictory} className="bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-2 px-6 rounded-full transition transform hover:scale-105 uppercase tracking-widest shadow-lg text-xs">Continuar</button>
                             </div>
                         </div>
                     )}
