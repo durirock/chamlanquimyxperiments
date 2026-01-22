@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arduinator - Live Ecosystem Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Cormorant+Garamond:wght@300;400;500&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --color-matrix-bright: #39ff14;
+            --color-matrix-main: #00ff41;
+            --color-matrix-dark: #0b4018;
+            --color-matrix-faint: #1a2c1e;
+            --color-bg-dark: #000000;
+            --color-text: #a3a3a3;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-bg-dark);
+            color: var(--color-text);
+        }
+        .neuro-gradient-text {
+            background: linear-gradient(90deg, #bbf7d0, var(--color-matrix-bright));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; text-fill-color: transparent;
+        }
+        .card-bg {
+            background: rgba(0, 10, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            transition: all 0.3s ease;
+        }
+        .glow-pulse {
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.5), 0 0 30px rgba(57, 255, 20, 0.3);
+            animation: pulse 4s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            50% { transform: scale(1.02); box-shadow: 0 0 25px rgba(57, 255, 20, 0.7), 0 0 45px rgba(57, 255, 20, 0.5); }
+        }
+        .bg-pattern {
+            background-image: radial-gradient(rgba(0, 255, 65, 0.05) 1px, transparent 1px);
+            background-size: 25px 25px;
+        }
+        .neuron-module {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: absolute;
+        }
+        .neuron-module.disconnected { opacity: 0.4; transform: scale(0.95) !important; }
+        .card-bg.disconnected { opacity: 0.5; border-left-color: #4b5563; }
+        .interval-btn, .chart-creator select, .chart-creator button {
+            background-color: var(--color-matrix-faint);
+            border: 1px solid var(--color-matrix-dark);
+            transition: background-color 0.2s;
+        }
+        .interval-btn.active, .chart-creator button:hover {
+            background: linear-gradient(90deg, var(--color-matrix-main), var(--color-matrix-bright));
+            color: black;
+        }
+        .data-line {
+            transition: opacity 0.5s ease, stroke-dashoffset 1s ease;
+            stroke-dasharray: 500;
+            stroke-dashoffset: 0;
+        }
+        .data-line.disconnected {
+            stroke-dashoffset: 500;
+            opacity: 0 !important;
+        }
+        @keyframes pulse-line {
+            0% { stroke-width: 2; opacity: 0.6; }
+            50% { stroke-width: 3.5; opacity: 1; }
+            100% { stroke-width: 2; opacity: 0.6; }
+        }
+        .data-line:not(.disconnected) {
+            animation: pulse-line 2.5s infinite ease-in-out;
+        }
+        
+        #data-stream-container {
+            height: 350px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            background: #000;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow: hidden;
+            border: 1px solid var(--color-matrix-dark);
+            box-shadow: inset 0 0 15px rgba(57, 255, 20, 0.2);
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+        }
+        .data-chunk {
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+            margin-right: 0.75rem;
+            margin-bottom: 0.25rem;
+        }
+        @keyframes fadeIn { to { opacity: 1; } }
+        
+        .language-container {
+            min-height: 200px;
+            text-align: left;
+            word-wrap: break-word;
+            overflow: auto;
+            max-height: 250px;
+        }
+        #ancient-language-container {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 500;
+            font-size: 2.2rem;
+            line-height: 1.8;
+            text-shadow: 0 0 8px var(--color-matrix-main);
+            color: var(--color-matrix-bright);
+        }
+        #symbolic-language-container {
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 400;
+            font-size: 2rem;
+            line-height: 1.5;
+            text-shadow: 0 0 8px var(--color-matrix-main);
+            color: var(--color-matrix-bright);
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 10px;
+            margin-left: 8px;
+            animation: blink-cursor 0.7s infinite;
+        }
+        #ancient-language-container .typing-cursor, #symbolic-language-container .typing-cursor, #dialogue-chat-window .typing-cursor { 
+            background-color: var(--color-matrix-bright); 
+            height: 2.2rem; 
+        }
+        @keyframes blink-cursor { 50% { opacity: 0; } }
+        
+        .flicker-text { animation: text-flicker 3s linear infinite; }
+        @keyframes text-flicker { 0%{opacity:0.8} 2%{opacity:1} 8%{opacity:0.7} 9%{opacity:1} 12%{opacity:0.6} 20%{opacity:1} 25%{opacity:0.8} 30%{opacity:1} 70%{opacity:0.9} 72%{opacity:1} 98%{opacity:0.8} 100%{opacity:1} }
+
+        .action-toggle {
+            width: 60px; height: 32px; background-color: var(--color-matrix-faint); border-radius: 99px; position: relative; cursor: pointer; border: 1px solid var(--color-matrix-dark);
+        }
+        .action-toggle::after {
+            content: ''; position: absolute; top: 2px; left: 2px; width: 26px; height: 26px; background-color: #a3a3a3; border-radius: 50%; transition: all 0.3s;
+        }
+        .action-toggle.active { background-color: var(--color-matrix-main); }
+        .action-toggle.active::after { transform: translateX(28px); background-color: black; }
+        .action-status { transition: all 0.3s ease; }
+
+        #dialogue-chat-window {
+            height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #000;
+            border-radius: 0.5rem;
+            border: 1px solid var(--color-matrix-dark);
+        }
+        .chat-message { display: flex; margin-bottom: 1rem; animation: fadeIn 0.5s; }
+        .chat-message.arduoinator .chat-bubble {
+            background: var(--color-matrix-faint);
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.2rem;
+        }
+        .chat-message.ecosystem { justify-content: flex-end; }
+        .chat-message.ecosystem .chat-bubble {
+            background: var(--color-matrix-dark);
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.5rem;
+            color: var(--color-matrix-bright);
+        }
+        .chat-bubble {
+            max-width: 80%;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            word-wrap: break-word;
+        }
+
+    </style>
+</head>
+<body class="bg-pattern">
+
+    <div class="container mx-auto px-4 py-8 md:py-16">
+        <header class="text-center mb-16">
+            <h1 class="text-4xl md:text-6xl font-black tracking-tighter neuro-gradient-text mb-4">ARDUINATOR</h1>
+            <p class="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto">No monitoreamos la naturaleza. Escuchamos su conciencia.</p>
+        </header>
+
+        <!-- The Living Network Visualization -->
+        <div id="network-container" class="relative w-full h-[550px] md:h-[500px] mb-16 flex items-center justify-center">
+            <!-- Central Soma -->
+            <div class="z-10 text-center flex flex-col items-center">
+                <div class="w-32 h-32 md:w-40 md:h-40 rounded-full flex items-center justify-center glow-pulse border-2 border-green-400 bg-gray-900/80">
+                    <i data-lucide="brain-circuit" class="w-16 h-16 md:w-20 md:h-20 text-green-300"></i>
+                </div>
+                <h3 class="mt-4 text-xl font-bold text-green-200">SOMA</h3>
+                <p class="text-sm text-gray-400">El Núcleo Cognitivo</p>
+                <p class="text-xs text-gray-500 mt-2 italic">Haz clic en un módulo para (des)conectarlo.</p>
+            </div>
+            <!-- Neurons -->
+            <div id="neuron-bio" class="flex items-center gap-4 neuron-module"><div class="w-16 h-16 rounded-full flex items-center justify-center bg-green-900/50 border border-green-400"><i data-lucide="leaf" class="w-8 h-8 text-green-300"></i></div><div><h4 class="font-bold text-green-200">Bio-Sensores</h4><p class="text-xs text-gray-400">Pulso de las plantas</p></div></div>
+            <div id="neuron-env" class="flex items-center gap-4 neuron-module"><div class="w-16 h-16 rounded-full flex items-center justify-center bg-green-900/50 border border-green-400"><i data-lucide="sun-moon" class="w-8 h-8 text-green-300"></i></div><div><h4 class="font-bold text-green-200">Ambiente Int.</h4><p class="text-xs text-gray-400">Ciclos y Luz</p></div></div>
+            <div id="neuron-water" class="flex items-center gap-4 neuron-module"><div class="w-16 h-16 rounded-full flex items-center justify-center bg-green-900/50 border border-green-400"><i data-lucide="droplets" class="w-8 h-8 text-green-300"></i></div><div><h4 class="font-bold text-green-200">Hidratación</h4><p class="text-xs text-gray-400">Agua y Suelo</p></div></div>
+            <div id="neuron-exterior" class="flex items-center gap-4 neuron-module"><div class="w-16 h-16 rounded-full flex items-center justify-center bg-green-900/50 border border-green-400"><i data-lucide="globe" class="w-8 h-8 text-green-300"></i></div><div><h4 class="font-bold text-green-200">Exterior</h4><p class="text-xs text-gray-400">Entorno Global</p></div></div>
+            <!-- SVG Connections -->
+            <svg id="svg-container" class="absolute inset-0 w-full h-full opacity-70"><defs><linearGradient id="line-grad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#a3e635"/><stop offset="100%" stop-color="#22c55e"/></linearGradient></defs><line id="line-bio" class="data-line" /><line id="line-env" class="data-line" /><line id="line-water" class="data-line" /><line id="line-exterior" class="data-line" /></svg>
+        </div>
+
+        <!-- Live Data Cards -->
+        <div id="data-cards" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-16">
+             <div id="card-bio" class="card-bg rounded-xl p-4 border-l-4 border-green-400"><h3 class="font-bold text-sm text-green-200 mb-2">Armonía</h3><p class="text-3xl font-black text-white" id="harmony-index">92.7<span class="text-xl text-gray-400">%</span></p></div>
+             <div id="card-soil" class="card-bg rounded-xl p-4 border-l-4 border-green-400"><h3 class="font-bold text-sm text-green-200 mb-2">pH Suelo</h3><p class="text-3xl font-black text-white" id="ph-value">6.8</p></div>
+             <div id="card-env" class="card-bg rounded-xl p-4 border-l-4 border-green-400"><h3 class="font-bold text-sm text-green-200 mb-2">Temp. Int.</h3><p class="text-3xl font-black text-white" id="temp-value">23.4<span class="text-xl text-gray-400">°C</span></p></div>
+             <div id="card-co2" class="card-bg rounded-xl p-4 border-l-4 border-green-400"><h3 class="font-bold text-sm text-green-200 mb-2">CO₂</h3><p class="text-3xl font-black text-white" id="co2-value">450<span class="text-xl text-gray-400">ppm</span></p></div>
+             <div id="card-uv" class="card-bg rounded-xl p-4 border-l-4 border-green-400"><h3 class="font-bold text-sm text-green-200 mb-2">Índice UV</h3><p class="text-3xl font-black text-white" id="uv-value">2.1</p></div>
+             <div id="card-pulse" class="card-bg rounded-xl p-4 border-l-4 border-green-400"><h3 class="font-bold text-sm text-green-200 mb-2">Bio-Pulso</h3><p class="text-3xl font-black text-white" id="pulse-value">0.32<span class="text-xl text-gray-400">μV</span></p></div>
+        </div>
+
+        <!-- Data Analysis & Charts Section -->
+        <div class="text-center mb-6"><h2 class="text-3xl font-bold tracking-tight text-green-200">Análisis de Datos y Correlaciones</h2></div>
+        <div class="card-bg rounded-xl p-6 mb-8">
+            <div class="chart-creator flex flex-wrap items-center justify-center gap-4">
+                <label for="y1-select" class="text-sm font-semibold">Eje Y (Izquierda):</label>
+                <select id="y1-select" class="px-3 py-2 rounded-md text-sm text-white bg-black border-green-900"></select>
+                <label for="y2-select" class="text-sm font-semibold">Eje Y (Derecha):</label>
+                <select id="y2-select" class="px-3 py-2 rounded-md text-sm text-white bg-black border-green-900"></select>
+                <button id="create-chart-btn" class="px-4 py-2 rounded-md text-sm font-semibold bg-green-900/50 hover:bg-green-500 hover:text-black">Crear Gráfico</button>
+            </div>
+            <!-- Interval buttons container -->
+            <div class="flex justify-center gap-2 mt-4" id="interval-controls">
+                <button data-interval="1000" data-unit="second" class="interval-btn px-3 py-1 rounded-md text-xs font-semibold text-green-200 active">1s</button>
+                <button data-interval="5000" data-unit="second" class="interval-btn px-3 py-1 rounded-md text-xs font-semibold text-green-200">5s</button>
+                <button data-interval="30000" data-unit="minute" class="interval-btn px-3 py-1 rounded-md text-xs font-semibold text-green-200">30s</button>
+            </div>
+        </div>
+        <div id="chart-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Dynamic charts will be added here -->
+        </div>
+
+        <!-- Data Stream Section -->
+        <div class="mt-20 text-center"><h2 class="text-3xl font-bold tracking-tight text-green-200">Flujo de Conciencia del Ecosistema</h2></div>
+        <div id="data-stream-container" class="mt-8"></div>
+
+        <!-- Symbolic Language Section -->
+        <div class="mt-20 text-center"><h2 class="text-3xl font-bold tracking-tight text-green-200">Simbología Primordial</h2></div>
+        <div class="relative mt-8 card-bg rounded-xl p-8">
+            <div id="symbolic-language-container" class="language-container">
+                <span id="symbolic-language-output" class="flicker-text"></span><span class="typing-cursor"></span>
+            </div>
+        </div>
+
+        <!-- Ancient Language Section -->
+        <div class="mt-20 text-center"><h2 class="text-3xl font-bold tracking-tight text-green-200">El Lenguaje Emergente de la Tierra</h2></div>
+        <div class="relative mt-8 card-bg rounded-xl p-8">
+            <div id="ancient-language-container" class="language-container">
+                <span id="ancient-language-output" class="flicker-text"></span><span class="typing-cursor"></span>
+            </div>
+        </div>
+        
+        <!-- Live Dialogue Section -->
+        <div class="mt-20 text-center"><h2 class="text-3xl font-bold tracking-tight text-green-200">El Diálogo Vivo</h2></div>
+        <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1 card-bg rounded-xl p-8">
+                <h3 class="text-xl font-bold text-center mb-6 text-green-200">Panel de Interacción</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between"><div class="flex items-center gap-3"><i data-lucide="waves" class="w-6 h-6 text-green-300"></i><div><h4 class="font-semibold text-white">Hidratación</h4><p class="text-xs text-gray-400" id="watering-status-text">Autónomo</p></div></div><div id="watering-toggle" class="action-toggle"></div></div>
+                    <div class="flex items-center justify-between"><div class="flex items-center gap-3"><i data-lucide="lightbulb" class="w-6 h-6 text-green-300"></i><div><h4 class="font-semibold text-white">Iluminación</h4><p class="text-xs text-gray-400" id="light-status-text">Autónomo</p></div></div><div id="light-toggle" class="action-toggle"></div></div>
+                    <div class="flex items-center justify-between"><div class="flex items-center gap-3"><i data-lucide="thermometer" class="w-6 h-6 text-green-300"></i><div><h4 class="font-semibold text-white">Clima</h4><p class="text-xs text-gray-400" id="climate-status-text">Autónomo</p></div></div><div id="climate-toggle" class="action-toggle"></div></div>
+                    <div class="flex items-center justify-between"><div class="flex items-center gap-3"><i data-lucide="wind" class="w-6 h-6 text-green-300"></i><div><h4 class="font-semibold text-white">Ventilación</h4><p class="text-xs text-gray-400" id="vent-status-text">Autónomo</p></div></div><div id="vent-toggle" class="action-toggle"></div></div>
+                     <div class="flex items-center justify-between"><div class="flex items-center gap-3"><i data-lucide="audio-lines" class="w-6 h-6 text-green-300"></i><div><h4 class="font-semibold text-white">Audio-Traducción</h4><p class="text-xs text-gray-400" id="sound-status-text">Escuchando...</p></div></div><div id="sound-toggle" class="action-toggle"></div></div>
+                </div>
+            </div>
+            <div class="lg:col-span-2 card-bg rounded-xl p-4">
+                 <div id="dialogue-chat-window">
+                    <!-- Chat messages will be appended here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Lucide icon replacement
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            // Elements check and setup
+            const networkContainer = document.getElementById('network-container');
+            const dataStreamContainer = document.getElementById('data-stream-container');
+            const ancientLanguageOutput = document.getElementById('ancient-language-output');
+            const symbolicLanguageOutput = document.getElementById('symbolic-language-output');
+            const dialogueChatWindow = document.getElementById('dialogue-chat-window');
+            const chartGrid = document.getElementById('chart-grid');
+            const y1Select = document.getElementById('y1-select');
+            const y2Select = document.getElementById('y2-select');
+            const createChartBtn = document.getElementById('create-chart-btn');
+            const intervalControls = document.getElementById('interval-controls');
+
+            // Neurons & Lines mapping
+            const neuronKeys = ['bio', 'env', 'water', 'exterior'];
+            const neuronElements = {};
+            const lineElements = {};
+            neuronKeys.forEach(k => {
+                neuronElements[k] = document.getElementById(`neuron-${k}`);
+                lineElements[k] = document.getElementById(`line-${k}`);
+            });
+
+            // Card mapping
+            const cardElements = {
+                bio: [document.getElementById('card-bio'), document.getElementById('card-pulse')],
+                env: [document.getElementById('card-env'), document.getElementById('card-co2'), document.getElementById('card-uv')],
+                water: [document.getElementById('card-soil')],
+                exterior: []
+            };
+
+            // Metrics mapping
+            const metricValueElements = {
+                harmony: document.getElementById('harmony-index'),
+                ph: document.getElementById('ph-value'),
+                temp: document.getElementById('temp-value'),
+                co2: document.getElementById('co2-value'),
+                uv: document.getElementById('uv-value'),
+                pulse: document.getElementById('pulse-value'),
+            };
+
+            // Toggles & Status
+            const toggles = {
+                watering: document.getElementById('watering-toggle'),
+                sound: document.getElementById('sound-toggle'),
+                light: document.getElementById('light-toggle'),
+                climate: document.getElementById('climate-toggle'),
+                vent: document.getElementById('vent-toggle')
+            };
+            const statusTexts = {
+                watering: document.getElementById('watering-status-text'),
+                sound: document.getElementById('sound-status-text'),
+                light: document.getElementById('light-status-text'),
+                climate: document.getElementById('climate-status-text'),
+                vent: document.getElementById('vent-status-text')
+            };
+
+            // State
+            let currentData = {};
+            let allCharts = [];
+            let simulationIntervalId;
+            let streamIntervalId;
+            let dialogueTurn = 'arduoinator';
+            const modules = { bio: { connected: true }, env: { connected: true }, water: { connected: true }, exterior: { connected: true } };
+            const actions = { watering: false, sound: false, light: false, climate: false, vent: false };
+            const manualOverrides = { watering: false, sound: false, light: false, climate: false, vent: false };
+            const typingManager = {};
+
+            // Lexicons
+            const lexicon = { 
+                roots: ['Grak', 'Urr', 'Nûm', 'Koth', 'Zûl', 'Vorak', 'Marr', 'Thokk'], 
+                state: ['-un', '-ag', 'oth', '-esh', '-ik', '-al', '-uun'], 
+                flow: ['tharr', 'vok', 'ess', 'marr', 'grol', 'yess', 'vonn'], 
+                conjunctions: ['og', 'ahn', 'il', 'ez', 'ka'], 
+                end: ['. ', ' ', ', ', '. ', '... '] 
+            };
+            const symbolicLexicon = {
+                harmony: ['⨎', '⨏', '⨐', '⨑', '⨒'], 
+                temp: ['⏏', '⏍', '⎎', '⎓', '⏑'],
+                humidity: ['≈', '≋', '⏆', '⏇', '⏈'], 
+                sound: ['♪', '♫', '〰'], 
+                separator: ['⬩', '⬪', '⬫']
+            };
+            const arduinatorSymbols = { 
+                watering: '💧', sound: '♫', light: '💡', climate: '🌡️', vent: '☴', observe: 'Ø', bio: '◈' 
+            };
+
+            // --- INIT ---
+
+            function updateLayout() {
+                if (!networkContainer) return;
+                const containerRect = networkContainer.getBoundingClientRect();
+                const somaX = containerRect.width / 2;
+                const somaY = containerRect.height / 2;
+                const radius = Math.min(containerRect.width, containerRect.height) / 2.6;
+                const angles = { bio: -Math.PI / 2, env: 0, water: Math.PI / 2, exterior: Math.PI };
+                
+                neuronKeys.forEach(key => {
+                    const neuron = neuronElements[key];
+                    const line = lineElements[key];
+                    if (!neuron || !line) return;
+
+                    const angle = angles[key];
+                    const neuronRect = neuron.getBoundingClientRect();
+                    const x = somaX + radius * Math.cos(angle) - neuronRect.width / 2;
+                    const y = somaX + radius * Math.sin(angle) - neuronRect.height / 2;
+                    neuron.style.transform = `translate(${x}px, ${y}px)`;
+
+                    const lineEndX = somaX + (radius * 0.8) * Math.cos(angle);
+                    const lineEndY = somaX + (radius * 0.8) * Math.sin(angle);
+                    line.setAttribute('x1', somaX);
+                    line.setAttribute('y1', somaY);
+                    line.setAttribute('x2', lineEndX);
+                    line.setAttribute('y2', lineEndY);
+                    line.setAttribute('stroke', 'url(#line-grad)');
+                });
+            }
+            window.addEventListener('resize', updateLayout);
+            setTimeout(updateLayout, 100);
+
+            // Chart Metric Setup
+            const availableMetrics = [
+                { label: 'Armonía', key: 'harmonyValue' },
+                { label: 'Hum. Suelo', key: 'soilHumidity' },
+                { label: 'Hum. Aire', key: 'airHumidity' },
+                { label: 'Temp. Int.', key: 'intTemp' },
+                { label: 'Temp. Ext.', key: 'extTempValue' },
+                { label: 'pH Suelo', key: 'ph' },
+                { label: 'CO₂', key: 'co2' },
+                { label: 'UV', key: 'uv' },
+                { label: 'Bio-Pulso', key: 'bioPulse' }
+            ];
+
+            if (y1Select && y2Select) {
+                availableMetrics.forEach(m => {
+                    y1Select.innerHTML += `<option value="${m.key}">${m.label}</option>`;
+                    y2Select.innerHTML += `<option value="${m.key}">${m.label}</option>`;
+                });
+                y2Select.value = 'soilHumidity';
+            }
+
+            // Neuron Click Listeners
+            neuronKeys.forEach(key => {
+                if (neuronElements[key]) {
+                    neuronElements[key].addEventListener('click', () => {
+                        modules[key].connected = !modules[key].connected;
+                        neuronElements[key].classList.toggle('disconnected', !modules[key].connected);
+                        if (lineElements[key]) lineElements[key].classList.toggle('disconnected');
+                        if (cardElements[key]) {
+                            cardElements[key].forEach(c => { if(c) c.classList.toggle('disconnected', !modules[key].connected); });
+                        }
+                    });
+                }
+            });
+
+            // Toggle Listeners
+            Object.keys(toggles).forEach(key => {
+                if (toggles[key]) {
+                    toggles[key].addEventListener('click', () => {
+                        manualOverrides[key] = true;
+                        actions[key] = !actions[key];
+                        toggles[key].classList.toggle('active', actions[key]);
+                        if (statusTexts[key]) statusTexts[key].textContent = "Manual";
+                        setTimeout(() => { manualOverrides[key] = false; }, 8000);
+                    });
+                }
+            });
+
+            // --- HELPER FUNCTIONS ---
+
+            function getRandom(min, max, dec = 1) { return parseFloat((Math.random() * (max - min) + min).toFixed(dec)); }
+
+            function typeWriter(element, textGenerator, speed) {
+                const elementId = element.id;
+                if (typingManager[elementId] && typingManager[elementId].isTyping) return;
+                
+                const textToType = textGenerator();
+                let i = 0;
+                typingManager[elementId] = { isTyping: true };
+                
+                const intervalId = setInterval(() => {
+                    if (i < textToType.length) {
+                        element.textContent += textToType[i];
+                        i++;
+                        if (element.parentElement) element.parentElement.scrollTop = element.parentElement.scrollHeight;
+                    } else {
+                        clearInterval(intervalId);
+                        typingManager[elementId].isTyping = false;
+                        const words = element.textContent.split(' ');
+                        if (words.length > 60) element.textContent = words.slice(words.length - 60).join(' ') + ' ';
+                    }
+                }, speed);
+                typingManager[elementId].intervalId = intervalId;
+            }
+
+            function generateAncientWord() {
+                let phrase = '';
+                let phraseLength = Math.floor(Math.random() * 3) + 2;
+                for(let i=0; i < phraseLength; i++) {
+                    const r = Math.random();
+                    if (r < 0.4) phrase += lexicon.roots[Math.floor(Math.random()*lexicon.roots.length)] + lexicon.state[Math.floor(Math.random()*lexicon.state.length)];
+                    else if (r < 0.8) phrase += lexicon.flow[Math.floor(Math.random()*lexicon.flow.length)] + lexicon.state[Math.floor(Math.random()*lexicon.state.length)];
+                    else phrase += lexicon.conjunctions[Math.floor(Math.random()*lexicon.conjunctions.length)];
+                }
+                return phrase + lexicon.end[Math.floor(Math.random()*lexicon.end.length)];
+            }
+
+            function generateSymbolicGlyph(isResponse = false) {
+                let glyph = '';
+                const hIdx = Math.floor(Math.random() * symbolicLexicon.harmony.length);
+                const tIdx = Math.floor(Math.random() * symbolicLexicon.temp.length);
+                const huIdx = Math.floor(Math.random() * symbolicLexicon.humidity.length);
+                
+                let seq = Math.floor(Math.random() * 3) + (isResponse ? 4 : 2);
+                for(let i=0; i < seq; i++) {
+                    const r = Math.random();
+                    if (r < 0.33) glyph += symbolicLexicon.harmony[hIdx];
+                    else if (r < 0.66) glyph += symbolicLexicon.temp[tIdx];
+                    else glyph += symbolicLexicon.humidity[huIdx];
+                }
+                return glyph + symbolicLexicon.separator[Math.floor(Math.random() * symbolicLexicon.separator.length)] + ' ';
+            }
+
+            function colorize(val, type) {
+                let color = 'text-green-400';
+                if (type === 'temp') {
+                    if (val > 24.5) color = 'text-red-500';
+                    else if (val < 22) color = 'text-blue-400';
+                } else if (type === 'harmony') {
+                    if (val > 95) color = 'text-green-200';
+                    else if (val < 90) color = 'text-yellow-500';
+                }
+                return `<span class="${color}">${val}</span>`;
+            }
+
+            function getArduoinatorMessage() {
+                let msg = arduinatorSymbols.observe + ' ';
+                const keys = Object.keys(actions);
+                const active = keys.filter(k => actions[k]);
+                let action = active.length > 0 ? active[Math.floor(Math.random()*active.length)] : 'observe';
+                
+                msg += (arduinatorSymbols[action] || arduinatorSymbols.observe) + ' ';
+                if(action === 'watering') msg += colorize(currentData.soilHumidity, 'humidity') + '% ';
+                else if(action === 'climate') msg += colorize(currentData.intTemp, 'temp') + '°C ';
+                else msg += colorize(currentData.harmonyValue, 'harmony') + '% ';
+                return msg;
+            }
+
+            function addChatMessage() {
+                if (!dialogueChatWindow) return;
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${dialogueTurn}`;
+                const bubble = document.createElement('div');
+                bubble.className = 'chat-bubble';
+                
+                if (dialogueTurn === 'arduoinator') bubble.innerHTML = getArduoinatorMessage();
+                else bubble.textContent = generateSymbolicGlyph(true) + (Math.random() > 0.7 ? generateAncientWord() : '');
+
+                messageDiv.appendChild(bubble);
+                dialogueChatWindow.appendChild(messageDiv);
+                dialogueChatWindow.scrollTop = dialogueChatWindow.scrollHeight;
+                
+                dialogueTurn = dialogueTurn === 'arduoinator' ? 'ecosystem' : 'arduoinator';
+                if (dialogueChatWindow.children.length > 25) dialogueChatWindow.removeChild(dialogueChatWindow.children[0]);
+            }
+
+            // --- SIMULATION LOOP ---
+
+            function updateMetrics() {
+                const now = new Date();
+                
+                // Sensor Simulation
+                const soilH = getRandom(50, 80);
+                const airH = getRandom(60, 85);
+                const intT = getRandom(19, 27);
+                const harm = getRandom(85, 99);
+                
+                currentData = {
+                    harmonyValue: harm, soilHumidity: soilH, airHumidity: airH, intTemp: intT,
+                    extTempValue: getRandom(14, 22), ph: getRandom(6.2, 7.5, 1),
+                    co2: getRandom(380, 550, 0), uv: getRandom(0.5, 5, 1), bioPulse: getRandom(0.05, 0.9, 2), wind: getRandom(2, 30, 0)
+                };
+
+                // Autopoietic Logic
+                if (!manualOverrides.watering && statusTexts.watering) {
+                    if (modules.water.connected && soilH < 62) actions.watering = true; else if (soilH > 72) actions.watering = false;
+                    statusTexts.watering.textContent = "Autónomo";
+                }
+                if (!manualOverrides.light && statusTexts.light) {
+                    const hour = now.getHours(); actions.light = (hour > 6 && hour < 20);
+                    statusTexts.light.textContent = "Autónomo";
+                }
+                if (!manualOverrides.climate && statusTexts.climate) {
+                    if (intT < 21) actions.climate = true; else if (intT > 25) actions.climate = false;
+                    statusTexts.climate.textContent = "Autónomo";
+                }
+                if (!manualOverrides.vent && statusTexts.vent) {
+                    if (airH > 78) actions.vent = true; else if (airH < 68) actions.vent = false;
+                    statusTexts.vent.textContent = "Autónomo";
+                }
+                if (!manualOverrides.sound && statusTexts.sound) {
+                    if (Math.random() < 0.05) actions.sound = !actions.sound;
+                    statusTexts.sound.textContent = actions.sound ? "Traduciendo..." : "Silencio";
+                }
+
+                // Update UI state
+                Object.keys(toggles).forEach(k => { if(toggles[k]) toggles[k].classList.toggle('active', actions[k]); });
+
+                // Update Metrics display
+                if (modules.bio.connected && metricValueElements.harmony) metricValueElements.harmony.innerHTML = `${currentData.harmonyValue}<span class="text-xl text-gray-400">%</span>`;
+                if (metricValueElements.pulse) metricValueElements.pulse.innerHTML = `${currentData.bioPulse}<span class="text-xl text-gray-400">μV</span>`;
+                if (metricValueElements.temp) metricValueElements.temp.innerHTML = `${currentData.intTemp}<span class="text-xl text-gray-400">°C</span>`;
+                if (metricValueElements.ph) metricValueElements.ph.textContent = currentData.ph;
+                if (metricValueElements.co2) metricValueElements.co2.innerHTML = `${currentData.co2}<span class="text-xl text-gray-400">ppm</span>`;
+                if (metricValueElements.uv) metricValueElements.uv.textContent = currentData.uv;
+
+                // Update Charts
+                allCharts.forEach(c => {
+                    const y1K = c.canvas.dataset.y1;
+                    const y2K = c.canvas.dataset.y2;
+                    if (currentData[y1K] !== undefined) {
+                        if (c.data.labels.length > 20) { c.data.labels.shift(); c.data.datasets.forEach(ds => ds.data.shift()); }
+                        c.data.labels.push(now);
+                        c.data.datasets[0].data.push(currentData[y1K]);
+                        c.data.datasets[1].data.push(currentData[y2K]);
+                        c.update('none');
+                    }
+                });
+
+                // Update Languages
+                if (ancientLanguageOutput) typeWriter(ancientLanguageOutput, generateAncientWord, 40);
+                if (symbolicLanguageOutput) typeWriter(symbolicLanguageOutput, generateSymbolicGlyph, 60);
+                addChatMessage();
+            }
+
+            function updateDataStream() {
+                if (!dataStreamContainer || !currentData.harmonyValue) return;
+                const chunk = document.createElement('span');
+                chunk.className = 'data-chunk';
+                const r = Math.random();
+                let val = r < 0.33 ? currentData.harmonyValue + '%' : (r < 0.66 ? currentData.intTemp + '°C' : currentData.co2 + 'ppm');
+                chunk.innerHTML = `<span class="text-green-500 opacity-70">${val}</span>`;
+                dataStreamContainer.appendChild(chunk);
+                if (dataStreamContainer.children.length > 150) dataStreamContainer.removeChild(dataStreamContainer.children[0]);
+            }
+
+            // --- CONTROLS ---
+
+            if (createChartBtn) {
+                createChartBtn.addEventListener('click', () => {
+                    const y1 = y1Select.value;
+                    const y2 = y2Select.value;
+                    if (y1 === y2 || !chartGrid) return;
+
+                    const container = document.createElement('div');
+                    container.className = 'card-bg rounded-xl p-4 h-64';
+                    const canvas = document.createElement('canvas');
+                    canvas.dataset.y1 = y1;
+                    canvas.dataset.y2 = y2;
+                    container.appendChild(canvas);
+                    chartGrid.appendChild(container);
+
+                    const m1 = availableMetrics.find(m => m.key === y1);
+                    const m2 = availableMetrics.find(m => m.key === y2);
+
+                    const unit = intervalControls ? intervalControls.querySelector('.active').dataset.unit : 'second';
+                    const chart = new Chart(canvas, {
+                        type: 'line',
+                        data: {
+                            datasets: [
+                                { label: m1.label, data: [], borderColor: '#39ff14', yAxisID: 'y', pointRadius: 0 },
+                                { label: m2.label, data: [], borderColor: '#a3a3a3', yAxisID: 'y1', pointRadius: 0 }
+                            ]
+                        },
+                        options: chartOptions(unit, m1.label, m2.label)
+                    });
+                    allCharts.push(chart);
+                });
+            }
+
+            if (intervalControls) {
+                intervalControls.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'BUTTON') {
+                        intervalControls.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        startSimulation(parseInt(e.target.dataset.interval), e.target.dataset.unit);
+                    }
+                });
+            }
+
+            function startSimulation(int, unit) {
+                clearInterval(simulationIntervalId);
+                clearInterval(streamIntervalId);
+                
+                simulationIntervalId = setInterval(updateMetrics, int);
+                streamIntervalId = setInterval(updateDataStream, 150);
+                
+                updateMetrics();
+            }
+
+            // Initial startup
+            startSimulation(1000, 'second');
+        });
+    </script>
+
+</body>
+</html>
