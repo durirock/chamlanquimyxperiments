@@ -1,0 +1,472 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Activity, 
+  Wind, 
+  Thermometer, 
+  Droplets, 
+  Sun, 
+  Zap, 
+  Music, 
+  Cpu, 
+  Trees, 
+  Power,
+  Microscope,
+  Layers,
+  ChevronRight,
+  TrendingUp,
+  Mountain,
+  Gauge,
+  Cloud,
+  Maximize
+} from 'lucide-react';
+
+const BionatorApp = () => {
+  // Estado de los Órganos Sensoriales
+  const [activeSensors, setActiveSensors] = useState({
+    atmosferico: true,
+    somatico: true,
+    optico: true,
+    metabolico: true,
+    biosinfonico: true
+  });
+
+  const [telemetry, setTelemetry] = useState({
+    tempExt: 24.5,
+    humedadSuelo: 65,
+    cargaSolar: 88,
+    frecuenciaMidi: 440,
+    resistenciaMicelial: 1250,
+    bateria: 94
+  });
+
+  // Configuración de Visualización
+  const [speed, setSpeed] = useState(90); // ms por actualización
+  const [mode, setMode] = useState('tunnel'); // 'tunnel' o 'open'
+
+  // Estructura de Datos para la Malla 3D (Suelo y Techo)
+  const [terrainData, setTerrainData] = useState(
+    Array(20).fill(0).map(() => Array(12).fill(0))
+  );
+  const [ceilingData, setCeilingData] = useState(
+    Array(20).fill(0).map(() => Array(12).fill(0))
+  );
+
+  const [leftAxis, setLeftAxis] = useState('soil');
+  const [rightAxis, setRightAxis] = useState('midi');
+  const [forestLog, setForestLog] = useState([]);
+  const [consciousnessFlow, setConsciousnessFlow] = useState([]);
+  const [frame, setFrame] = useState(0);
+
+  const forestSymbols = ["᚛", "᚜", "ᚿ", "ᛀ", "ᚻ", "ᚽ", "ᚿ", "ᛃ", "ᛄ", "ᛅ", "ᛇ", "ᛈ", "ᛉ", "ᛊ", "ᛋ", "ᛍ", "ᛎ", "ᛏ", "ᛐ", "ᛑ", "ᛒ", "ᛓ", "ᛔ", "ᛖ", "ᛗ", "ᛘ", "ᛙ", "ᛚ", "ᛛ", "ᛜ", "ᛝ", "ᛞ", "ᛟ", "ᛠ", "ᛡ", "ᛢ", "ᛣ", "ᛤ", "ᛥ", "ᛦ", "ᛧ", "ᛨ", "ᛩ", "ᛪ"];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // 1. Actualización de Telemetría
+      const newTelemetry = {
+        tempExt: +(20 + Math.random() * 10).toFixed(2),
+        humedadSuelo: +(40 + Math.random() * 40).toFixed(2),
+        cargaSolar: +(70 + Math.random() * 30).toFixed(2),
+        frecuenciaMidi: Math.floor(200 + Math.random() * 600),
+        resistenciaMicelial: Math.floor(1100 + Math.random() * 300),
+        bateria: Math.max(0, telemetry.bateria - 0.005)
+      };
+      setTelemetry(prev => ({ ...newTelemetry, bateria: prev.bateria - 0.001 }));
+
+      // 2. Generación de Relieve
+      const updateMesh = (axisL, axisR, isCeiling = false) => {
+        const valL = (axisL === 'soil' ? newTelemetry.humedadSuelo / 100 : (newTelemetry.tempExt - 20) / 10);
+        const valR = (axisR === 'midi' ? (newTelemetry.frecuenciaMidi - 200) / 600 : newTelemetry.cargaSolar / 100);
+        
+        return Array(12).fill(0).map((_, i) => {
+          if (i < 4) return valL * (4 - i) * (isCeiling ? 1.8 : 1.5) + (Math.random() * 0.15); 
+          if (i > 7) return valR * (i - 7) * (isCeiling ? 1.8 : 1.5) + (Math.random() * 0.15);
+          return Math.random() * 0.04;
+        });
+      };
+
+      setTerrainData(prev => [updateMesh(leftAxis, rightAxis), ...prev.slice(0, 19)]);
+      if (mode === 'tunnel') {
+        setCeilingData(prev => [updateMesh(rightAxis, leftAxis, true), ...prev.slice(0, 19)]);
+      }
+
+      setFrame(f => f + 1);
+
+      if (Math.random() > 0.85) {
+        const events = ["TOPOGRAFÍA_CELESTE_OK", "ACOPLAMIENTO_SOMÁTICO", "VÓRTICE_BIOLÓGICO", "MODULACIÓN_TEMPORAL"];
+        setConsciousnessFlow(prev => [events[Math.floor(Math.random() * events.length)], ...prev].slice(0, 5));
+      }
+
+      if (activeSensors.biosinfonico) {
+        let code = "";
+        for (let i = 0; i < 15; i++) code += forestSymbols[Math.floor(Math.random() * forestSymbols.length)];
+        setForestLog(prev => [code, ...prev].slice(0, 10));
+      }
+    }, speed);
+
+    return () => clearInterval(interval);
+  }, [leftAxis, rightAxis, telemetry.bateria, speed, mode]);
+
+  const toggleSensor = (id) => setActiveSensors(prev => ({ ...prev, [id]: !prev[id] }));
+
+  // Renderizador de la Malla Dual o Simple
+  const renderMesh = () => {
+    const lines = [];
+    const vanishingPoint = { x: 50, y: 50 };
+
+    const drawMesh = (data, isCeiling = false) => {
+      data.forEach((row, zIndex) => {
+        const depth = zIndex / 20; 
+        const scale = 1 - depth;
+        let pathD = "";
+        
+        row.forEach((val, xIndex) => {
+          const xPos = 4 + (xIndex * 8.4);
+          const px = vanishingPoint.x + (xPos - 50) * scale;
+          const yOffset = (50 - (val * 25 * scale)) * scale;
+          const py = isCeiling ? vanishingPoint.y - yOffset : vanishingPoint.y + yOffset;
+
+          if (xIndex === 0) pathD += `M ${px},${py}`;
+          else pathD += ` L ${px},${py}`;
+        });
+        lines.push(
+          <path 
+            key={`${isCeiling ? 'ceil' : 'floor'}-lat-${zIndex}`} 
+            d={pathD} 
+            fill="none" 
+            stroke={isCeiling ? "#10b981" : "#22c55e"} 
+            strokeWidth={0.25 * scale} 
+            className={isCeiling ? "opacity-30" : "opacity-60"} 
+          />
+        );
+      });
+
+      for (let xIndex = 0; xIndex < 12; xIndex++) {
+        let pathD = "";
+        for (let zIndex = 0; zIndex < 20; zIndex++) {
+          const depth = zIndex / 20;
+          const scale = 1 - depth;
+          const val = data[zIndex][xIndex];
+          const xPos = 4 + (xIndex * 8.4);
+          const px = vanishingPoint.x + (xPos - 50) * scale;
+          const yOffset = (50 - (val * 25 * scale)) * scale;
+          const py = isCeiling ? vanishingPoint.y - yOffset : vanishingPoint.y + yOffset;
+
+          if (zIndex === 0) pathD += `M ${px},${py}`;
+          else pathD += ` L ${px},${py}`;
+        }
+        lines.push(
+          <path 
+            key={`${isCeiling ? 'ceil' : 'floor'}-long-${xIndex}`} 
+            d={pathD} 
+            fill="none" 
+            stroke={isCeiling ? "#10b981" : "#22c55e"} 
+            strokeWidth="0.1" 
+            className="opacity-20" 
+          />
+        );
+      }
+    };
+
+    drawMesh(terrainData, false);
+    if (mode === 'tunnel') drawMesh(ceilingData, true);
+    return lines;
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-green-500 font-mono p-4 md:p-6 flex flex-col gap-4 overflow-hidden">
+      
+      {/* HEADER BIO-TERMINAL */}
+      <header className="flex justify-between items-center border-b border-green-900/40 pb-4">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={18} className="animate-pulse" />
+            <h1 className="text-xl font-black uppercase tracking-tighter text-white">Bionator_OS // v2.44</h1>
+          </div>
+          <p className="text-[8px] text-green-800 tracking-[0.4em] uppercase">Control Temporal • {mode === 'tunnel' ? 'Modo Túnel' : 'Cielo Abierto'}</p>
+        </div>
+        
+        <div className="flex gap-8">
+          <div className="text-right">
+            <p className="text-[9px] text-green-900 mb-1 tracking-widest uppercase">Energía_Nodo</p>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-black text-white">{telemetry.bateria.toFixed(1)}%</span>
+              <div className="w-32 h-1.5 bg-zinc-950 border border-green-900/20 rounded-full overflow-hidden">
+                <div className="h-full bg-green-500 shadow-[0_0_10px_#22c55e]" style={{ width: `${telemetry.bateria}%` }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 overflow-hidden">
+        
+        {/* PANEL IZQUIERDO: CONTROLES */}
+        <aside className="lg:col-span-3 flex flex-col gap-4 overflow-y-auto pr-2">
+          
+          {/* MODULACIÓN DE VELOCIDAD */}
+          <div className="bg-green-500/5 border border-green-900/20 p-4 rounded-xl">
+            <h2 className="text-[10px] font-bold text-green-800 mb-4 uppercase tracking-[0.2em] flex items-center">
+              <Gauge size={12} className="mr-2" /> Modulación_Temporal
+            </h2>
+            <input 
+              type="range" 
+              min="30" 
+              max="500" 
+              value={speed} 
+              onChange={(e) => setSpeed(parseInt(e.target.value))}
+              className="w-full accent-green-500 bg-zinc-900 h-1 rounded-full appearance-none cursor-pointer"
+            />
+            <div className="flex justify-between mt-2 text-[9px] text-green-900 font-bold">
+              <span>RÁPIDO (30ms)</span>
+              <span>LENTO (500ms)</span>
+            </div>
+          </div>
+
+          {/* MODO DE VISUALIZACIÓN */}
+          <div className="bg-green-500/5 border border-green-900/20 p-4 rounded-xl">
+            <h2 className="text-[10px] font-bold text-green-800 mb-4 uppercase tracking-[0.2em] flex items-center">
+              <Maximize size={12} className="mr-2" /> Config_Atmosférica
+            </h2>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setMode('tunnel')}
+                className={`flex-1 py-2 text-[9px] font-black border transition-all ${mode === 'tunnel' ? 'bg-green-500/20 border-green-500 text-white' : 'border-green-900/20 text-green-900'}`}
+              >
+                MODO TÚNEL
+              </button>
+              <button 
+                onClick={() => setMode('open')}
+                className={`flex-1 py-2 text-[9px] font-black border transition-all ${mode === 'open' ? 'bg-green-500/20 border-green-500 text-white' : 'border-green-900/20 text-green-900'}`}
+              >
+                CIELO ABIERTO
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-green-500/5 border border-green-900/20 p-4 rounded-xl">
+            <h2 className="text-[10px] font-bold text-green-800 mb-4 uppercase tracking-[0.2em] flex items-center">
+              <Microscope size={12} className="mr-2" /> Órganos_Sinápticos
+            </h2>
+            <div className="space-y-1">
+              <SensorKey id="atmosferico" label="Atmosférico" active={activeSensors.atmosferico} onClick={toggleSensor} />
+              <SensorKey id="somatico" label="Somático" active={activeSensors.somatico} onClick={toggleSensor} />
+              <SensorKey id="optico" label="Óptico" active={activeSensors.optico} onClick={toggleSensor} />
+              <SensorKey id="biosinfonico" label="Biosinfónico" active={activeSensors.biosinfonico} onClick={toggleSensor} />
+            </div>
+          </div>
+
+          <div className="mt-auto p-3 bg-zinc-950/50 border border-green-900/20 rounded-lg">
+             <h3 className="text-[9px] font-black mb-2 opacity-30 tracking-widest uppercase text-white">Lógica_Autopoiética</h3>
+             <div className="space-y-1">
+               {consciousnessFlow.map((msg, i) => (
+                 <div key={i} className={`text-[8px] flex items-center ${i === 0 ? 'text-green-400' : 'text-green-900'}`}>
+                    <ChevronRight size={10} className="mr-1" /> {msg}
+                 </div>
+               ))}
+             </div>
+          </div>
+        </aside>
+
+        {/* PANEL CENTRAL: EL VALLE TOTAL */}
+        <main className="lg:col-span-6 flex flex-col gap-4">
+          <div className="relative flex-1 bg-black rounded-3xl border border-green-900/20 overflow-hidden shadow-[inset_0_0_100px_rgba(0,0,0,1)]">
+            
+            {/* Visualizador de Malla */}
+            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <defs>
+                <filter id="neonGlow">
+                  <feGaussianBlur stdDeviation="0.4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              {/* Guías de Perspectiva */}
+              <g stroke="#064e3b" strokeWidth="0.03" className="opacity-40">
+                {[...Array(mode === 'tunnel' ? 12 : 6)].map((_, i) => {
+                  const angle = (mode === 'tunnel' ? i * 30 : 180 + i * 36) * (Math.PI / 180);
+                  return (
+                    <line key={i} x1="50" y1="50" x2={50 + Math.cos(angle) * 100} y2={50 + Math.sin(angle) * 100} />
+                  );
+                })}
+              </g>
+
+              {/* Horizonte en Cielo Abierto */}
+              {mode === 'open' && (
+                <line x1="0" y1="50" x2="100" y2="50" stroke="#064e3b" strokeWidth="0.1" opacity="0.5" />
+              )}
+
+              {/* Mallas */}
+              <g filter="url(#neonGlow)">
+                {renderMesh()}
+              </g>
+
+              {/* Punto de Fuga */}
+              <circle cx="50" cy="50" r="0.4" fill="white" className="animate-pulse" />
+            </svg>
+
+            {/* Lecturas en tiempo real */}
+            <div className="absolute top-8 left-8 right-8 flex justify-between pointer-events-none">
+              <div className="text-left border-l border-green-500/40 pl-4">
+                <p className="text-[8px] text-green-700 font-black tracking-widest">INPUT_ALPHA</p>
+                <p className="text-4xl font-black text-white leading-none mt-1">
+                  {leftAxis === 'soil' ? telemetry.humedadSuelo : telemetry.tempExt}
+                  <span className="text-xs text-green-500 font-normal ml-1">{leftAxis === 'soil' ? '%' : '°C'}</span>
+                </p>
+              </div>
+              <div className="text-right border-r border-green-500/40 pr-4">
+                <p className="text-[8px] text-green-700 font-black tracking-widest">INPUT_BETA</p>
+                <p className="text-4xl font-black text-white leading-none mt-1">
+                  {rightAxis === 'midi' ? telemetry.frecuenciaMidi : telemetry.cargaSolar}
+                  <span className="text-xs text-green-500 font-normal ml-1">{rightAxis === 'midi' ? 'Hz' : 'W'}</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Efectos de Clima en Modo Open */}
+            {mode === 'open' && (
+              <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-green-500/5 to-transparent pointer-events-none" />
+            )}
+          </div>
+
+          {/* TERMINAL SINFÓNICO */}
+          <div className="h-44 bg-zinc-950 border border-green-900/20 rounded-2xl p-4 font-mono text-[11px] overflow-hidden relative">
+            <div className="absolute top-0 left-0 right-0 p-2 bg-black/40 border-b border-green-900/10 flex justify-between items-center z-10 backdrop-blur-sm">
+              <span className="text-[9px] font-black text-green-600 flex items-center tracking-widest uppercase">
+                <Trees size={12} className="mr-2" /> Sync_Micelio // {speed}ms
+              </span>
+              <div className="flex gap-2">
+                <div className={`w-1.5 h-1.5 rounded-full ${frame % 2 === 0 ? 'bg-green-500' : 'bg-green-900'}`} />
+              </div>
+            </div>
+            <div className="mt-8 space-y-1">
+              {forestLog.map((line, i) => (
+                <div key={i} className={`flex gap-6 ${i === 0 ? 'text-green-400' : 'text-green-950'}`}>
+                  <span className="opacity-20 text-[10px] tabular-nums">{frame - i}</span>
+                  <span className="tracking-[0.5em] truncate">{line}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+
+        {/* PANEL DERECHO: METABOLISMO */}
+        <aside className="lg:col-span-3 flex flex-col gap-4">
+          <div className="bg-green-500/5 border border-green-900/20 p-5 flex-1 rounded-2xl flex flex-col">
+            <h2 className="text-[10px] font-black text-green-800 mb-6 uppercase tracking-widest flex items-center">
+              <Activity size={14} className="mr-2" /> Metabolismo_Vigilante
+            </h2>
+            
+            <div className="space-y-8">
+              <MetricRow label="Res_Micelial" value={`${telemetry.resistenciaMicelial} Ω`} active={activeSensors.biosinfonico} />
+              <MetricRow label="Solar_Flux" value={`${telemetry.cargaSolar} W`} active={activeSensors.optico} />
+              <MetricRow label="Atmos_State" value={`${telemetry.tempExt} °C`} active={activeSensors.atmosferico} />
+            </div>
+
+            <div className="mt-auto pt-6 border-t border-green-900/20">
+               <h3 className="text-[10px] font-black text-green-900 mb-4 uppercase tracking-widest">Homeostasis_Sync</h3>
+               <div className={`p-4 rounded-xl border transition-all duration-1000 ${telemetry.humedadSuelo < 50 ? 'bg-red-500/10 border-red-900/40' : 'bg-black border-green-950'}`}>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[9px] font-bold text-green-800 uppercase tracking-tighter">Solenoides</span>
+                    <div className={`w-2 h-2 rounded-full ${telemetry.humedadSuelo < 50 ? 'bg-red-500 animate-ping shadow-[0_0_10px_red]' : 'bg-green-950'}`} />
+                  </div>
+                  <p className="text-[10px] text-green-900 leading-relaxed italic font-bold">
+                    {telemetry.humedadSuelo < 50 
+                      ? "ESTADO: EMERGENCIA_HÍDRICA. Iniciando pulso rítmico." 
+                      : "ESTADO: Balance osmótico estabilizado."}
+                  </p>
+               </div>
+            </div>
+          </div>
+
+          <div className="p-5 bg-gradient-to-br from-green-950/20 to-black border border-green-900/10 rounded-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-2 opacity-5">
+              {mode === 'tunnel' ? <Mountain size={60} /> : <Cloud size={60} />}
+            </div>
+            <p className="text-[9px] text-green-900 uppercase tracking-widest mb-3 font-black italic">Alianza_2044</p>
+            <p className="text-[10px] text-green-800 leading-relaxed font-bold">
+              "El Bionator se acopla al medio, formando parte de la tierra que habita, alimentándose de sol y colores."
+            </p>
+          </div>
+        </aside>
+
+      </div>
+
+      <footer className="text-center py-2 border-t border-green-900/10">
+        <p className="text-[8px] text-green-950 tracking-[1em] uppercase font-black">
+          Gaea_Protocol • {mode.toUpperCase()}_MESH • Infinite_Z_Horizon
+        </p>
+      </footer>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        input[type=range]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          height: 12px;
+          width: 12px;
+          border-radius: 50%;
+          background: #22c55e;
+          cursor: pointer;
+          box-shadow: 0 0 10px #22c55e;
+        }
+        .bg-black::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+          background-size: 100% 4px, 4px 100%;
+          pointer-events: none;
+          z-index: 5;
+        }
+      `}} />
+    </div>
+  );
+};
+
+// COMPONENTES AUXILIARES
+const SensorKey = ({ id, label, active, onClick }) => (
+  <button 
+    onClick={() => onClick(id)}
+    className={`w-full flex items-center gap-3 p-3 border transition-all duration-300 ${
+      active ? 'bg-green-500/10 border-green-500/50 text-white' : 'bg-transparent border-green-900/10 text-green-950'
+    }`}
+  >
+    <div className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-zinc-900'}`} />
+    <span className="text-[10px] font-black tracking-widest flex-1 text-left uppercase">{label}</span>
+    <Power size={11} className={active ? 'text-green-500 opacity-60' : 'opacity-10'} />
+  </button>
+);
+
+const MetricRow = ({ label, value, active }) => (
+  <div className={`transition-all duration-500 ${active ? 'opacity-100' : 'opacity-10'}`}>
+    <p className="text-[8px] text-green-900 font-black mb-2 tracking-widest uppercase">{label}</p>
+    <div className="flex items-baseline gap-3">
+      <span className="text-xl font-black text-white tabular-nums">{value}</span>
+      <div className="flex-1 h-[1px] bg-green-900/20" />
+    </div>
+  </div>
+);
+
+const AxisSelect = ({ label, value, onChange }) => (
+  <div className="flex flex-col gap-2">
+    <span className="text-[8px] text-green-900 font-black tracking-widest uppercase">{label}</span>
+    <div className="flex gap-1 flex-wrap">
+      {['soil', 'temp', 'solar', 'midi'].map(m => (
+        <button 
+          key={m}
+          onClick={() => onChange(m)}
+          className={`px-2 py-1 text-[9px] font-black border transition-all ${
+            value === m ? 'bg-green-500/20 border-green-500/60 text-green-400' : 'bg-black border-green-900/20 text-green-900'
+          }`}
+        >
+          {m.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+export default function App() {
+  return <BionatorApp />;
+}
