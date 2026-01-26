@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kalpa - Organismo Final V9</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- ========================================== -->
+    <!-- SHADERS: ORGANISMO VIVO -->
+    <!-- ========================================== -->
+
+    <script type="x-shader/x-vertex" id="vertexshader">
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+        varying vec3 vPos;
+        varying float vDist; 
+        
+        uniform float uTime;
+        uniform float uSpeed; 
+        uniform float uBreathIntensity; 
+        uniform float uTubeThickness; 
+        uniform float uAudioDisplace;
+
+        void main() {
+            vUv = uv;
+            vNormal = normalize(normalMatrix * normal);
+            vPos = position; 
+            
+            float breath = sin(uTime * 1.5) * uBreathIntensity * 5.0;
+            vec3 newPos = position + normal * (breath + uTubeThickness + uAudioDisplace);
+
+            vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
+            vViewPosition = -mvPosition.xyz; 
+            vDist = length(mvPosition.xyz);
+            gl_Position = projectionMatrix * mvPosition;
+        }
+    </script>
+
+    <script type="x-shader/x-fragment" id="fragmentshader">
+        uniform float uTime;
+        uniform float uSpeed;           
+        uniform float uOpacityBase;     
+        uniform float uFresnelIntensity;
+        uniform float uColorSaturation;
+        uniform float uColorScale;
+        
+        // --- PROFUNDIDAD AUMENTADA ---
+        const float fogNear = 2000.0; // Niebla empieza mas lejos
+        const float fogFar = 8000.0; // Niebla termina muy lejos
+
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vViewPosition;
+        varying vec3 vPos;
+        varying float vDist;
+
+        vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+        vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+        vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+        float snoise(vec3 v) {
+            const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+            const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+            vec3 i  = floor(v + dot(v, C.yyy) );
+            vec3 x0 = v - i + dot(i, C.xxx) ;
+            vec3 g = step(x0.yzx, x0.xyz);
+            vec3 l = 1.0 - g;
+            vec3 i1 = min( g.xyz, l.zxy );
+            vec3 i2 = max( g.xyz, l.zxy );
+            vec3 x1 = x0 - i1 + C.xxx;
+            vec3 x2 = x0 - i2 + C.yyy;
+            vec3 x3 = x0 - D.yyy;
+            i = mod289(i);
+            vec4 p = permute( permute( permute(
+                        i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+                    + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+                    + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+            float n_ = 0.142857142857;
+            vec3  ns = n_ * D.wyz - D.xzx;
+            vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+            vec4 x_ = floor(j * ns.z);
+            vec4 y_ = floor(j - 7.0 * x_ );
+            vec4 x = x_ *ns.x + ns.yyyy;
+            vec4 y = y_ *ns.x + ns.yyyy;
+            vec4 h = 1.0 - abs(x) - abs(y);
+            vec4 b0 = vec4( x.xy, y.xy );
+            vec4 b1 = vec4( x.zw, y.zw );
+            vec4 s0 = floor(b0)*2.0 + 1.0;
+            vec4 s1 = floor(b1)*2.0 + 1.0;
+            vec4 sh = -step(h, vec4(0.0));
+            vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+            vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+            vec3 p0 = vec3(a0.xy,h.x);
+            vec3 p1 = vec3(a0.zw,h.y);
+            vec3 p2 = vec3(a1.xy,h.z);
+            vec3 p3 = vec3(a1.zw,h.w);
+            vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+            p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+            vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+            m = m * m;
+            return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
+        }
+
+        vec3 spectralPalette(float t) {
+            vec3 a = vec3(0.5, 0.5, 0.5);
+            vec3 b = vec3(0.5, 0.5, 0.5);
+            vec3 c = vec3(1.0, 1.0, 1.0);
+            vec3 d = vec3(0.00, 0.33, 0.67);
+            return a + b * cos(6.28318 * (c * t + d));
+        }
+
+        void main() {
+            vec3 viewDir = normalize(vViewPosition);
+            vec3 normal = normalize(vNormal);
+
+            float timeFactor = uTime * uSpeed * 0.2; 
+            vec3 posScaled = vPos * uColorScale;
+            
+            vec3 posAnimated1 = posScaled - vec3(timeFactor, 0.0, 0.0);
+            vec3 posAnimated2 = posScaled * 1.5 - vec3(timeFactor * 1.2, 0.0, 0.0);
+
+            float n1 = snoise(posAnimated1);
+            float n2 = snoise(posAnimated2);
+            float fluid = n1 * 0.6 + n2 * 0.4;
+
+            vec3 baseColor = spectralPalette(fluid * 0.8 + timeFactor * 0.5);
+            vec3 color = pow(baseColor, vec3(2.0 - uColorSaturation)); 
+
+            float fresnelBase = pow(1.0 - abs(dot(normal, viewDir)), 2.5);
+            vec3 finalColor = color + vec3(0.8) * fresnelBase;
+            
+            float alpha = uOpacityBase + fresnelBase * uFresnelIntensity;
+            float fogFactor = smoothstep(fogNear, fogFar, vDist);
+            alpha *= (1.0 - fogFactor);
+
+            gl_FragColor = vec4(finalColor, alpha);
+        }
+    </script>
+
+    <style>
+        :root {
+            --primary-glow: #4DDBFF;
+            --secondary-glow: #FF4DDB;
+            --panel-bg: rgba(5, 12, 25, 0.85);
+        }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: white;
+            font-family: 'Courier New', monospace;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: cursor 0.5s; 
+        }
+        
+        body.hide-cursor { cursor: none; }
+
+        #debug-info {
+            position: absolute; top: 20px; left: 20px; pointer-events: none;
+            color: rgba(255, 255, 255, 0.6); font-size: 11px; z-index: 10;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); letter-spacing: 1px;
+            mix-blend-mode: screen;
+            opacity: 1; transition: opacity 2s ease-in-out;
+        }
+        
+        .fade-out { opacity: 0 !important; }
+
+        /* --- UI PANEL --- */
+        #config-toggle {
+            position: absolute; top: 20px; right: 20px; z-index: 200;
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(10, 20, 40, 0.8); border: 1px solid var(--primary-glow);
+            color: var(--primary-glow); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.3s ease; pointer-events: auto;
+        }
+        #config-toggle:hover { transform: rotate(90deg); box-shadow: 0 0 15px var(--primary-glow); }
+
+        #config-panel {
+            position: absolute; top: 70px; right: 20px; width: 300px;
+            background: rgba(5, 12, 25, 0.95); border: 1px solid rgba(77, 219, 255, 0.3);
+            border-radius: 12px; padding: 20px; backdrop-filter: blur(10px);
+            z-index: 199; transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: -10px 10px 30px rgba(0,0,0,0.8); pointer-events: auto;
+            color: #EAEAEA; font-family: 'Courier New', monospace;
+            max-height: 80vh; overflow-y: auto;
+        }
+        #config-panel.open { transform: translateX(0); }
+        
+        .config-item { margin-bottom: 15px; }
+        .config-label { display: flex; justify-content: space-between; color: #94a3b8; font-size: 0.8rem; margin-bottom: 5px; }
+        .config-val { color: var(--primary-glow); font-weight: bold; }
+        
+        input[type=range] { width: 100%; -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
+            background: var(--primary-glow); cursor: pointer; margin-top: -6px;
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: rgba(255,255,255,0.2); border-radius: 2px;
+        }
+        input[type=range]:focus { outline: none; }
+
+        .btn-reset {
+            width: 100%; padding: 8px; margin-top: 10px;
+            background: rgba(255, 68, 68, 0.15); border: 1px solid rgba(255,68,68,0.4);
+            color: #ffadad; font-size: 0.8rem; cursor: pointer; border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .btn-reset:hover { background: rgba(255, 68, 68, 0.3); border-color: rgba(255, 68, 68, 0.8); }
+
+        .btn-save {
+            width: 100%; padding: 8px; margin-top: 20px;
+            background: rgba(77, 219, 255, 0.15); border: 1px solid rgba(77,219,255,0.4);
+            color: #b3ecff; font-size: 0.8rem; cursor: pointer; border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .btn-save:hover { background: rgba(77, 219, 255, 0.3); border-color: rgba(77, 219, 255, 0.8); }
+
+        /* --- AUDIO UI --- */
+        .upload-section {
+            margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 15px; text-align: center; display: flex; flex-direction: column; gap: 10px;
+        }
+        .upload-btn {
+            background: rgba(77, 219, 255, 0.15); border: 1px solid var(--primary-glow);
+            color: var(--primary-glow); padding: 8px 15px; border-radius: 20px;
+            cursor: pointer; font-size: 11px; letter-spacing: 1px;
+            transition: all 0.3s ease; text-transform: uppercase;
+            display: inline-block; width: 85%; margin: 0 auto;
+        }
+        .upload-btn:hover { background: var(--primary-glow); color: #000; box-shadow: 0 0 15px var(--primary-glow); }
+        
+        .radio-btn {
+            background: rgba(255, 77, 219, 0.15); border: 1px solid var(--secondary-glow);
+            color: var(--secondary-glow); padding: 8px 15px; border-radius: 20px;
+            cursor: pointer; font-size: 11px; letter-spacing: 1px;
+            transition: all 0.3s ease; text-transform: uppercase;
+            display: inline-block; width: 85%; margin: 0 auto;
+        }
+        .radio-btn:hover { background: var(--secondary-glow); color: #000; box-shadow: 0 0 15px var(--secondary-glow); }
+
+        #file-input { display: none; }
+        #audio-status { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 8px; font-style: italic; }
+
+        /* --- VISUALIZADOR ORGÁNICO --- */
+        #visualizer-container {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 50; transition: opacity 0.5s;
+            cursor: pointer;
+            width: 800px; height: 60px; /* Mas bajo */
+        }
+        /* Hint visual de que se puede cerrar */
+        #visualizer-container:hover .visualizer-close { opacity: 1; pointer-events: auto; }
+        
+        #visualizer-canvas {
+            width: 100%; height: 100%;
+            opacity: 0.8; /* Transparencia base */
+            transition: opacity 0.5s ease;
+            /* Máscara radial suave */
+            mask-image: radial-gradient(circle, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 80%);
+            -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 80%);
+            pointer-events: none; /* Dejar pasar clicks al contenedor */
+        }
+
+        /* BOTÓN CERRAR (X) */
+        .visualizer-close {
+            position: absolute; top: -20px; right: 0; 
+            width: 24px; height: 24px; border-radius: 50%;
+            background: rgba(255, 68, 68, 0.8); color: white; /* Más visible */
+            display: flex; justify-content: center; align-items: center;
+            font-size: 12px; cursor: pointer; opacity: 0;
+            transition: all 0.3s;
+            backdrop-filter: blur(4px);
+            z-index: 60;
+        }
+        .visualizer-close:hover { transform: scale(1.1); background: rgba(255, 100, 100, 1); }
+
+        /* BOTÓN EXPANDIR (⛶) */
+        .visualizer-expand {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(77, 219, 255, 0.1); color: var(--primary-glow);
+            border: 1px solid rgba(77, 219, 255, 0.3);
+            display: none; justify-content: center; align-items: center;
+            font-size: 16px; cursor: pointer;
+            backdrop-filter: blur(5px);
+            animation: pulseUI 3s infinite;
+            z-index: 70;
+        }
+        .visualizer-expand:hover { background: var(--primary-glow); color: #000; }
+
+        @keyframes pulseUI {
+            0% { box-shadow: 0 0 0 0 rgba(77, 219, 255, 0.3); }
+            70% { box-shadow: 0 0 0 10px rgba(77, 219, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(77, 219, 255, 0); }
+        }
+
+        /* ESTADOS DE MINIMIZADO */
+        #visualizer-container.minimized { pointer-events: none; }
+        #visualizer-container.minimized #visualizer-canvas { opacity: 0; height: 0; }
+        #visualizer-container.minimized + .visualizer-expand { display: flex; } 
+        
+        #touch-controls {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%; height: 100%; pointer-events: none; z-index: 999; display: none; 
+        }
+        #joystick-container {
+            position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 60%);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; pointer-events: auto;
+        }
+        #joystick-knob {
+            width: 40px; height: 40px; background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%; position: absolute;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            transition: transform 0.05s; backdrop-filter: blur(2px);
+        }
+        #hyperspace-btn {
+            position: absolute; bottom: 50px; right: 50px; width: 80px; height: 80px; border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(0,0,0,0) 60%);
+            pointer-events: auto; display: flex; justify-content: center; align-items: center;
+            font-size: 24px; color: rgba(255, 255, 255, 0.6);
+        }
+        
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="debug-info">
+        KALPA AUDIO-REACTIVO<br>
+        <span style="color:rgba(255,255,255,0.4)">WASD: Mover | Q/E: Pitch 360° | 3: Estereograma | 4: Nivelar Vuelo</span>
+    </div>
+
+    <!-- VISUALIZADOR INFERIOR ORGÁNICO -->
+    <div id="visualizer-container">
+        <div class="visualizer-close" id="btn-close-visualizer">✕</div>
+        <canvas id="visualizer-canvas"></canvas>
+    </div>
+    
+    <!-- BOTÓN EXPANDIR (Persistente) -->
+    <div class="visualizer-expand" id="btn-expand-visualizer"><i class="fas fa-wave-square"></i></div>
+
+    <!-- BOTÓN Y PANEL DE CONFIGURACIÓN -->
+    <button id="config-toggle"><i class="fas fa-cog"></i></button>
+    
+    <div id="config-panel">
+        <h3 style="color:var(--primary-glow); text-align:center; margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+            Kalpa Config
+        </h3>
+
+        <!-- SECCIÓN DE CARGA DE AUDIO -->
+        <div class="upload-section">
+            <button id="btn-radio" class="radio-btn">
+                <i class="fas fa-broadcast-tower"></i> Radio Tagua Tagua
+            </button>
+            
+            <label for="file-input" class="upload-btn">
+                <i class="fas fa-music"></i> Subir MP3
+            </label>
+            <input type="file" id="file-input" accept="audio/*">
+            
+            <!-- CONTROL DE VOLUMEN (NUEVO) -->
+            <div class="config-item" style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">
+                <div class="config-label"><span>Volumen Audio</span><span id="val-volume" class="config-val">1.0</span></div>
+                <input type="range" id="input-volume" min="0" max="2.0" step="0.1" value="1.0">
+            </div>
+
+            <div id="audio-status">Sin audio cargado</div>
+        </div>
+
+        <div class="config-item" style="background: rgba(77, 219, 255, 0.1); padding: 10px; border-radius: 8px;">
+            <div class="config-label"><span style="color:white">Compresión (Vueltas)</span><span id="val-density" class="config-val">3.0</span></div>
+            <input type="range" id="input-density" min="0.5" max="8.0" step="0.1" value="3.0">
+        </div>
+
+        <div class="config-item">
+            <div class="config-label">
+                <span>Reactividad Audio</span>
+                <span id="val-audioreact" class="config-val" style="color:var(--secondary-glow)">1.0</span>
+            </div>
+            <input type="range" id="input-audioreact" min="0" max="3.0" step="0.1" value="1.0">
+        </div>
+
+        <div class="config-item">
+            <div class="config-label"><span>Vida (Respiración)</span><span id="val-breath" class="config-val">0.1</span></div>
+            <input type="range" id="input-breath" min="0" max="2.0" step="0.1" value="0.1">
+        </div>
+
+        <div class="config-item">
+            <div class="config-label"><span>Saturación Color</span><span id="val-color" class="config-val">1.1</span></div>
+            <input type="range" id="input-color" min="0.0" max="2.0" step="0.1" value="1.1">
+        </div>
+
+        <div class="config-item">
+            <div class="config-label"><span>Tamaño Colores</span><span id="val-scale" class="config-val">0.005</span></div>
+            <input type="range" id="input-scale" min="0.001" max="0.15" step="0.001" value="0.005">
+        </div>
+
+        <div class="config-item">
+            <div class="config-label"><span>Grosor Arteria</span><span id="val-thickness" class="config-val">0.0</span></div>
+            <input type="range" id="input-thickness" min="-10.0" max="20.0" step="0.5" value="0.0">
+        </div>
+
+        <div class="config-item">
+            <div class="config-label"><span>Velocidad Flujo</span><span id="val-speed" class="config-val">1.0</span></div>
+            <input type="range" id="input-speed" min="0" max="5.0" step="0.1" value="1.0">
+        </div>
+
+        <div class="config-item">
+            <div class="config-label"><span>Opacidad Piel</span><span id="val-opacity" class="config-val">0.18</span></div>
+            <input type="range" id="input-opacity" min="0" max="1.0" step="0.01" value="0.18">
+        </div>
+
+        <div class="config-item">
+            <div class="config-label"><span>Intensidad Borde</span><span id="val-fresnel" class="config-val">0.55</span></div>
+            <input type="range" id="input-fresnel" min="0" max="2.0" step="0.05" value="0.55">
+        </div>
+
+        <button class="btn-save" id="btn-save-json">Guardar Configuración (.json)</button>
+        <button class="btn-reset" id="btn-reset">Reiniciar Organismo</button>
+    </div>
+
+    <div id="touch-controls">
+        <div id="joystick-container">
+            <div id="joystick-knob"></div>
+        </div>
+        <div id="hyperspace-btn">⚡</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- VARIABLES GLOBALES ---
+        let stereoMode = false;
+        let stereoSeparation = 2.5; 
+        let stereoFocus = 150.0;
+        let mouseTimer = null; // Para ocultar mouse
+
+        // --- SISTEMA DE AUDIO ---
+        const AudioSystem = {
+            context: null, analyser: null, source: null, audioEl: null, dataArray: null, isPlaying: false,
+            gainNode: null, // Nodo de ganancia 3D
+            masterGain: null, // Nodo de volumen maestro
+            lows: 0, mids: 0, highs: 0, volume: 0, reactivity: 1.0,
+            
+            // --- CAMBIA LA URL DE LA RADIO AQUÍ ---
+            radioUrl: 'https://stream.zeno.fm/lsthmognp16uv', 
+
+            init() {
+                const fileInput = document.getElementById('file-input');
+                const radioBtn = document.getElementById('btn-radio');
+                const visualizerCanvas = document.getElementById('visualizer-canvas');
+                
+                const closeBtn = document.getElementById('btn-close-visualizer');
+                const expandBtn = document.getElementById('btn-expand-visualizer');
+                const container = document.getElementById('visualizer-container');
+                
+                // Volumen
+                const volInput = document.getElementById('input-volume');
+                const volVal = document.getElementById('val-volume');
+
+                fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+                
+                // Radio Tagua Tagua Listener
+                radioBtn.addEventListener('click', () => this.playStream(this.radioUrl));
+
+                // Click en contenedor para Play/Pause
+                container.addEventListener('click', (e) => {
+                    // Evitar que el clic en cerrar propague el toggle
+                    if(e.target.classList.contains('visualizer-close')) return;
+                    e.stopPropagation();
+                    this.togglePlay();
+                });
+                
+                // Control Volumen
+                volInput.addEventListener('input', (e) => {
+                    const v = parseFloat(e.target.value);
+                    if(this.masterGain) this.masterGain.gain.value = v;
+                    volVal.innerText = v.toFixed(1);
+                });
+                
+                // --- UI ---
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    container.classList.add('minimized');
+                });
+
+                expandBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    container.classList.remove('minimized');
+                });
+            },
+
+            setupContext() {
+                if (!this.context) {
+                    this.context = new (window.AudioContext || window.webkitAudioContext)();
+                    this.analyser = this.context.createAnalyser();
+                    this.analyser.fftSize = 512;
+                    this.analyser.smoothingTimeConstant = 0.85; 
+                    this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                    
+                    // --- SISTEMA 3D: Gain Node Principal ---
+                    // IMPORTANTE: Conectar el gain al destino desde el inicio para que siempre suene
+                    this.gainNode = this.context.createGain();
+                    this.gainNode.connect(this.context.destination);
+                    
+                    // Y conectar el analizador al gain (la cadena de efectos)
+                    this.analyser.connect(this.gainNode);
+                }
+                if (this.context.state === 'suspended') this.context.resume();
+            },
+
+            // Reproducir Audio Element (Streaming o Local)
+            playStream(url) {
+                const status = document.getElementById('audio-status');
+                status.innerText = "Conectando a Radio...";
+                this.stop(); 
+                this.setupContext();
+
+                this.audioEl = new Audio();
+                this.audioEl.crossOrigin = "anonymous";
+                this.audioEl.src = url;
+                
+                // Crear Source
+                this.source = this.context.createMediaElementSource(this.audioEl);
+                // Conectar SOLO al inicio de la cadena (Analizador)
+                this.source.connect(this.analyser);
+
+                this.audioEl.play().then(() => {
+                    this.isPlaying = true;
+                    status.innerText = "En vivo: Radio Tagua Tagua";
+                    document.getElementById('visualizer-container').classList.remove('minimized');
+                }).catch(e => {
+                    console.error(e);
+                    status.innerText = "Error conexión (Intenta de nuevo)";
+                });
+            },
+
+            handleFileSelect(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                // Limpiar valor del input para permitir recargar el mismo archivo
+                e.target.value = '';
+                
+                const status = document.getElementById('audio-status');
+                status.innerText = "Cargando archivo...";
+                this.stop();
+                this.setupContext();
+
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    this.context.decodeAudioData(ev.target.result, (buffer) => {
+                        this.stop(); 
+                        this.source = this.context.createBufferSource();
+                        this.source.buffer = buffer;
+                        // Conectar SOLO al analizador
+                        this.source.connect(this.analyser);
+                        
+                        this.source.start(0);
+                        this.isPlaying = true;
+                        this.isBuffer = true; 
+                        status.innerText = "Reproduciendo: " + file.name;
+                        document.getElementById('visualizer-container').classList.remove('minimized');
+                    }, (err) => { console.error(err); status.innerText = "Error de archivo"; });
+                };
+                reader.readAsArrayBuffer(file);
+            },
+
+            togglePlay() {
+                if (this.isBuffer) {
+                    if(this.isPlaying) { 
+                        this.source.stop(); this.isPlaying = false; 
+                        document.getElementById('audio-status').innerText = "Pausado (Reinicie para play)";
+                    }
+                } else if (this.audioEl) {
+                    if (this.audioEl.paused) {
+                        this.audioEl.play();
+                        this.isPlaying = true;
+                    } else {
+                        this.audioEl.pause();
+                        this.isPlaying = false;
+                    }
+                }
+            },
+
+            stop() {
+                this.isPlaying = false;
+                if (this.source) {
+                    try { this.source.stop(); } catch(e){}
+                    try { this.source.disconnect(); } catch(e){}
+                    this.source = null; // IMPORTANTE: Limpiar referencia para re-crear
+                }
+                if (this.audioEl) {
+                    this.audioEl.pause();
+                    this.audioEl.src = "";
+                    this.audioEl = null;
+                }
+                this.isBuffer = false;
+            },
+
+            update() {
+                // --- LÓGICA DE VOLUMEN 3D ESPACIAL MEJORADA ---
+                if (this.gainNode && camera) {
+                    // Distancia al centro del espiral (0,0,0)
+                    const dist = camera.position.distanceTo(new THREE.Vector3(0,0,0));
+                    // Distancias aumentadas considerablemente para que no se corte rápido
+                    const maxDist = 10000; // Distancia donde el audio muere (antes 5000)
+                    const minDist = 500;  // Distancia de volumen máximo (antes 200)
+                    
+                    let vol = 1.0;
+                    if (dist > maxDist) {
+                        vol = 0.0; 
+                    } else if (dist > minDist) {
+                        // Atenuación lineal suave
+                        const t = (dist - minDist) / (maxDist - minDist);
+                        vol = 1.0 - t;
+                        // Aplicar curva smoothstep para que el fade-out sea más orgánico
+                        vol = vol * vol * (3 - 2 * vol); 
+                    }
+                    
+                    // Asignación directa para evitar glitches al volver
+                    // Usamos setValueAtTime para asegurar respuesta inmediata
+                    this.gainNode.gain.cancelScheduledValues(this.context.currentTime);
+                    this.gainNode.gain.setValueAtTime(vol, this.context.currentTime);
+                }
+
+                if (!this.isPlaying || !this.analyser) {
+                    this.lows *= 0.95; this.mids *= 0.95; this.highs *= 0.95; this.volume *= 0.95;
+                    return;
+                }
+                this.analyser.getByteFrequencyData(this.dataArray);
+                let lowSum = 0, midSum = 0, highSum = 0;
+                const binCount = this.analyser.frequencyBinCount; 
+                const lowLimit = Math.floor(binCount * 0.15);
+                const midLimit = Math.floor(binCount * 0.5);
+                
+                for (let i = 0; i < binCount; i++) {
+                    const val = this.dataArray[i] / 255.0; 
+                    if (i < lowLimit) lowSum += val; else if (i < midLimit) midSum += val; else highSum += val;
+                }
+                this.lows += (lowSum/lowLimit - this.lows) * 0.2;
+                this.mids += (midSum/(midLimit-lowLimit) - this.mids) * 0.2;
+                this.highs += (highSum/(binCount-midLimit) - this.highs) * 0.2;
+                this.volume = (this.lows + this.mids + this.highs) / 3.0;
+                this.drawVisualizer();
+            },
+            
+            // --- VISUALIZADOR ORGÁNICO ESPEJO ---
+            drawVisualizer() {
+                const canvas = document.getElementById('visualizer-canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 800; canvas.height = 160; // Más alto para simetría vertical
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2; // Centro vertical
+                
+                // Ancho de barra
+                const bufferLength = this.analyser.frequencyBinCount;
+                const barWidth = (canvas.width / bufferLength) * 1.5; 
+                
+                // Line cap para bordes redondos
+                ctx.lineCap = "round";
+                ctx.lineWidth = barWidth * 0.8; 
+
+                for(let i = 0; i < bufferLength; i++) {
+                    const value = this.dataArray[i];
+                    const percent = value / 255;
+                    // Altura orgánica (mitad hacia arriba, mitad hacia abajo)
+                    const barHeight = Math.max(2, percent * 60); 
+                    
+                    // --- COLOR ESPECTRAL ORGÁNICO ---
+                    const hue = (i / bufferLength * 300) + (performance.now() * 0.05) % 360; 
+                    const sat = 80 + (percent * 20); 
+                    const light = 50 + (percent * 30);
+                    
+                    ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${light}%, 0.8)`;
+                    ctx.beginPath();
+                    
+                    // Lado Derecho
+                    ctx.moveTo(centerX + (i * barWidth), centerY - barHeight);
+                    ctx.lineTo(centerX + (i * barWidth), centerY + barHeight);
+                    ctx.stroke();
+                    
+                    // Lado Izquierdo (Espejo)
+                    ctx.moveTo(centerX - (i * barWidth), centerY - barHeight);
+                    ctx.lineTo(centerX - (i * barWidth), centerY + barHeight);
+                    ctx.stroke();
+                }
+            }
+        };
+
+        // --- GESTOR DE CONFIGURACIÓN ---
+        const ConfigManager = {
+            defaults: {
+                speed: 1.0, opacityBase: 0.18, fresnelIntensity: 0.55, colorSaturation: 1.10,
+                colorScale: 0.005, breathIntensity: 0.1, waveFrequency: 0.05, tubeThickness: 0.00,
+                springDensity: 3.0, audioReactivity: 1.0 
+            },
+            current: {},
+            init() {
+                const saved = localStorage.getItem('kalpa_bio_config_v11');
+                this.current = saved ? { ...this.defaults, ...JSON.parse(saved) } : { ...this.defaults };
+                this.bindUI(); this.updateUI();
+                
+                const toggleBtn = document.getElementById('config-toggle');
+                const configPanel = document.getElementById('config-panel');
+                toggleBtn.addEventListener('click', (e) => { e.stopPropagation(); configPanel.classList.toggle('open'); });
+                document.addEventListener('click', (e) => {
+                    if (configPanel.classList.contains('open') && !configPanel.contains(e.target) && e.target !== toggleBtn) {
+                        configPanel.classList.remove('open');
+                    }
+                });
+                configPanel.addEventListener('click', (e) => { e.stopPropagation(); });
+                document.getElementById('btn-reset').addEventListener('click', () => {
+                    this.current = { ...this.defaults }; this.save(); this.updateUI(); this.applyToWorld(); rebuildWorld(); 
+                });
+                document.getElementById('btn-save-json').addEventListener('click', () => this.downloadConfig());
+            },
+            bindUI() {
+                const bind = (id, key, rebuild=false) => {
+                    const el = document.getElementById(id); if(!el)return;
+                    const valEl = document.getElementById(id.replace('input-', 'val-'));
+                    el.addEventListener('input', (e) => {
+                        this.current[key] = parseFloat(e.target.value);
+                        if(valEl) valEl.innerText = this.current[key].toFixed(key==='colorScale'?3:2);
+                        this.save();
+                        rebuild ? rebuildWorld() : this.applyToWorld();
+                    });
+                };
+                bind('input-speed','speed'); bind('input-opacity','opacityBase'); bind('input-fresnel','fresnelIntensity');
+                bind('input-breath','breathIntensity'); bind('input-thickness','tubeThickness'); bind('input-color','colorSaturation');
+                bind('input-scale','colorScale'); bind('input-density','springDensity',true); bind('input-audioreact','audioReactivity');
+            },
+            updateUI() {
+                // Update UI logic (simplificado)
+                for(let k in this.current) {
+                    let id = 'input-';
+                    if(k=='speed')id+='speed'; if(k=='opacityBase')id+='opacity'; if(k=='springDensity')id+='density';
+                    // etc...
+                }
+            },
+            save() { localStorage.setItem('kalpa_bio_config_v11', JSON.stringify(this.current)); },
+            downloadConfig() { /* ... */ },
+            applyToWorld() {}
+        };
+
+        // --- MOTOR INFINITO ---
+        const SEGMENT_LENGTH = 1000;
+        const SEGMENT_RADIUS = 60;
+        const VISIBLE_SEGMENTS = 12; // Aumentado a 12 para ver MUCHO mas lejos
+        
+        let scene, camera, renderer, clock;
+        let activeSegments = [];
+        let minZ = 0, maxZ = 0;
+        const NORMAL_SPEED = 150.0; const TURBO_SPEED = 600.0; let currentSpeed = 0;
+        let moveForward=false, moveBackward=false, moveLeft=false, moveRight=false, moveUp=false, moveDown=false, isTurbo=false;
+        let rotateLeft=false, rotateRight=false; let roll=0; let isMouseDown=false;
+        let isTouchDevice = false, joystickActive = false;
+
+        function init() {
+            ConfigManager.init();
+            AudioSystem.init();
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000); 
+            clock = new THREE.Clock();
+            // FAR aumentado a 10000 para renderizar lo muy lejano
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 10000);
+            camera.rotation.order = "YXZ"; 
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.body.appendChild(renderer.domElement);
+            initWorldSegments();
+
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            document.addEventListener('mousedown', (e) => {
+                if (e.target.closest('#config-panel') || e.target.closest('#config-toggle') || e.target.closest('#visualizer-container')) return;
+                isMouseDown = true;
+                hideCursor(); // Ocultar al clickear
+            });
+            document.addEventListener('mouseup', () => isMouseDown = false);
+            
+            // --- CURSOR FANTASMA CORREGIDO ---
+            // Solo reaparece si NO se está arrastrando (clic presionado)
+            document.addEventListener('mousemove', (e) => {
+                onMouseMove(e);
+                // Si no hay botones presionados, mostrar cursor
+                if (e.buttons === 0) { 
+                    showCursor(); 
+                }
+            });
+
+            // Timer para ocultar info
+            setTimeout(() => {
+                const info = document.getElementById('debug-info');
+                if(info) info.classList.add('fade-out');
+            }, 5000);
+
+            animate();
+        }
+
+        // --- GESTIÓN DE CURSOR ---
+        function hideCursor() {
+            document.body.classList.add('hide-cursor');
+        }
+        function showCursor() {
+            document.body.classList.remove('hide-cursor');
+            clearTimeout(mouseTimer);
+            mouseTimer = setTimeout(hideCursor, 2000); // Ocultar tras 2s de inactividad
+        }
+
+        // --- FUNCION DE VUELO NIVELADO (TECLA 4) ---
+        function levelFlight() {
+            // Obtener dirección actual
+            const dir = new THREE.Vector3();
+            camera.getWorldDirection(dir);
+            
+            // Proyectar al plano horizontal (ignorar Y, salvo que miremos directo arriba/abajo)
+            if (Math.abs(dir.y) > 0.99) {
+                dir.set(0, 0, -1); // Reset a default si mira muy arriba/abajo
+            } else {
+                dir.y = 0;
+                dir.normalize();
+            }
+            
+            // Mirar al horizonte en la dirección actual
+            const target = camera.position.clone().add(dir.multiplyScalar(1000));
+            camera.lookAt(target);
+        }
+
+        // --- GENERACIÓN PROCEDURAL (Identica V14) ---
+        function initWorldSegments() { createSegmentAt(0); createSegmentAt(-SEGMENT_LENGTH); createSegmentAt(SEGMENT_LENGTH); minZ=-SEGMENT_LENGTH; maxZ=SEGMENT_LENGTH; }
+        function rebuildWorld() { 
+            activeSegments.forEach(s=>{scene.remove(s);s.geometry.dispose();s.material.dispose();}); 
+            activeSegments=[]; 
+            const cz=Math.round(camera.position.z/SEGMENT_LENGTH)*SEGMENT_LENGTH; 
+            minZ=cz; maxZ=cz; 
+            createSegmentAt(cz); createSegmentAt(cz-SEGMENT_LENGTH); createSegmentAt(cz+SEGMENT_LENGTH); 
+            minZ=cz-SEGMENT_LENGTH; maxZ=cz+SEGMENT_LENGTH; 
+        }
+        class SpiralCurve extends THREE.Curve {
+            constructor(z,l,r,t){super();this.sz=z;this.l=l;this.r=r;this.t=t;}
+            getPoint(t,tg=new THREE.Vector3()){
+                const z=this.sz-(t*this.l); 
+                const a=z*(this.t*Math.PI*2/this.l); 
+                return tg.set(Math.cos(a)*this.r, Math.sin(a)*this.r, z);
+            }
+        }
+        function createSegmentAt(z) {
+            const curve = new SpiralCurve(z, SEGMENT_LENGTH, SEGMENT_RADIUS, ConfigManager.current.springDensity);
+            const geo = new THREE.TubeGeometry(curve, 400, SEGMENT_RADIUS*0.4, 64, false);
+            const mat = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime:{value:0}, uSpeed:{value:0}, uOpacityBase:{value:0}, uFresnelIntensity:{value:0},
+                    uColorSaturation:{value:0}, uColorScale:{value:0}, uBreathIntensity:{value:0},
+                    uTubeThickness:{value:0}, uAudioDisplace:{value:0}
+                },
+                vertexShader: document.getElementById('vertexshader').textContent,
+                fragmentShader: document.getElementById('fragmentshader').textContent,
+                side: THREE.BackSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+            });
+            const m = new THREE.Mesh(geo, mat); m.userData={startZ:z};
+            scene.add(m); activeSegments.push(m); activeSegments.sort((a,b)=>b.userData.startZ-a.userData.startZ);
+        }
+        function updateProceduralGeneration() {
+            if(camera.position.z<minZ+SEGMENT_LENGTH*2) { minZ-=SEGMENT_LENGTH; createSegmentAt(minZ); }
+            if(camera.position.z>maxZ-SEGMENT_LENGTH*2) { maxZ+=SEGMENT_LENGTH; createSegmentAt(maxZ); }
+            for(let i=activeSegments.length-1;i>=0;i--){
+                if(Math.abs(camera.position.z-(activeSegments[i].userData.startZ-SEGMENT_LENGTH/2)) > SEGMENT_LENGTH*(VISIBLE_SEGMENTS+1)) {
+                    scene.remove(activeSegments[i]); activeSegments[i].geometry.dispose(); activeSegments[i].material.dispose(); activeSegments.splice(i,1);
+                }
+            }
+        }
+
+        // --- ANIMACIÓN ---
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = clock.getDelta(); const time = clock.getElapsedTime();
+            AudioSystem.update();
+            const cm = ConfigManager.current; const r = cm.audioReactivity;
+            const aThick = cm.tubeThickness+(AudioSystem.lows*15.0*r);
+            const aBreath = cm.breathIntensity+(AudioSystem.mids*1.5*r);
+            const aDisp = AudioSystem.lows*10.0*r;
+            const aFres = cm.fresnelIntensity+(AudioSystem.highs*1.0*r);
+            const aSat = cm.colorSaturation+(AudioSystem.highs*0.5*r);
+            
+            activeSegments.forEach(m => {
+                if(m.material.uniforms) {
+                    m.material.uniforms.uTime.value = time;
+                    m.material.uniforms.uOpacityBase.value = cm.opacityBase;
+                    m.material.uniforms.uColorScale.value = cm.colorScale;
+                    m.material.uniforms.uTubeThickness.value = aThick;
+                    m.material.uniforms.uBreathIntensity.value = aBreath;
+                    m.material.uniforms.uFresnelIntensity.value = aFres;
+                    m.material.uniforms.uColorSaturation.value = aSat;
+                    m.material.uniforms.uAudioDisplace.value = aDisp;
+                    m.material.uniforms.uSpeed.value = cm.speed + (AudioSystem.volume*2.0*r);
+                }
+            });
+
+            // Movimiento & Rotación
+            let ts = isTurbo ? TURBO_SPEED : NORMAL_SPEED; ts += AudioSystem.volume*200.0*r;
+            if(moveForward) currentSpeed += (ts-currentSpeed)*0.05;
+            else if(moveBackward) currentSpeed += (-ts-currentSpeed)*0.05;
+            else currentSpeed += (0-currentSpeed)*0.05;
+
+            if(rotateLeft) camera.rotateX(2.0*dt);
+            if(rotateRight) camera.rotateX(-2.0*dt);
+
+            const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
+            const right = new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
+            const up = new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion);
+            const vel = new THREE.Vector3();
+            if(Math.abs(currentSpeed)>0.1) vel.addScaledVector(dir, currentSpeed*dt);
+            if(moveLeft) vel.addScaledVector(right, -NORMAL_SPEED*dt);
+            if(moveRight) vel.addScaledVector(right, NORMAL_SPEED*dt);
+            if(moveUp) vel.addScaledVector(up, NORMAL_SPEED*dt);
+            if(moveDown) vel.addScaledVector(up, -NORMAL_SPEED*dt);
+            camera.position.add(vel);
+
+            updateProceduralGeneration();
+
+            if(stereoMode) {
+                const w = window.innerWidth, h = window.innerHeight;
+                renderer.setScissorTest(true);
+                const op = camera.position.clone(), oq = camera.quaternion.clone();
+                const vr = new THREE.Vector3(1,0,0).applyQuaternion(oq), vf = new THREE.Vector3(0,0,-1).applyQuaternion(oq);
+                const fp = op.clone().add(vf.multiplyScalar(stereoFocus));
+                
+                renderer.setScissor(0,0,w/2,h); renderer.setViewport(0,0,w/2,h);
+                camera.position.sub(vr.clone().multiplyScalar(stereoSeparation/2)); camera.lookAt(fp);
+                renderer.render(scene, camera);
+
+                renderer.setScissor(w/2,0,w/2,h); renderer.setViewport(w/2,0,w/2,h);
+                camera.position.copy(op); camera.quaternion.copy(oq);
+                camera.position.add(vr.clone().multiplyScalar(stereoSeparation/2)); camera.lookAt(fp);
+                renderer.render(scene, camera);
+
+                renderer.setScissorTest(false); camera.position.copy(op); camera.quaternion.copy(oq);
+            } else {
+                renderer.setViewport(0,0,window.innerWidth, window.innerHeight);
+                renderer.render(scene, camera);
+            }
+        }
+
+        function onKeyDown(e) { 
+            switch(e.code){
+                case 'KeyW': moveForward=true; break; case 'KeyS': moveBackward=true; break;
+                case 'KeyA': moveLeft=true; break; case 'KeyD': moveRight=true; break;
+                case 'KeyQ': rotateLeft=true; break; case 'KeyE': rotateRight=true; break;
+                case 'KeyZ': moveUp=true; break; case 'KeyX': moveDown=true; break;
+                case 'Space': isTurbo=true; break;
+                case 'Digit3': stereoMode=!stereoMode; onWindowResize(); break;
+                case 'Digit4': levelFlight(); break;
+                case 'Digit9': stereoFocus=Math.max(10,stereoFocus-10); break;
+                case 'Digit0': stereoFocus+=10; break;
+            }
+        }
+        function onKeyUp(e) {
+            switch(e.code){
+                case 'KeyW': moveForward=false; break; case 'KeyS': moveBackward=false; break;
+                case 'KeyA': moveLeft=false; break; case 'KeyD': moveRight=false; break;
+                case 'KeyQ': rotateLeft=false; break; case 'KeyE': rotateRight=false; break;
+                case 'KeyZ': moveUp=false; break; case 'KeyX': moveDown=false; break;
+                case 'Space': isTurbo=false; break;
+            }
+        }
+        function onMouseMove(e) {
+            if(isMouseDown) {
+                const s = 0.002;
+                camera.rotateOnWorldAxis(new THREE.Vector3(0,1,0), -e.movementX*s);
+                camera.rotateX(-e.movementY*s);
+            }
+        }
+        function onWindowResize() {
+            camera.aspect = stereoMode ? (window.innerWidth/2)/window.innerHeight : window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        init();
+    </script>
+</body>
+</html>
