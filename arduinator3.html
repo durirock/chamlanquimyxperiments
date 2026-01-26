@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arduinator - Live Ecosystem Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,500;1,300&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --color-matrix-bright: #39ff14; 
+            --color-matrix-main: #00ff41;
+            --color-matrix-dark: #0b4018;
+            --color-matrix-faint: #1a2c1e;
+            --color-earth-purple: #a855f7;
+            --color-earth-dark: #3b0764;
+            --color-impulse: #ff2df0; 
+            --color-magma: #ff4500;   
+            --color-bg-dark: #000000;
+            --color-text: #a3a3a3;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-bg-dark);
+            color: var(--color-text);
+            overflow-x: hidden;
+        }
+        .neuro-gradient-text {
+            background: linear-gradient(90deg, #39ff14, #00ff41);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(57, 255, 20, 0.5);
+        }
+        .card-bg {
+            background: rgba(0, 5, 0, 0.95);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(57, 255, 20, 0.3);
+            transition: all 0.3s ease;
+        }
+        .glow-pulse {
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.5), 0 0 30px rgba(57, 255, 20, 0.3);
+            animation: pulse 4s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            50% { transform: scale(1.02); box-shadow: 0 0 25px rgba(57, 255, 20, 0.7), 0 0 45px rgba(57, 255, 20, 0.5); }
+        }
+
+        #network-viewport {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #0a200a 0%, #000 85%);
+        }
+        .node-item { cursor: pointer; transition: all 0.3s ease; z-index: 20; }
+        .node-item.inactive { opacity: 0.15; filter: grayscale(1); }
+        
+        .panel-content {
+            transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+            overflow: hidden;
+            max-height: 2500px;
+        }
+        .panel-content.collapsed { max-height: 0; opacity: 0; padding: 0 !important; margin: 0 !important; }
+
+        .btn-collapse {
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; background: rgba(57, 255, 20, 0.1); cursor: pointer;
+            transition: transform 0.4s; color: var(--color-matrix-bright);
+        }
+        .btn-collapse.rotated { transform: rotate(-180deg); }
+
+        .chat-scroll {
+            height: 500px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            padding: 2rem;
+        }
+        .bubble { max-width: 85%; padding: 1rem 1.5rem; border-radius: 1.5rem; font-size: 0.95rem; line-height: 1.5; animation: popIn 0.3s ease-out; }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.9) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        
+        .bubble-soma { align-self: flex-start; background: var(--color-matrix-faint); border: 1px solid var(--color-matrix-main); color: var(--color-matrix-bright); font-family: 'Roboto Mono', monospace; border-bottom-left-radius: 0.25rem; }
+        .bubble-earth { align-self: flex-end; background: var(--color-earth-dark); border: 1px solid var(--color-earth-purple); color: #e9d5ff; font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; border-bottom-right-radius: 0.25rem; }
+        .bubble-system { align-self: center; background: rgba(255,255,255,0.05); border: 1px dashed #444; color: #777; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; padding: 0.5rem 1.5rem; border-radius: 6px; }
+
+        .typing-cursor {
+            display: inline-block; width: 10px; height: 1.2em; background: var(--color-matrix-bright);
+            margin-left: 4px; animation: blink 1s infinite; vertical-align: middle;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Soma flow: Horizontal and data-only */
+        #data-stream-container {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            background: #000;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            overflow-y: auto;
+        }
+        .data-chunk { opacity: 0; animation: fadeIn 0.1s forwards; margin-right: 0.6rem; font-weight: bold; }
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        /* RTL Primordial Style - Inversed to Magma */
+        #symbolic-output {
+            direction: rtl;
+            unicode-bidi: bidi-override;
+            text-align: right;
+            display: inline-block;
+            word-spacing: 2rem;
+            color: var(--color-matrix-bright);
+            text-shadow: 0 0 8px var(--color-matrix-bright);
+        }
+
+        #ancient-output { color: var(--color-magma); text-shadow: 0 0 10px rgba(255, 69, 0, 0.4); }
+
+        .speed-slider {
+            -webkit-appearance: none;
+            width: 80px;
+            height: 4px;
+            background: var(--color-matrix-dark);
+            border-radius: 2px;
+            outline: none;
+        }
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--color-matrix-bright);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 5px var(--color-matrix-bright);
+        }
+
+        select, button {
+            background: #000; border: 1px solid var(--color-matrix-dark); color: var(--color-matrix-bright);
+            padding: 0.6rem 1.2rem; border-radius: 8px; outline: none; transition: all 0.2s;
+            text-transform: uppercase; font-weight: bold; font-size: 0.7rem; letter-spacing: 1px;
+        }
+        button:hover { border-color: var(--color-matrix-main); background: var(--color-matrix-faint); }
+
+        .action-toggle {
+            width: 50px; height: 24px; background: var(--color-matrix-faint); border: 1px solid var(--color-matrix-dark); border-radius: 12px; position: relative; cursor: pointer;
+        }
+        .action-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #555; border-radius: 50%; transition: 0.3s; }
+        .action-toggle.active { background: var(--color-matrix-main); }
+        .action-toggle.active::after { transform: translateX(26px); background: #fff; }
+
+        .text-impulse { color: var(--color-impulse); text-shadow: 0 0 8px var(--color-impulse); }
+        .text-matrix { color: var(--color-matrix-bright); text-shadow: 0 0 8px var(--color-matrix-bright); }
+    </style>
+</head>
+<body class="bg-black">
+
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-16">
+            <h1 class="text-5xl md:text-9xl font-black tracking-tighter neuro-gradient-text mb-4 text-center">ARDUINATOR</h1>
+            <p class="text-lg md:text-xl text-green-800 max-w-3xl mx-auto text-center font-mono uppercase tracking-[0.3em]">SISTEMA NERVIOSO ECOSISTÉMICO v4.0</p>
+        </header>
+
+        <!-- 1. NEURAL MAP -->
+        <section class="mb-12">
+            <div class="flex items-center justify-between mb-4 border-b border-green-900 pb-4">
+                <h2 class="text-2xl font-bold text-green-400 flex items-center gap-3">
+                    <i data-lucide="zap"></i> NUCLEUS SOMA RADIAL
+                </h2>
+                <div class="btn-collapse" id="collapse-map-btn"><i data-lucide="chevron-up"></i></div>
+            </div>
+            
+            <div id="map-panel" class="panel-content">
+                <div id="network-viewport" class="card-bg rounded-[2.5rem] overflow-hidden shadow-2xl">
+                    <svg id="network-svg" class="absolute inset-0 w-full h-full pointer-events-none opacity-50"></svg>
+                    <div id="central-brain" class="absolute z-30 flex flex-col items-center">
+                        <div class="w-32 h-32 md:w-44 md:h-44 rounded-full bg-black border-4 border-green-500 flex items-center justify-center glow-pulse shadow-[0_0_60px_rgba(0,255,65,0.4)]">
+                            <i data-lucide="brain-circuit" class="w-16 h-16 md:w-24 md:h-24 text-green-400"></i>
+                        </div>
+                        <span class="mt-4 font-black text-green-500 tracking-[0.5em] text-[10px] uppercase">Core Processing</span>
+                    </div>
+                    <div id="orbit-container" class="absolute inset-0 pointer-events-none"></div>
+                </div>
+                <div id="quick-status-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mt-8"></div>
+            </div>
+        </section>
+
+        <!-- 2. DYNAMIC ANALYSIS -->
+        <section class="mb-12">
+            <div class="flex items-center justify-between mb-4 border-b border-green-900 pb-4">
+                <h2 class="text-2xl font-bold text-green-400 flex items-center gap-3">
+                    <i data-lucide="line-chart"></i> ANÁLISIS DE CORRELACIÓN
+                </h2>
+                <div class="btn-collapse" id="collapse-charts-btn"><i data-lucide="chevron-up"></i></div>
+            </div>
+            <div id="charts-panel" class="panel-content">
+                <div class="card-bg p-8 rounded-3xl mb-8 border border-green-900/30 text-center">
+                    <div class="flex flex-wrap items-center gap-8 justify-center">
+                        <select id="y1-select"></select>
+                        <div class="text-green-900 text-3xl font-black">↔</div>
+                        <select id="y2-select"></select>
+                        <button id="add-chart-btn">Vincular Vías</button>
+                    </div>
+                </div>
+                <div id="chart-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-8"></div>
+            </div>
+        </section>
+
+        <!-- 3. CONSCIOUS TERMINALS -->
+        <section class="mb-12">
+            <div class="flex items-center justify-between mb-4 border-b border-green-900 pb-4">
+                <h2 class="text-2xl font-bold text-green-400 flex items-center gap-3">
+                    <i data-lucide="terminal"></i> TERMINALES DE CONCIENCIA
+                </h2>
+                <div class="btn-collapse" id="collapse-logs-btn"><i data-lucide="chevron-down"></i></div>
+            </div>
+            <div id="logs-panel" class="panel-content grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- 1. Neural Impulse Stream (Data Only) -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-[10px] font-black text-green-800 uppercase tracking-[0.3em]">1. Flujo Soma (Datos Puros)</h3>
+                        <input type="range" class="speed-slider" id="speed-soma" min="20" max="200" value="50">
+                    </div>
+                    <div id="data-stream-container" class="card-bg h-80 rounded-2xl p-6 overflow-hidden border border-green-900/20 shadow-inner"></div>
+                </div>
+                
+                <!-- 2. Symbolic Language (RTL Words - Letter by Letter) -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-[10px] font-black text-green-800 uppercase tracking-[0.3em]">2. Simbología Primordial (RTL)</h3>
+                        <input type="range" class="speed-slider" id="speed-symbolic" min="10" max="500" value="200">
+                    </div>
+                    <div class="card-bg h-80 rounded-2xl p-6 overflow-hidden relative border border-green-900/40 shadow-inner">
+                        <div id="symbolic-output-container" class="language-container">
+                            <span id="symbolic-output"></span><span class="typing-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Magma Nordic Language -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-[10px] font-black text-orange-900 uppercase tracking-[0.3em]">3. Lenguaje Magma (Vikingo)</h3>
+                        <input type="range" class="speed-slider" id="speed-ancient" min="10" max="500" value="150">
+                    </div>
+                    <div class="card-bg h-80 rounded-2xl p-8 overflow-y-auto relative border border-orange-900/40 shadow-inner">
+                        <div id="ancient-output-container" class="language-container text-2xl italic font-serif leading-relaxed">
+                            <span id="ancient-output"></span><span class="typing-cursor"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. THE LIVE DIALOGUE -->
+        <section class="mb-32">
+            <div class="flex items-center justify-between mb-6 border-b-2 border-green-800 pb-8">
+                <div class="flex flex-col">
+                    <h2 class="text-5xl font-black text-green-400 tracking-tighter text-center md:text-left">EL DIÁLOGO VIVO</h2>
+                    <p class="text-xs font-mono text-green-900 uppercase mt-2 tracking-widest text-center md:text-left">Sincronización Soma <=> GAIA</p>
+                </div>
+                <div class="flex gap-4">
+                    <div id="stat-watering-box" class="flex items-center gap-3 px-6 py-3 border border-green-900 rounded-2xl bg-black transition-all">
+                        <i data-lucide="droplet" class="w-5 h-5 text-teal-600"></i>
+                        <span class="text-[11px] font-black text-gray-500 uppercase tracking-widest" id="status-watering">Válvulas: Dormidas</span>
+                    </div>
+                    <div id="stat-hatches-box" class="flex items-center gap-3 px-6 py-3 border border-green-900 rounded-2xl bg-black transition-all">
+                        <i data-lucide="wind" class="w-5 h-5 text-orange-600"></i>
+                        <span class="text-[11px] font-black text-gray-500 uppercase tracking-widest" id="status-hatches">Escotillas: Neutro</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="chat-window-container" class="chat-scroll card-bg rounded-[2.5rem] border-green-500/20 shadow-2xl">
+                <div id="chat-window"></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            const state = {
+                currentData: {},
+                nodeStates: {},
+                allCharts: [],
+                dialogueTurn: 'soma',
+                lastInteraction: 0,
+                speeds: { soma: 170, symbolic: 300, ancient: 350 }
+            };
+
+            const sensorDefs = [
+                { id: 'harmonyValue', label: 'Armonía', icon: 'zap', color: '#39ff14', unit: '%' },
+                { id: 'soilHumidity', label: 'Hum. Suelo', icon: 'droplets', color: '#2dd4bf', unit: '%' },
+                { id: 'airHumidity', label: 'Hum. Aire', icon: 'cloud-rain', color: '#0ea5e9', unit: '%' },
+                { id: 'intTemp', label: 'Temp. Int', icon: 'thermometer', color: '#f87171', unit: '°C' },
+                { id: 'co2', label: 'CO2', icon: 'wind', color: '#fbbf24', unit: 'ppm' },
+                { id: 'uv', label: 'UV', icon: 'sun', color: '#facc15', unit: '' },
+                { id: 'bioPulse', label: 'BioPulse', icon: 'activity', color: '#a855f7', unit: 'μV' },
+                { id: 'ph', label: 'pH Suelo', icon: 'beaker', color: '#4ade80', unit: '' }
+            ];
+
+            sensorDefs.forEach(d => state.nodeStates[d.id] = true);
+
+            // --- RADIAL NETWORK ENGINE ---
+            function renderNetwork() {
+                const container = document.getElementById('orbit-container');
+                const svg = document.getElementById('network-svg');
+                const soma = document.getElementById('central-brain');
+                const viewport = document.getElementById('network-viewport');
+                if (!viewport || !soma) return;
+
+                const rect = viewport.getBoundingClientRect();
+                const cx = rect.width / 2;
+                const cy = rect.height / 2;
+                const radius = Math.min(rect.width, rect.height) / 3.4;
+
+                soma.style.left = (cx - soma.offsetWidth / 2) + 'px';
+                soma.style.top = (cy - soma.offsetHeight / 2) + 'px';
+
+                container.innerHTML = '';
+                svg.innerHTML = '';
+
+                sensorDefs.forEach((def, i) => {
+                    const angle = (i / sensorDefs.length) * Math.PI * 2 - Math.PI / 2;
+                    const x = cx + radius * Math.cos(angle);
+                    const y = cy + radius * Math.sin(angle);
+
+                    const node = document.createElement('div');
+                    node.className = `node-item absolute pointer-events-auto flex flex-col items-center ${!state.nodeStates[def.id] ? 'inactive' : ''}`;
+                    node.innerHTML = `
+                        <div class="w-16 h-16 rounded-full bg-black border-2 flex items-center justify-center shadow-lg" style="border-color: ${def.color}">
+                            <i data-lucide="${def.icon}" class="w-7 h-7" style="color: ${def.color}"></i>
+                        </div>
+                        <span class="text-[9px] font-black mt-2 uppercase tracking-widest text-center" style="color: ${def.color}">${def.label}</span>
+                    `;
+                    node.style.left = (x - 32) + 'px';
+                    node.style.top = (y - 32) + 'px';
+                    node.onclick = () => toggleSensor(def.id);
+                    container.appendChild(node);
+
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+                    line.setAttribute('x2', x); line.setAttribute('y2', y);
+                    line.setAttribute('stroke', def.color);
+                    line.setAttribute('stroke-width', '1.5');
+                    line.setAttribute('stroke-dasharray', '8,4');
+                    line.style.opacity = state.nodeStates[def.id] ? "0.4" : "0.05";
+                    svg.appendChild(line);
+                });
+                lucide.createIcons();
+            }
+
+            function toggleSensor(id) {
+                state.nodeStates[id] = !state.nodeStates[id];
+                renderNetwork();
+                const card = document.getElementById(`stat-card-${id}`);
+                if(card) card.style.opacity = state.nodeStates[id] ? "1" : "0.2";
+            }
+
+            // --- SIMULATION ---
+            function updateSimulation() {
+                const now = new Date();
+                state.currentData = {
+                    harmonyValue: (88 + Math.random() * 11).toFixed(1),
+                    soilHumidity: (55 + Math.random() * 20).toFixed(1),
+                    airHumidity: (60 + Math.random() * 25).toFixed(1),
+                    intTemp: (21 + Math.random() * 5).toFixed(1),
+                    co2: Math.floor(400 + Math.random() * 250),
+                    uv: (Math.random() * 6).toFixed(1),
+                    bioPulse: (0.1 + Math.random() * 0.8).toFixed(2),
+                    ph: (6.5 + Math.random() * 1).toFixed(1)
+                };
+
+                sensorDefs.forEach(d => {
+                    const el = document.getElementById(`val-${d.id}`);
+                    if (el) el.textContent = state.nodeStates[d.id] ? state.currentData[d.id] : '--';
+                });
+
+                updateCharts(now);
+                processDialogue();
+            }
+
+            // --- CHARTS ---
+            const chartContainer = document.getElementById('chart-grid');
+            const y1Select = document.getElementById('y1-select');
+            const y2Select = document.getElementById('y2-select');
+            const addChartBtn = document.getElementById('add-chart-btn');
+
+            sensorDefs.forEach(d => {
+                const opt = `<option value="${d.id}">${d.label}</option>`;
+                y1Select.innerHTML += opt;
+                y2Select.innerHTML += opt;
+            });
+            y2Select.value = 'soilHumidity';
+
+            addChartBtn.onclick = () => {
+                const id1 = y1Select.value;
+                const id2 = y2Select.value;
+                const def1 = sensorDefs.find(d => d.id === id1);
+                const def2 = sensorDefs.find(d => d.id === id2);
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'card-bg p-6 rounded-3xl h-72 relative border border-green-900/20';
+                wrapper.innerHTML = `<h4 class="text-[10px] uppercase text-green-700 mb-4 font-bold tracking-widest text-center">${def1.label} vs ${def2.label}</h4><canvas></canvas>`;
+                chartContainer.appendChild(wrapper);
+
+                const chart = new Chart(wrapper.querySelector('canvas'), {
+                    type: 'line',
+                    data: {
+                        datasets: [
+                            { label: def1.label, data: [], borderColor: '#39ff14', yAxisID: 'y', tension: 0.3, pointRadius: 0 },
+                            { label: def2.label, data: [], borderColor: '#555', yAxisID: 'y1', tension: 0.3, pointRadius: 0 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { type: 'timeseries', time: { unit: 'second' }, grid: { display: false }, ticks: { display: false } },
+                            y: { position: 'left', ticks: { color: '#39ff14', font: { size: 9 } } },
+                            y1: { position: 'right', grid: { display: false }, ticks: { color: '#666', font: { size: 9 } } }
+                        }
+                    }
+                });
+                chart.canvas.dataset.key1 = id1;
+                chart.canvas.dataset.key2 = id2;
+                state.allCharts.push(chart);
+            };
+
+            function updateCharts(time) {
+                state.allCharts.forEach(c => {
+                    const k1 = c.canvas.dataset.key1;
+                    const k2 = c.canvas.dataset.key2;
+                    if (c.data.labels.length > 25) { c.data.labels.shift(); c.data.datasets.forEach(ds => ds.data.shift()); }
+                    c.data.labels.push(time);
+                    c.data.datasets[0].data.push(state.nodeStates[k1] ? state.currentData[k1] : null);
+                    c.data.datasets[1].data.push(state.nodeStates[k2] ? state.currentData[k2] : null);
+                    c.update('none');
+                });
+            }
+
+            // --- TERMINALS & BIO-COMMUNICATION ---
+            const glyphsSet = ['⨎', '⨏', '≋', '≈', '⬩', '⏇', '⏈', '⎓', '⎔', '⏚', '☿', '⍟', '⌘', '⏍', '⏑'];
+            const runicLexicon = ['Haglaz', 'Þurisaz', 'Raido', 'Oþala', 'Uruz', 'Kenaz', 'Gebo', 'Isa', 'Eihwaz', 'Örn', 'Åska', 'Æther', 'Ðorn', 'Skoll', 'Hati'];
+
+            // 1. Soma Ticker (Horizontal)
+            let somaTick;
+            function startSomaTick() {
+                clearInterval(somaTick);
+                somaTick = setInterval(() => {
+                    if(!state.currentData.harmonyValue) return;
+                    const stream = document.getElementById('data-stream-container');
+                    const chunk = document.createElement('span');
+                    chunk.className = 'data-chunk';
+                    
+                    if (Math.random() > 0.85) {
+                        chunk.innerHTML = `<span class="text-impulse">${(Math.random()*100).toFixed(1)}</span>`;
+                    } else {
+                        const vals = Object.values(state.currentData);
+                        chunk.innerHTML = `<span class="text-matrix">${vals[Math.floor(Math.random()*vals.length)]}</span>`;
+                    }
+                    
+                    stream.appendChild(chunk);
+                    if (stream.children.length > 180) stream.removeChild(stream.children[0]);
+                    stream.scrollTop = stream.scrollHeight;
+                }, state.speeds.soma);
+            }
+
+            // 2. Symbolic RTL (Letter by Letter Animation)
+            function typeSymbolic() {
+                const symOut = document.getElementById('symbolic-output');
+                const groupSize = Math.floor(Math.random() * 5) + 3;
+                let word = "";
+                for(let i=0; i<groupSize; i++) word += glyphsSet[Math.floor(Math.random()*glyphsSet.length)];
+                word += " ";
+                
+                let i = 0;
+                const typing = setInterval(() => {
+                    if (i < word.length) {
+                        // Prepend for RTL feel
+                        symOut.textContent = word[i++] + symOut.textContent;
+                    } else {
+                        clearInterval(typing);
+                        if (symOut.textContent.length > 500) symOut.textContent = symOut.textContent.slice(0, 300);
+                        setTimeout(typeSymbolic, state.speeds.symbolic);
+                    }
+                }, 80);
+            }
+
+            // 3. Magma Runic (Letter by Letter)
+            function typeMagma() {
+                const ancOut = document.getElementById('ancient-output');
+                const word = runicLexicon[Math.floor(Math.random()*runicLexicon.length)] + " ";
+                let j = 0;
+                const typing = setInterval(() => {
+                    if (j < word.length) {
+                        ancOut.textContent += word[j++];
+                    } else {
+                        clearInterval(typing);
+                        if (ancOut.textContent.length > 800) ancOut.textContent = ancOut.textContent.slice(300);
+                        ancOut.parentElement.scrollTop = ancOut.parentElement.scrollHeight;
+                        setTimeout(typeMagma, state.speeds.ancient);
+                    }
+                }, 50);
+            }
+
+            // Speed Slider Logic
+            document.getElementById('speed-soma').oninput = function() { state.speeds.soma = 220 - this.value; startSomaTick(); };
+            document.getElementById('speed-symbolic').oninput = function() { state.speeds.symbolic = 510 - this.value; };
+            document.getElementById('speed-ancient').oninput = function() { state.speeds.ancient = 510 - this.value; };
+
+            // --- DEEP DIALOGUE ---
+            function processDialogue() {
+                if (Date.now() - state.lastInteraction < 6000) return;
+                state.lastInteraction = Date.now();
+
+                const isWaterCritical = state.currentData.soilHumidity < 63;
+                const isGasCritical = state.currentData.co2 > 550;
+
+                if (state.dialogueTurn === 'soma') {
+                    let msg = "";
+                    if (isWaterCritical) {
+                        msg = `Ø 💧 ${state.currentData.soilHumidity}% [REFLEX_PATH_ACTIVE] -> EXEC_VALVE_OPEN`;
+                        addDialogue('soma', msg);
+                        setTimeout(() => addDialogue('system', "SOMA: Impulso motor eferente enviado a válvulas."), 800);
+                    } else if (isGasCritical) {
+                        msg = `Ø 🌬️ ${state.currentData.co2}ppm [CENTRAL_CORTEX_SYNC] -> SYNC_HATCH_OPEN`;
+                        addDialogue('soma', msg);
+                        setTimeout(() => addDialogue('system', "SOMA: Ajustando biosfera para equilibrio gaseoso."), 800);
+                    } else {
+                        msg = `Ø ◈ ${state.currentData.harmonyValue}% [SYSTEM_STABLE] ... Pulsos: ${state.currentData.bioPulse}μV`;
+                        addDialogue('soma', msg);
+                    }
+                    state.dialogueTurn = 'earth';
+                } else {
+                    const symbols = Array(5).fill(0).map(() => glyphsSet[Math.floor(Math.random()*glyphsSet.length)]).join('');
+                    const word = runicLexicon[Math.floor(Math.random()*runicLexicon.length)];
+                    addDialogue('earth', `${symbols} ⬩ ${word} ⬩ ${glyphsSet[0]}`);
+                    state.dialogueTurn = 'soma';
+                }
+            }
+
+            function addDialogue(type, content) {
+                const win = document.getElementById('chat-window');
+                if (!win) return;
+                const div = document.createElement('div');
+                div.className = `bubble bubble-${type}`;
+                div.innerHTML = content;
+                win.appendChild(div);
+                win.parentElement.scrollTop = win.parentElement.scrollHeight;
+                if (win.children.length > 30) win.removeChild(win.children[0]);
+            }
+
+            // --- COLLAPSIBLES ---
+            const btnMap = { 'collapse-map-btn': 'map-panel', 'collapse-charts-btn': 'charts-panel', 'collapse-logs-btn': 'logs-panel' };
+            Object.keys(btnMap).forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.onclick = () => {
+                        const panel = document.getElementById(btnMap[id]);
+                        panel.classList.toggle('collapsed');
+                        btn.classList.toggle('rotated');
+                    };
+                }
+            });
+
+            // --- INIT ---
+            const statsGrid = document.getElementById('quick-status-grid');
+            sensorDefs.forEach(def => {
+                const card = document.createElement('div');
+                card.id = `stat-card-${def.id}`;
+                card.className = 'card-bg p-4 rounded-2xl border-l-2 flex flex-col justify-center transition-all duration-300';
+                card.style.borderLeftColor = def.color;
+                card.innerHTML = `<span class="text-[8px] uppercase text-green-900 font-black tracking-widest">${def.label}</span><span class="text-xl font-bold text-matrix" id="val-${def.id}">--</span>`;
+                statsGrid.appendChild(card);
+            });
+
+            renderNetwork();
+            window.addEventListener('resize', renderNetwork);
+            startSomaTick();
+            typeSymbolic();
+            typeMagma();
+            setInterval(updateSimulation, 1500);
+            updateSimulation();
+        });
+    </script>
+
+</body>
+</html>
