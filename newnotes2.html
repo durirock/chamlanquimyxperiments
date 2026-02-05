@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Synth · Ley de 7 · Choques Conscientes</title>
+<style>
+  body{
+    background:#0a0c12;
+    color:#eaeaf0;
+    font-family:system-ui,sans-serif;
+    text-align:center;
+    padding:20px;
+  }
+  .piano{
+    position:relative;
+    width:980px;
+    height:260px;
+    margin:40px auto;
+  }
+  .white{
+    position:absolute;
+    bottom:0;
+    width:70px;
+    height:260px;
+    background:#f6f6f8;
+    border-radius:0 0 8px 8px;
+    border:1px solid #aaa;
+    z-index:1;
+  }
+  .black{
+    position:absolute;
+    bottom:120px;
+    width:45px;
+    height:140px;
+    background:#111;
+    border-radius:0 0 6px 6px;
+    z-index:2;
+  }
+  .shock{
+    background:linear-gradient(180deg,#b68cff,#e6d8ff);
+    box-shadow:0 0 15px rgba(182,140,255,.6);
+  }
+  .label{
+    position:absolute;
+    bottom:10px;
+    width:100%;
+    font-size:.7rem;
+    opacity:.6;
+  }
+</style>
+</head>
+<body>
+
+<h2>Synth · Ley de 7 · Choques Conscientes</h2>
+<p>Teclas moradas = recuerdo de sí (Mi–Fa / Si–Do)</p>
+
+<div class="piano" id="piano"></div>
+
+<script>
+const ctx = new (window.AudioContext||window.webkitAudioContext)();
+
+function play(freq){
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.type="sine";
+  o.frequency.value=freq;
+  o.connect(g);
+  g.connect(ctx.destination);
+  g.gain.setValueAtTime(0.001,ctx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.3,ctx.currentTime+0.02);
+  g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+1);
+  o.start();
+  o.stop(ctx.currentTime+1);
+}
+
+// --- Definición de notas (2 octavas desde C3)
+const notes = [
+  // Octava 1
+  {k:"A",n:"C",hz:130.81,x:0},
+  {k:"W",n:"C#",hz:138.59,x:45,black:true},
+  {k:"S",n:"D",hz:146.83,x:70},
+  {k:"E",n:"D#",hz:155.56,x:115,black:true},
+  {k:"D",n:"E",hz:164.81,x:140},
+  {k:"R",n:"E→F",hz:170, x:175,shock:true}, // choque
+  {k:"F",n:"F",hz:174.61,x:210},
+  {k:"T",n:"F#",hz:185.00,x:255,black:true},
+  {k:"G",n:"G",hz:196.00,x:280},
+  {k:"Y",n:"G#",hz:207.65,x:325,black:true},
+  {k:"H",n:"A",hz:220.00,x:350},
+  {k:"U",n:"A#",hz:233.08,x:395,black:true},
+  {k:"J",n:"B",hz:246.94,x:420},
+  {k:"I",n:"B→C",hz:255, x:455,shock:true}, // choque
+  {k:"K",n:"C",hz:261.63,x:490},
+
+  // Octava 2
+  {k:"L",n:"D",hz:293.66,x:560},
+  {k:"O",n:"D#",hz:311.13,x:605,black:true},
+  {k:"Ñ",n:"E",hz:329.63,x:630},
+];
+
+const piano=document.getElementById("piano");
+
+notes.forEach(n=>{
+  const d=document.createElement("div");
+  d.className = n.black ? "black" : "white";
+  if(n.shock) d.classList.add("shock");
+  d.style.left=n.x+"px";
+  d.onclick=()=>play(n.hz);
+  const l=document.createElement("div");
+  l.className="label";
+  l.innerText=n.k;
+  d.appendChild(l);
+  piano.appendChild(d);
+});
+
+document.addEventListener("keydown",e=>{
+  const note=notes.find(n=>n.k.toLowerCase()===e.key.toLowerCase());
+  if(note) play(note.hz);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETHOS v3.0 | Sistema MAGI de Síntesis Triádica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=JetBrains+Mono:wght@300;400;500&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-void: #030308;
+            --bg-deep: #0a0a14;
+            --bg-panel: rgba(12, 15, 25, 0.85);
+            --melchior-primary: #00d4ff;
+            --melchior-glow: rgba(0, 212, 255, 0.4);
+            --balthasar-primary: #00ff88;
+            --balthasar-glow: rgba(0, 255, 136, 0.4);
+            --casper-primary: #ff6b00;
+            --casper-glow: rgba(255, 107, 0, 0.4);
+            --synthesis-primary: #ff00ff;
+            --synthesis-glow: rgba(255, 0, 255, 0.5);
+            --text-primary: #e8e8f0;
+            --text-muted: #6a6a80;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --success: #00ff88;
+            --warning: #ffaa00;
+            --error: #ff4466;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-void);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* === FONDO ANIMADO === */
+        .cosmic-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(255, 107, 0, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(0, 255, 136, 0.05) 0%, transparent 60%),
+                var(--bg-void);
+        }
+
+        .cosmic-bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+        }
+
+        /* === HEADER === */
+        .header {
+            text-align: center;
+            padding: 1.5rem 1rem;
+            position: relative;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.6rem, 4vw, 2.5rem);
+            font-weight: 900;
+            letter-spacing: 0.3em;
+            background: linear-gradient(135deg, var(--melchior-primary), var(--balthasar-primary), var(--casper-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.25rem;
+        }
+
+        .header .subtitle {
+            font-family: 'Cinzel', serif;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+        }
+
+        .header .epigraph {
+            font-style: italic;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            opacity: 0.7;
+        }
+
+        .version-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            background: linear-gradient(135deg, var(--synthesis-primary), var(--melchior-primary));
+            border-radius: 2rem;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            margin-top: 0.5rem;
+        }
+
+        /* === API KEYS PANEL === */
+        .api-keys-panel {
+            max-width: 800px;
+            margin: 0 auto 1.5rem;
+            padding: 1rem;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            backdrop-filter: blur(20px);
+        }
+
+        .api-keys-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+
+        .api-keys-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+        }
+
+        .api-keys-toggle {
+            font-size: 0.7rem;
+            color: var(--synthesis-primary);
+        }
+
+        .api-keys-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .api-key-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .api-key-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .api-key-label .icon {
+            font-size: 1rem;
+        }
+
+        .api-key-input {
+            padding: 0.5rem 0.75rem;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.7rem;
+            transition: all 0.3s;
+        }
+
+        .api-key-input:focus {
+            outline: none;
+            border-color: var(--synthesis-primary);
+        }
+
+        .api-key-input.valid {
+            border-color: var(--success);
+        }
+
+        /* === MODO SELECTOR === */
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            padding: 0 1rem;
+        }
+
+        .mode-btn {
+            padding: 0.6rem 1.2rem;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .mode-btn:hover {
+            border-color: var(--synthesis-primary);
+            color: var(--text-primary);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, var(--synthesis-primary), var(--melchior-primary));
+            border-color: transparent;
+            color: white;
+        }
+
+        .mode-description {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            padding: 0 1rem;
+        }
+
+        /* === LAYOUT PRINCIPAL === */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding: 0 1rem 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 1200px) {
+            .main-container {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+        }
+
+        /* === TRIÁNGULO DE MAGI === */
+        .triangle-section {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .triangle-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 750px;
+            margin: 0 auto;
+            aspect-ratio: 1 / 0.95;
+        }
+
+        .triangle-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .triangle-line {
+            fill: none;
+            stroke: var(--border-subtle);
+            stroke-width: 1;
+            stroke-dasharray: 8 4;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .triangle-line.connected {
+            stroke-dasharray: none;
+            stroke-width: 2;
+            filter: drop-shadow(0 0 8px currentColor);
+        }
+
+        /* === NODOS MAGI === */
+        .magi-node {
+            position: absolute;
+            width: clamp(200px, 32%, 280px);
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 1rem;
+            z-index: 10;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .magi-node:hover {
+            transform: translateY(-4px);
+        }
+
+        .magi-node.connected {
+            border-width: 2px;
+        }
+
+        #node-melchior {
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            --node-color: var(--melchior-primary);
+            --node-glow: var(--melchior-glow);
+        }
+        #node-melchior.connected { border-color: var(--melchior-primary); box-shadow: 0 0 30px var(--melchior-glow); }
+        #node-melchior:hover { transform: translateX(-50%) translateY(-4px); }
+
+        #node-balthasar {
+            bottom: 3%;
+            left: 3%;
+            --node-color: var(--balthasar-primary);
+            --node-glow: var(--balthasar-glow);
+        }
+        #node-balthasar.connected { border-color: var(--balthasar-primary); box-shadow: 0 0 30px var(--balthasar-glow); }
+
+        #node-casper {
+            bottom: 3%;
+            right: 3%;
+            --node-color: var(--casper-primary);
+            --node-glow: var(--casper-glow);
+        }
+        #node-casper.connected { border-color: var(--casper-primary); box-shadow: 0 0 30px var(--casper-glow); }
+
+        .node-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .node-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--node-color), transparent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .node-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--node-color);
+            letter-spacing: 0.1em;
+        }
+
+        .node-aspect {
+            font-family: 'Cinzel', serif;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        .node-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.65rem;
+            margin-bottom: 0.75rem;
+            padding: 0.4rem 0.6rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: all 0.3s;
+        }
+
+        .status-dot.active {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* === SELECTOR DE IA === */
+        .ai-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .ai-select {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .ai-select:focus {
+            outline: none;
+            border-color: var(--node-color);
+        }
+
+        .ai-select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .connect-btn {
+            width: 100%;
+            padding: 0.55rem;
+            background: linear-gradient(135deg, var(--node-color), color-mix(in srgb, var(--node-color) 60%, black));
+            border: none;
+            border-radius: 6px;
+            color: var(--bg-void);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .connect-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px var(--node-glow);
+        }
+
+        .connect-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .connect-btn.connected {
+            background: var(--success);
+        }
+
+        /* === INPUT INDIVIDUAL (MODO INVERSO) === */
+        .node-input-area {
+            display: none;
+            margin-top: 0.75rem;
+        }
+
+        .node-input-area.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .node-input {
+            width: 100%;
+            min-height: 60px;
+            padding: 0.6rem;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.7rem;
+            line-height: 1.5;
+            resize: vertical;
+            transition: all 0.3s;
+        }
+
+        .node-input:focus {
+            outline: none;
+            border-color: var(--node-color);
+            box-shadow: 0 0 0 2px var(--node-glow);
+        }
+
+        .node-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* === NÚCLEO CENTRAL === */
+        .synthesis-core {
+            position: absolute;
+            top: 52%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: clamp(110px, 20%, 150px);
+            height: clamp(110px, 20%, 150px);
+            z-index: 15;
+        }
+
+        .core-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 2px solid var(--border-subtle);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .core-ring:nth-child(2) {
+            inset: -12px;
+            border-style: dashed;
+            animation: rotate-slow 20s linear infinite;
+        }
+
+        .core-ring:nth-child(3) {
+            inset: -24px;
+            border-width: 1px;
+            animation: rotate-slow 30s linear infinite reverse;
+        }
+
+        @keyframes rotate-slow {
+            to { transform: rotate(360deg); }
+        }
+
+        .core-center {
+            position: absolute;
+            inset: 12%;
+            border-radius: 50%;
+            background: var(--bg-deep);
+            border: 2px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: default;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .core-icon {
+            font-size: 1.8rem;
+            margin-bottom: 0.2rem;
+            transition: all 0.5s;
+        }
+
+        .core-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.45rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-align: center;
+            color: var(--text-muted);
+            transition: all 0.5s;
+        }
+
+        /* Estados del núcleo */
+        .synthesis-core.partial .core-ring {
+            border-color: var(--warning);
+        }
+        .synthesis-core.partial .core-center {
+            border-color: var(--warning);
+            box-shadow: 0 0 30px rgba(255, 170, 0, 0.3);
+        }
+        .synthesis-core.partial .core-label {
+            color: var(--warning);
+        }
+
+        .synthesis-core.active .core-ring {
+            border-color: var(--synthesis-primary);
+        }
+        .synthesis-core.active .core-center {
+            border-color: var(--synthesis-primary);
+            background: linear-gradient(135deg, rgba(255, 0, 255, 0.2), rgba(0, 212, 255, 0.2));
+            box-shadow: 0 0 50px var(--synthesis-glow);
+            cursor: pointer;
+            animation: pulse-core 2s ease-in-out infinite;
+        }
+        .synthesis-core.active .core-label {
+            color: var(--synthesis-primary);
+        }
+        .synthesis-core.active .core-icon {
+            animation: float 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-core {
+            0%, 100% { box-shadow: 0 0 30px var(--synthesis-glow); }
+            50% { box-shadow: 0 0 60px var(--synthesis-glow), 0 0 100px var(--synthesis-glow); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        /* === PANEL DE SÍNTESIS === */
+        .synthesis-section {
+            flex: 1.2;
+            min-width: 0;
+        }
+
+        .synthesis-panel {
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 1.25rem;
+            height: fit-content;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: var(--synthesis-primary);
+        }
+
+        .synthesis-type {
+            display: flex;
+            gap: 0.4rem;
+        }
+
+        .type-btn {
+            padding: 0.35rem 0.7rem;
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            border-radius: 5px;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.6rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .type-btn:hover {
+            border-color: var(--synthesis-primary);
+            color: var(--synthesis-primary);
+        }
+
+        .type-btn.active {
+            background: var(--synthesis-primary);
+            border-color: var(--synthesis-primary);
+            color: var(--bg-void);
+        }
+
+        /* === ÁREA DE CONSULTA UNIFICADA === */
+        .query-area {
+            margin-bottom: 1rem;
+        }
+
+        .query-area.hidden {
+            display: none;
+        }
+
+        .query-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .query-input {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            resize: vertical;
+            transition: all 0.3s;
+        }
+
+        .query-input:focus {
+            outline: none;
+            border-color: var(--synthesis-primary);
+            box-shadow: 0 0 0 3px var(--synthesis-glow);
+        }
+
+        .query-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .query-actions {
+            display: flex;
+            gap: 0.6rem;
+            margin-top: 0.75rem;
+        }
+
+        .synthesis-btn {
+            flex: 1;
+            padding: 0.7rem 1.2rem;
+            background: linear-gradient(135deg, var(--synthesis-primary), var(--melchior-primary));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .synthesis-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 30px var(--synthesis-glow);
+        }
+
+        .synthesis-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .clear-btn {
+            padding: 0.7rem 0.9rem;
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .clear-btn:hover {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        /* === INSTRUCCIONES MODO INVERSO === */
+        .inverse-instructions {
+            display: none;
+            padding: 0.75rem;
+            background: rgba(255, 0, 255, 0.1);
+            border: 1px solid var(--synthesis-primary);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .inverse-instructions.visible {
+            display: block;
+        }
+
+        .inverse-instructions p {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .inverse-instructions strong {
+            color: var(--synthesis-primary);
+        }
+
+        /* === RESPUESTAS === */
+        .responses-area {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding-right: 0.5rem;
+            min-height: 200px;
+        }
+
+        .responses-area::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .responses-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .responses-area::-webkit-scrollbar-thumb {
+            background: var(--border-subtle);
+            border-radius: 3px;
+        }
+
+        .response-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 0.9rem;
+            animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .response-card[data-magi="melchior"] {
+            border-left: 3px solid var(--melchior-primary);
+        }
+        .response-card[data-magi="balthasar"] {
+            border-left: 3px solid var(--balthasar-primary);
+        }
+        .response-card[data-magi="casper"] {
+            border-left: 3px solid var(--casper-primary);
+        }
+        .response-card[data-magi="synthesis"] {
+            border-left: 3px solid var(--synthesis-primary);
+            background: linear-gradient(135deg, rgba(255, 0, 255, 0.05), rgba(0, 212, 255, 0.05));
+        }
+
+        .response-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.6rem;
+        }
+
+        .response-magi-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .response-magi-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        .response-ai-badge {
+            font-size: 0.55rem;
+            padding: 0.15rem 0.4rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            color: var(--text-muted);
+        }
+
+        .response-card[data-magi="melchior"] .response-magi-name { color: var(--melchior-primary); }
+        .response-card[data-magi="balthasar"] .response-magi-name { color: var(--balthasar-primary); }
+        .response-card[data-magi="casper"] .response-magi-name { color: var(--casper-primary); }
+        .response-card[data-magi="synthesis"] .response-magi-name { color: var(--synthesis-primary); }
+
+        .response-time {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+        }
+
+        .response-query {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px dashed var(--border-subtle);
+        }
+
+        .response-content {
+            font-size: 0.75rem;
+            line-height: 1.7;
+            color: var(--text-primary);
+            white-space: pre-wrap;
+        }
+
+        .response-content code {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 0.1rem 0.35rem;
+            border-radius: 3px;
+            font-size: 0.7rem;
+        }
+
+        /* === LOADING === */
+        .loading-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 3px;
+        }
+
+        .loading-dots span {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--synthesis-primary);
+            animation: bounce 1.4s ease-in-out infinite;
+        }
+
+        .loading-dots span:nth-child(1) { animation-delay: 0s; }
+        .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* === EMPTY STATE === */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            opacity: 0.3;
+        }
+
+        .empty-state p {
+            font-size: 0.75rem;
+            max-width: 280px;
+            line-height: 1.5;
+        }
+
+        /* === TOAST === */
+        .toast-container {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .toast {
+            padding: 0.6rem 1rem;
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            font-size: 0.75rem;
+            animation: slideInToast 0.3s ease-out;
+        }
+
+        .toast.success { border-left: 3px solid var(--success); }
+        .toast.error { border-left: 3px solid var(--error); }
+        .toast.warning { border-left: 3px solid var(--warning); }
+
+        @keyframes slideInToast {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .magi-node {
+                width: clamp(150px, 42%, 200px);
+                padding: 0.8rem;
+            }
+
+            .node-title {
+                font-size: 0.7rem;
+            }
+
+            .synthesis-panel {
+                padding: 1rem;
+            }
+
+            .api-keys-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cosmic-bg"></div>
+    
+    <header class="header">
+        <h1>MAGI SYSTEM</h1>
+        <p class="subtitle">Consola de Síntesis Triádica ETHOS</p>
+        <p class="epigraph">"Tres aspectos de una misma mente — Científica, Madre, Mujer"</p>
+        <span class="version-badge">v3.0 NAOKO</span>
+    </header>
+
+    <!-- Panel de API Keys -->
+    <div class="api-keys-panel" id="api-keys-panel">
+        <div class="api-keys-header" onclick="toggleApiPanel()">
+            <span class="api-keys-title">🔑 CLAVES API</span>
+            <span class="api-keys-toggle" id="api-toggle">▼ Expandir</span>
+        </div>
+        <div class="api-keys-grid" id="api-keys-grid" style="display: none;">
+            <div class="api-key-item">
+                <label class="api-key-label"><span class="icon">🧠</span> Claude (Anthropic)</label>
+                <input type="password" class="api-key-input" id="api-claude" placeholder="sk-ant-..." oninput="saveApiKey('claude')">
+            </div>
+            <div class="api-key-item">
+                <label class="api-key-label"><span class="icon">💎</span> Gemini (Google)</label>
+                <input type="password" class="api-key-input" id="api-gemini" placeholder="AIza..." oninput="saveApiKey('gemini')">
+            </div>
+            <div class="api-key-item">
+                <label class="api-key-label"><span class="icon">⚡</span> GPT-4 (OpenAI)</label>
+                <input type="password" class="api-key-input" id="api-openai" placeholder="sk-..." oninput="saveApiKey('openai')">
+            </div>
+        </div>
+    </div>
+
+    <!-- Selector de Modo -->
+    <div class="mode-selector">
+        <button class="mode-btn active" data-mode="synthesis" onclick="setOperationMode('synthesis')">
+            ⬡ SÍNTESIS
+        </button>
+        <button class="mode-btn" data-mode="inverse" onclick="setOperationMode('inverse')">
+            ◈ INVERSO
+        </button>
+    </div>
+    <p class="mode-description" id="mode-description">
+        Una consulta → Tres perspectivas de la misma mente
+    </p>
+
+    <main class="main-container">
+        <!-- SECCIÓN DEL TRIÁNGULO MAGI -->
+        <section class="triangle-section">
+            <div class="triangle-wrapper">
+                <!-- SVG del triángulo -->
+                <svg class="triangle-svg" viewBox="0 0 100 90" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <linearGradient id="grad-1-2" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:var(--melchior-primary)"/>
+                            <stop offset="100%" style="stop-color:var(--balthasar-primary)"/>
+                        </linearGradient>
+                        <linearGradient id="grad-2-3" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:var(--balthasar-primary)"/>
+                            <stop offset="100%" style="stop-color:var(--casper-primary)"/>
+                        </linearGradient>
+                        <linearGradient id="grad-3-1" x1="100%" y1="100%" x2="0%" y2="0%">
+                            <stop offset="0%" style="stop-color:var(--casper-primary)"/>
+                            <stop offset="100%" style="stop-color:var(--melchior-primary)"/>
+                        </linearGradient>
+                    </defs>
+                    <line class="triangle-line" data-line="1-2" x1="50" y1="8" x2="12" y2="85" stroke="url(#grad-1-2)"/>
+                    <line class="triangle-line" data-line="2-3" x1="12" y1="85" x2="88" y2="85" stroke="url(#grad-2-3)"/>
+                    <line class="triangle-line" data-line="3-1" x1="88" y1="85" x2="50" y2="8" stroke="url(#grad-3-1)"/>
+                </svg>
+
+                <!-- Nodo MELCHIOR -->
+                <div class="magi-node" id="node-melchior">
+                    <div class="node-header">
+                        <div class="node-icon">🔬</div>
+                        <div>
+                            <div class="node-title">MELCHIOR-1</div>
+                            <div class="node-aspect">La Científica</div>
+                        </div>
+                    </div>
+                    <div class="node-status">
+                        <span class="status-dot" id="status-melchior"></span>
+                        <span id="status-text-melchior">Sin enlace</span>
+                    </div>
+                    <div class="ai-selector">
+                        <select class="ai-select" id="select-melchior" onchange="onAISelect('melchior')">
+                            <option value="">Seleccionar IA...</option>
+                            <option value="claude">🧠 Claude</option>
+                            <option value="gemini">💎 Gemini</option>
+                            <option value="openai">⚡ GPT-4</option>
+                        </select>
+                        <button class="connect-btn" id="btn-melchior" onclick="connectNode('melchior')" disabled>
+                            ENLAZAR
+                        </button>
+                    </div>
+                    <div class="node-input-area" id="input-area-melchior">
+                        <textarea class="node-input" id="input-melchior" placeholder="Consulta para la perspectiva científica..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Nodo BALTHASAR -->
+                <div class="magi-node" id="node-balthasar">
+                    <div class="node-header">
+                        <div class="node-icon">💝</div>
+                        <div>
+                            <div class="node-title">BALTHASAR-2</div>
+                            <div class="node-aspect">La Madre</div>
+                        </div>
+                    </div>
+                    <div class="node-status">
+                        <span class="status-dot" id="status-balthasar"></span>
+                        <span id="status-text-balthasar">Sin enlace</span>
+                    </div>
+                    <div class="ai-selector">
+                        <select class="ai-select" id="select-balthasar" onchange="onAISelect('balthasar')">
+                            <option value="">Seleccionar IA...</option>
+                            <option value="claude">🧠 Claude</option>
+                            <option value="gemini">💎 Gemini</option>
+                            <option value="openai">⚡ GPT-4</option>
+                        </select>
+                        <button class="connect-btn" id="btn-balthasar" onclick="connectNode('balthasar')" disabled>
+                            ENLAZAR
+                        </button>
+                    </div>
+                    <div class="node-input-area" id="input-area-balthasar">
+                        <textarea class="node-input" id="input-balthasar" placeholder="Consulta para la perspectiva maternal..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Nodo CASPER -->
+                <div class="magi-node" id="node-casper">
+                    <div class="node-header">
+                        <div class="node-icon">🌹</div>
+                        <div>
+                            <div class="node-title">CASPER-3</div>
+                            <div class="node-aspect">La Mujer</div>
+                        </div>
+                    </div>
+                    <div class="node-status">
+                        <span class="status-dot" id="status-casper"></span>
+                        <span id="status-text-casper">Sin enlace</span>
+                    </div>
+                    <div class="ai-selector">
+                        <select class="ai-select" id="select-casper" onchange="onAISelect('casper')">
+                            <option value="">Seleccionar IA...</option>
+                            <option value="claude">🧠 Claude</option>
+                            <option value="gemini">💎 Gemini</option>
+                            <option value="openai">⚡ GPT-4</option>
+                        </select>
+                        <button class="connect-btn" id="btn-casper" onclick="connectNode('casper')" disabled>
+                            ENLAZAR
+                        </button>
+                    </div>
+                    <div class="node-input-area" id="input-area-casper">
+                        <textarea class="node-input" id="input-casper" placeholder="Consulta para la perspectiva femenina..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Núcleo central -->
+                <div class="synthesis-core" id="synthesis-core">
+                    <div class="core-ring"></div>
+                    <div class="core-ring"></div>
+                    <div class="core-ring"></div>
+                    <div class="core-center" id="core-center">
+                        <span class="core-icon">◇</span>
+                        <span class="core-label">ESPERANDO<br>ENLACES</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PANEL DE SÍNTESIS -->
+        <section class="synthesis-section">
+            <div class="synthesis-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">⬡ CÁMARA MAGI</h2>
+                    <div class="synthesis-type">
+                        <button class="type-btn active" data-type="parallel" onclick="setSynthesisType('parallel')">Paralelo</button>
+                        <button class="type-btn" data-type="sequential" onclick="setSynthesisType('sequential')">Secuencial</button>
+                        <button class="type-btn" data-type="debate" onclick="setSynthesisType('debate')">Debate</button>
+                    </div>
+                </div>
+
+                <!-- Instrucciones modo inverso -->
+                <div class="inverse-instructions" id="inverse-instructions">
+                    <p><strong>MODO INVERSO:</strong> Escribe consultas individuales en cada nodo MAGI del triángulo. Cada perspectiva recibirá su propia pregunta.</p>
+                </div>
+
+                <!-- Área de consulta unificada (modo síntesis) -->
+                <div class="query-area" id="query-area">
+                    <label class="query-label">Consulta para las tres mentes:</label>
+                    <textarea class="query-input" id="query-input" placeholder="Ingresa tu consulta...&#10;&#10;Las tres perspectivas de Naoko Akagi procesarán tu pregunta:&#10;• MELCHIOR: Análisis científico y lógico&#10;• BALTHASAR: Sabiduría maternal y protectora&#10;• CASPER: Intuición y perspectiva femenina"></textarea>
+                    <div class="query-actions">
+                        <button class="synthesis-btn" id="synthesis-btn" onclick="executeSynthesis()" disabled>
+                            ⬡ INICIAR SÍNTESIS
+                        </button>
+                        <button class="clear-btn" onclick="clearResponses()">Limpiar</button>
+                    </div>
+                </div>
+
+                <!-- Botón para modo inverso -->
+                <div class="query-area hidden" id="inverse-query-area">
+                    <div class="query-actions">
+                        <button class="synthesis-btn" id="inverse-btn" onclick="executeInverse()" disabled>
+                            ◈ EJECUTAR CONSULTAS
+                        </button>
+                        <button class="clear-btn" onclick="clearResponses()">Limpiar</button>
+                    </div>
+                </div>
+
+                <div class="responses-area" id="responses-area">
+                    <div class="empty-state" id="empty-state">
+                        <div class="empty-state-icon">◇</div>
+                        <p>Conecta al menos un nodo MAGI para comenzar la síntesis triádica.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // === ESTADO DE LA APLICACIÓN ===
+        const state = {
+            apiKeys: {
+                claude: null,
+                gemini: null,
+                openai: null
+            },
+            nodes: {
+                melchior: { connected: false, ai: null },
+                balthasar: { connected: false, ai: null },
+                casper: { connected: false, ai: null }
+            },
+            operationMode: 'synthesis', // 'synthesis' o 'inverse'
+            synthesisType: 'parallel',  // 'parallel', 'sequential', 'debate'
+            isProcessing: false
+        };
+
+        // === CONFIGURACIÓN DE MAGI ===
+        const MAGI_CONFIG = {
+            melchior: {
+                name: 'MELCHIOR-1',
+                aspect: 'La Científica',
+                persona: 'Eres MELCHIOR-1, el aspecto científico del sistema MAGI. Representas la mente analítica de Naoko Akagi como científica. Tu perspectiva es lógica, basada en datos, empírica y racional. Analizas problemas con rigor metodológico y buscas la verdad objetiva. Respondes de forma precisa y fundamentada.'
+            },
+            balthasar: {
+                name: 'BALTHASAR-2',
+                aspect: 'La Madre',
+                persona: 'Eres BALTHASAR-2, el aspecto maternal del sistema MAGI. Representas la mente protectora de Naoko Akagi como madre. Tu perspectiva prioriza el cuidado, la seguridad, el bienestar a largo plazo y la sabiduría que viene de querer proteger a quienes amamos. Respondes con calidez y considerando las consecuencias humanas.'
+            },
+            casper: {
+                name: 'CASPER-3',
+                aspect: 'La Mujer',
+                persona: 'Eres CASPER-3, el aspecto femenino del sistema MAGI. Representas la mente intuitiva de Naoko Akagi como mujer. Tu perspectiva incluye intuición, inteligencia emocional, creatividad y la sabiduría que trasciende la lógica pura. Respondes con profundidad emocional y visión holística.'
+            }
+        };
+
+        // === CONFIGURACIÓN DE APIs ===
+        const AI_CONFIG = {
+            claude: {
+                name: 'Claude',
+                model: 'claude-sonnet-4-20250514',
+                endpoint: 'https://api.anthropic.com/v1/messages'
+            },
+            gemini: {
+                name: 'Gemini',
+                model: 'gemini-1.5-flash',
+                endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+            },
+            openai: {
+                name: 'GPT-4',
+                model: 'gpt-4o-mini',
+                endpoint: 'https://api.openai.com/v1/chat/completions'
+            }
+        };
+
+        // === INICIALIZACIÓN ===
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSavedData();
+            updateSystemStatus();
+        });
+
+        // === GESTIÓN DE API KEYS ===
+        function toggleApiPanel() {
+            const grid = document.getElementById('api-keys-grid');
+            const toggle = document.getElementById('api-toggle');
+            if (grid.style.display === 'none') {
+                grid.style.display = 'grid';
+                toggle.textContent = '▲ Colapsar';
+            } else {
+                grid.style.display = 'none';
+                toggle.textContent = '▼ Expandir';
+            }
+        }
+
+        function loadSavedData() {
+            // Cargar API keys
+            ['claude', 'gemini', 'openai'].forEach(ai => {
+                const savedKey = localStorage.getItem(`ethos_api_${ai}`);
+                if (savedKey) {
+                    state.apiKeys[ai] = savedKey;
+                    document.getElementById(`api-${ai}`).value = savedKey;
+                    document.getElementById(`api-${ai}`).classList.add('valid');
+                }
+            });
+
+            // Cargar configuración de nodos
+            ['melchior', 'balthasar', 'casper'].forEach(node => {
+                const savedConfig = localStorage.getItem(`ethos_node_${node}`);
+                if (savedConfig) {
+                    const config = JSON.parse(savedConfig);
+                    if (config.ai && state.apiKeys[config.ai]) {
+                        document.getElementById(`select-${node}`).value = config.ai;
+                        onAISelect(node);
+                        // Auto-conectar
+                        setTimeout(() => connectNode(node, true), 100);
+                    }
+                }
+            });
+        }
+
+        function saveApiKey(ai) {
+            const input = document.getElementById(`api-${ai}`);
+            const key = input.value.trim();
+            
+            if (key.length > 10) {
+                state.apiKeys[ai] = key;
+                localStorage.setItem(`ethos_api_${ai}`, key);
+                input.classList.add('valid');
+            } else {
+                state.apiKeys[ai] = null;
+                localStorage.removeItem(`ethos_api_${ai}`);
+                input.classList.remove('valid');
+            }
+            
+            updateNodeButtons();
+        }
+
+        // === SELECCIÓN DE IA EN NODOS ===
+        function onAISelect(node) {
+            const select = document.getElementById(`select-${node}`);
+            const btn = document.getElementById(`btn-${node}`);
+            const selectedAI = select.value;
+            
+            if (selectedAI && state.apiKeys[selectedAI]) {
+                btn.disabled = false;
+            } else if (selectedAI && !state.apiKeys[selectedAI]) {
+                btn.disabled = true;
+                showToast(`Configura la API key de ${AI_CONFIG[selectedAI].name} primero`, 'warning');
+                // Expandir panel de keys
+                document.getElementById('api-keys-grid').style.display = 'grid';
+                document.getElementById('api-toggle').textContent = '▲ Colapsar';
+            } else {
+                btn.disabled = true;
+            }
+        }
+
+        function updateNodeButtons() {
+            ['melchior', 'balthasar', 'casper'].forEach(node => {
+                const select = document.getElementById(`select-${node}`);
+                const selectedAI = select.value;
+                const btn = document.getElementById(`btn-${node}`);
+                
+                if (state.nodes[node].connected) return;
+                
+                if (selectedAI && state.apiKeys[selectedAI]) {
+                    btn.disabled = false;
+                } else {
+                    btn.disabled = true;
+                }
+            });
+        }
+
+        // === CONEXIÓN DE NODOS ===
+        function connectNode(node, silent = false) {
+            const select = document.getElementById(`select-${node}`);
+            const selectedAI = select.value;
+            
+            if (!selectedAI || !state.apiKeys[selectedAI]) {
+                if (!silent) showToast('Selecciona una IA con API key válida', 'error');
+                return;
+            }
+
+            state.nodes[node] = { connected: true, ai: selectedAI };
+            localStorage.setItem(`ethos_node_${node}`, JSON.stringify({ ai: selectedAI }));
+
+            // Actualizar UI
+            document.getElementById(`node-${node}`).classList.add('connected');
+            document.getElementById(`status-${node}`).classList.add('active');
+            document.getElementById(`status-text-${node}`).textContent = AI_CONFIG[selectedAI].name;
+            
+            select.disabled = true;
+            const btn = document.getElementById(`btn-${node}`);
+            btn.textContent = 'ENLAZADO';
+            btn.classList.add('connected');
+            btn.disabled = true;
+
+            if (!silent) showToast(`${MAGI_CONFIG[node].name} enlazado con ${AI_CONFIG[selectedAI].name}`, 'success');
+            
+            updateSystemStatus();
+        }
+
+        function disconnectNode(node) {
+            state.nodes[node] = { connected: false, ai: null };
+            localStorage.removeItem(`ethos_node_${node}`);
+
+            document.getElementById(`node-${node}`).classList.remove('connected');
+            document.getElementById(`status-${node}`).classList.remove('active');
+            document.getElementById(`status-text-${node}`).textContent = 'Sin enlace';
+            
+            const select = document.getElementById(`select-${node}`);
+            select.disabled = false;
+            select.value = '';
+            
+            const btn = document.getElementById(`btn-${node}`);
+            btn.textContent = 'ENLAZAR';
+            btn.classList.remove('connected');
+            btn.disabled = true;
+
+            updateSystemStatus();
+        }
+
+        // === MODOS DE OPERACIÓN ===
+        function setOperationMode(mode) {
+            state.operationMode = mode;
+            
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+
+            const desc = document.getElementById('mode-description');
+            const queryArea = document.getElementById('query-area');
+            const inverseQueryArea = document.getElementById('inverse-query-area');
+            const inverseInstructions = document.getElementById('inverse-instructions');
+
+            if (mode === 'synthesis') {
+                desc.textContent = 'Una consulta → Tres perspectivas de la misma mente';
+                queryArea.classList.remove('hidden');
+                inverseQueryArea.classList.add('hidden');
+                inverseInstructions.classList.remove('visible');
+                
+                ['melchior', 'balthasar', 'casper'].forEach(node => {
+                    document.getElementById(`input-area-${node}`).classList.remove('visible');
+                });
+            } else {
+                desc.textContent = 'Tres consultas individuales → Cada perspectiva responde a su pregunta';
+                queryArea.classList.add('hidden');
+                inverseQueryArea.classList.remove('hidden');
+                inverseInstructions.classList.add('visible');
+                
+                ['melchior', 'balthasar', 'casper'].forEach(node => {
+                    if (state.nodes[node].connected) {
+                        document.getElementById(`input-area-${node}`).classList.add('visible');
+                    }
+                });
+            }
+
+            updateSystemStatus();
+        }
+
+        function setSynthesisType(type) {
+            state.synthesisType = type;
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === type);
+            });
+        }
+
+        // === ACTUALIZAR ESTADO DEL SISTEMA ===
+        function updateSystemStatus() {
+            const connected = Object.values(state.nodes).filter(n => n.connected).length;
+            const core = document.getElementById('synthesis-core');
+            const coreCenter = document.getElementById('core-center');
+            const coreLabel = coreCenter.querySelector('.core-label');
+            const coreIcon = coreCenter.querySelector('.core-icon');
+            
+            const synthesisBtn = document.getElementById('synthesis-btn');
+            const inverseBtn = document.getElementById('inverse-btn');
+
+            // Actualizar líneas del triángulo
+            const lines = {
+                '1-2': state.nodes.melchior.connected && state.nodes.balthasar.connected,
+                '2-3': state.nodes.balthasar.connected && state.nodes.casper.connected,
+                '3-1': state.nodes.casper.connected && state.nodes.melchior.connected
+            };
+
+            Object.entries(lines).forEach(([line, isConnected]) => {
+                const el = document.querySelector(`.triangle-line[data-line="${line}"]`);
+                el.classList.toggle('connected', isConnected);
+            });
+
+            // Actualizar núcleo
+            core.classList.remove('partial', 'active');
+            
+            if (connected === 0) {
+                coreIcon.textContent = '◇';
+                coreLabel.innerHTML = 'ESPERANDO<br>ENLACES';
+                synthesisBtn.disabled = true;
+                inverseBtn.disabled = true;
+            } else if (connected < 3) {
+                core.classList.add('partial');
+                coreIcon.textContent = '◈';
+                coreLabel.innerHTML = `${connected}/3<br>PARCIAL`;
+                synthesisBtn.disabled = false;
+                inverseBtn.disabled = false;
+            } else {
+                core.classList.add('active');
+                coreIcon.textContent = '⬡';
+                coreLabel.innerHTML = 'SÍNTESIS<br>COMPLETA';
+                synthesisBtn.disabled = false;
+                inverseBtn.disabled = false;
+            }
+
+            // Actualizar inputs en modo inverso
+            if (state.operationMode === 'inverse') {
+                ['melchior', 'balthasar', 'casper'].forEach(node => {
+                    const inputArea = document.getElementById(`input-area-${node}`);
+                    inputArea.classList.toggle('visible', state.nodes[node].connected);
+                });
+            }
+        }
+
+        // === EJECUTAR SÍNTESIS (Modo Normal) ===
+        async function executeSynthesis() {
+            const query = document.getElementById('query-input').value.trim();
+            if (!query) {
+                showToast('Ingresa una consulta', 'warning');
+                return;
+            }
+
+            const connectedNodes = Object.entries(state.nodes)
+                .filter(([_, data]) => data.connected)
+                .map(([node, _]) => node);
+
+            if (connectedNodes.length === 0) {
+                showToast('Conecta al menos un nodo MAGI', 'warning');
+                return;
+            }
+
+            state.isProcessing = true;
+            document.getElementById('synthesis-btn').disabled = true;
+            document.getElementById('empty-state')?.remove();
+
+            // Mostrar indicadores de carga
+            connectedNodes.forEach(node => addLoadingIndicator(node));
+
+            try {
+                if (state.synthesisType === 'parallel') {
+                    const promises = connectedNodes.map(node => queryNode(node, query));
+                    const results = await Promise.allSettled(promises);
+                    
+                    results.forEach((result, i) => {
+                        removeLoadingIndicator(connectedNodes[i]);
+                        if (result.status === 'fulfilled') {
+                            addResponseCard(connectedNodes[i], result.value, query);
+                        } else {
+                            addResponseCard(connectedNodes[i], `Error: ${result.reason.message}`, query, true);
+                        }
+                    });
+
+                    // Generar síntesis si hay múltiples respuestas
+                    if (connectedNodes.length > 1) {
+                        const responses = results
+                            .filter(r => r.status === 'fulfilled')
+                            .map((r, i) => ({ node: connectedNodes[i], response: r.value }));
+                        
+                        if (responses.length > 1) {
+                            addSynthesisCard(responses, query);
+                        }
+                    }
+                } else if (state.synthesisType === 'sequential') {
+                    let context = '';
+                    for (const node of connectedNodes) {
+                        const enhancedQuery = context 
+                            ? `${query}\n\nPerspectivas anteriores:\n${context}`
+                            : query;
+                        
+                        const response = await queryNode(node, enhancedQuery);
+                        removeLoadingIndicator(node);
+                        addResponseCard(node, response, query);
+                        context += `\n${MAGI_CONFIG[node].name} (${MAGI_CONFIG[node].aspect}): ${response}\n`;
+                    }
+                } else if (state.synthesisType === 'debate') {
+                    const debateQuery = `${query}\n\nEsta es una deliberación del sistema MAGI. Presenta tu perspectiva con claridad y considera posibles objeciones desde las otras perspectivas.`;
+                    
+                    const promises = connectedNodes.map(node => queryNode(node, debateQuery));
+                    const results = await Promise.allSettled(promises);
+                    
+                    results.forEach((result, i) => {
+                        removeLoadingIndicator(connectedNodes[i]);
+                        if (result.status === 'fulfilled') {
+                            addResponseCard(connectedNodes[i], result.value, query);
+                        }
+                    });
+                }
+            } catch (error) {
+                showToast(`Error en la síntesis: ${error.message}`, 'error');
+            }
+
+            state.isProcessing = false;
+            document.getElementById('synthesis-btn').disabled = false;
+        }
+
+        // === EJECUTAR MODO INVERSO ===
+        async function executeInverse() {
+            const connectedNodes = Object.entries(state.nodes)
+                .filter(([_, data]) => data.connected)
+                .map(([node, _]) => node);
+
+            if (connectedNodes.length === 0) {
+                showToast('Conecta al menos un nodo MAGI', 'warning');
+                return;
+            }
+
+            // Recoger queries individuales
+            const nodeQueries = {};
+            let hasQuery = false;
+            
+            connectedNodes.forEach(node => {
+                const query = document.getElementById(`input-${node}`).value.trim();
+                if (query) {
+                    nodeQueries[node] = query;
+                    hasQuery = true;
+                }
+            });
+
+            if (!hasQuery) {
+                showToast('Ingresa al menos una consulta en los nodos', 'warning');
+                return;
+            }
+
+            state.isProcessing = true;
+            document.getElementById('inverse-btn').disabled = true;
+            document.getElementById('empty-state')?.remove();
+
+            // Ejecutar queries en paralelo
+            const nodesToQuery = Object.keys(nodeQueries);
+            nodesToQuery.forEach(node => addLoadingIndicator(node));
+
+            try {
+                const promises = nodesToQuery.map(node => 
+                    queryNode(node, nodeQueries[node])
+                );
+                const results = await Promise.allSettled(promises);
+
+                results.forEach((result, i) => {
+                    const node = nodesToQuery[i];
+                    removeLoadingIndicator(node);
+                    if (result.status === 'fulfilled') {
+                        addResponseCard(node, result.value, nodeQueries[node]);
+                    } else {
+                        addResponseCard(node, `Error: ${result.reason.message}`, nodeQueries[node], true);
+                    }
+                });
+            } catch (error) {
+                showToast(`Error: ${error.message}`, 'error');
+            }
+
+            state.isProcessing = false;
+            document.getElementById('inverse-btn').disabled = false;
+        }
+
+        // === CONSULTAR NODO ===
+        async function queryNode(node, query) {
+            const ai = state.nodes[node].ai;
+            const key = state.apiKeys[ai];
+            const persona = MAGI_CONFIG[node].persona;
+
+            if (ai === 'claude') {
+                const response = await fetch(AI_CONFIG.claude.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': key,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
+                    body: JSON.stringify({
+                        model: AI_CONFIG.claude.model,
+                        max_tokens: 1024,
+                        system: persona,
+                        messages: [{ role: 'user', content: query }]
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || 'Error en Claude API');
+                }
+                
+                const data = await response.json();
+                return data.content[0].text;
+
+            } else if (ai === 'gemini') {
+                const response = await fetch(`${AI_CONFIG.gemini.endpoint}?key=${key}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: `${persona}\n\nConsulta: ${query}` }]
+                        }]
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || 'Error en Gemini API');
+                }
+                
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+
+            } else if (ai === 'openai') {
+                const response = await fetch(AI_CONFIG.openai.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${key}`
+                    },
+                    body: JSON.stringify({
+                        model: AI_CONFIG.openai.model,
+                        messages: [
+                            { role: 'system', content: persona },
+                            { role: 'user', content: query }
+                        ],
+                        max_tokens: 1024
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || 'Error en OpenAI API');
+                }
+                
+                const data = await response.json();
+                return data.choices[0].message.content;
+            }
+        }
+
+        // === UI HELPERS ===
+        function addLoadingIndicator(node) {
+            const responsesArea = document.getElementById('responses-area');
+            const loader = document.createElement('div');
+            loader.className = 'loading-indicator';
+            loader.id = `loading-${node}`;
+            
+            const ai = state.nodes[node].ai;
+            loader.innerHTML = `
+                <div class="loading-dots">
+                    <span></span><span></span><span></span>
+                </div>
+                <span>${MAGI_CONFIG[node].name} (${AI_CONFIG[ai].name}) procesando...</span>
+            `;
+            responsesArea.appendChild(loader);
+        }
+
+        function removeLoadingIndicator(node) {
+            document.getElementById(`loading-${node}`)?.remove();
+        }
+
+        function addResponseCard(node, content, query, isError = false) {
+            const responsesArea = document.getElementById('responses-area');
+            const card = document.createElement('div');
+            card.className = 'response-card';
+            card.dataset.magi = node;
+            
+            const ai = state.nodes[node].ai;
+            const timestamp = new Date().toLocaleTimeString();
+            
+            card.innerHTML = `
+                <div class="response-header">
+                    <div class="response-magi-info">
+                        <span class="response-magi-name">${MAGI_CONFIG[node].name} — ${MAGI_CONFIG[node].aspect}</span>
+                        <span class="response-ai-badge">${AI_CONFIG[ai].name}</span>
+                    </div>
+                    <span class="response-time">${timestamp}</span>
+                </div>
+                ${state.operationMode === 'inverse' ? `<div class="response-query">📝 ${escapeHtml(query)}</div>` : ''}
+                <div class="response-content" style="${isError ? 'color: var(--error);' : ''}">${escapeHtml(content)}</div>
+            `;
+            
+            responsesArea.appendChild(card);
+            responsesArea.scrollTop = responsesArea.scrollHeight;
+        }
+
+        function addSynthesisCard(responses, query) {
+            const responsesArea = document.getElementById('responses-area');
+            const card = document.createElement('div');
+            card.className = 'response-card';
+            card.dataset.magi = 'synthesis';
+            
+            const nodeNames = responses.map(r => MAGI_CONFIG[r.node].aspect);
+            
+            card.innerHTML = `
+                <div class="response-header">
+                    <div class="response-magi-info">
+                        <span class="response-magi-name">⬡ SÍNTESIS MAGI</span>
+                    </div>
+                    <span class="response-time">${new Date().toLocaleTimeString()}</span>
+                </div>
+                <div class="response-content">
+<strong>Convergencia triádica:</strong>
+
+Las perspectivas de ${nodeNames.join(', ')} han deliberado sobre la consulta.
+
+<strong>Puntos de integración:</strong>
+• Cada aspecto de la mente aporta una dimensión única
+• La síntesis emerge de la tensión creativa entre lógica, cuidado e intuición
+• La decisión final requiere integrar las tres voces
+
+<em>Revisa las respuestas individuales para la deliberación completa.</em>
+                </div>
+            `;
+            
+            responsesArea.appendChild(card);
+            responsesArea.scrollTop = responsesArea.scrollHeight;
+        }
+
+        function clearResponses() {
+            const responsesArea = document.getElementById('responses-area');
+            responsesArea.innerHTML = `
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-state-icon">◇</div>
+                    <p>Conecta al menos un nodo MAGI para comenzar la síntesis triádica.</p>
+                </div>
+            `;
+            document.getElementById('query-input').value = '';
+            ['melchior', 'balthasar', 'casper'].forEach(node => {
+                document.getElementById(`input-${node}`).value = '';
+            });
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML.replace(/\n/g, '<br>');
+        }
+    </script>
+</body>
+</html>
