@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arduinator - Holobionte OS | Definitivo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        :root {
+            --atlantis-cyan: #06b6d4;
+            --atlantis-emerald: #10b981;
+            --atlantis-amber: #f59e0b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .gradient-text {
+            background: linear-gradient(to right, #06b6d4, #10b981, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .crystal-glow {
+            box-shadow: 0 0 40px rgba(6, 182, 212, 0.2);
+            clip-path: polygon(50% 0%, 100% 20%, 80% 80%, 50% 100%, 20% 80%, 0% 20%);
+        }
+
+        .purchased-card {
+            border-color: #10b981 !important;
+            background-color: rgba(16, 185, 129, 0.1) !important;
+        }
+
+        /* Engineering Diagram Animations */
+        @keyframes flow { to { stroke-dashoffset: -20; } }
+        .flow-line { stroke-dasharray: 5, 5; animation: flow 1.5s linear infinite; }
+        .power-line { stroke: #f59e0b; }
+        .data-line { stroke: #06b6d4; }
+        .sensor-line { stroke: #10b981; }
+
+        .hover-scale { transition: transform 0.3s ease; }
+        .hover-scale:hover { transform: scale(1.02); }
+    </style>
+</head>
+<body class="selection:bg-cyan-500/30">
+
+    <!-- Atlantis Background Effects -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-cyan-600/5 blur-[120px] rounded-full"></div>
+        <div class="absolute bottom-0 right-0 w-1/2 h-1/2 bg-emerald-900/10 blur-[150px] rounded-full"></div>
+    </div>
+
+    <!-- Nav Bar -->
+    <nav class="sticky top-0 z-50 backdrop-blur-xl border-b border-cyan-900/30 bg-black/60">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('shop')">
+                <div class="w-10 h-10 bg-cyan-500 rounded-lg rotate-45 flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.6)]">
+                    <i data-lucide="zap" class="text-black -rotate-45 w-6 h-6"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-xl font-black tracking-tighter text-cyan-400 leading-none">ARDUINATOR</span>
+                    <span class="text-[8px] font-mono text-cyan-800 tracking-widest uppercase font-bold">Autopoietic Hardware</span>
+                </div>
+            </div>
+
+            <div class="hidden md:flex gap-8">
+                <button onclick="switchTab('shop')" id="btn-shop" class="nav-btn text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400">Laboratorio</button>
+                <button onclick="switchTab('arch')" id="btn-arch" class="nav-btn text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Arquitectura</button>
+                <button onclick="switchTab('dash')" id="btn-dash" class="nav-btn text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Dashboard</button>
+                <button onclick="switchTab('bio')" id="btn-bio" class="nav-btn text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Filosofía</button>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div id="status-tag" class="text-[10px] font-mono text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded border border-emerald-500/20">
+                    ENERGY: OPTIMAL
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="relative z-10 max-w-7xl mx-auto px-6 py-12">
+
+        <!-- TAB: LABORATORIO (TIENDA TÉCNICA) -->
+        <div id="content-shop" class="tab-content active space-y-16 animate-fade-in">
+            <header class="text-center space-y-4">
+                <h1 class="text-5xl md:text-8xl font-black uppercase italic tracking-tighter">Ensambla el <span class="gradient-text">Holobionte</span></h1>
+                <p class="text-slate-500 text-lg font-light max-w-2xl mx-auto italic">Selecciona los componentes. Tu Raspberry Pi 3 es el centro de mando; el resto son los órganos que le darán vida autónoma.</p>
+            </header>
+
+            <!-- Kits Categorizados -->
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Kit Nivel I: Core -->
+                <div id="kit-core" class="border border-slate-800 bg-slate-900/10 p-8 flex flex-col justify-between hover-scale">
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-center">
+                            <i data-lucide="cpu" class="text-cyan-400 w-8 h-8"></i>
+                            <input type="checkbox" onchange="togglePurchased('kit-core')" class="w-6 h-6 accent-emerald-500 cursor-pointer">
+                        </div>
+                        <h3 class="text-3xl font-black italic uppercase">Core Bundle</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed uppercase font-bold tracking-widest">SISTEMA NERVIOSO CENTRAL</p>
+                        <ul class="text-[11px] space-y-3 font-mono text-slate-400 border-t border-slate-800 pt-6">
+                            <li>+ ARDUINO NANO V3 (ATMEGA328P)</li>
+                            <li>+ LOGIC LEVEL SHIFTER (3.3V to 5V)</li>
+                            <li>+ CAPACITIVE SOIL MOISTURE V2.0</li>
+                            <li>+ 5V/10A RELAY MODULE</li>
+                        </ul>
+                    </div>
+                    <div class="pt-10 flex justify-between items-center">
+                        <span class="text-2xl font-black text-cyan-400 font-mono">$120.00</span>
+                        <a href="https://es.aliexpress.com/w/wholesale-arduino-nano-v3-kit.html" target="_blank" class="px-6 py-3 bg-cyan-500 text-black font-black uppercase text-[10px] hover:bg-cyan-400">Ver en Ali</a>
+                    </div>
+                </div>
+
+                <!-- Kit Nivel II: Energy Autonomy -->
+                <div id="kit-power" class="border-2 border-amber-500/40 bg-amber-500/5 p-8 flex flex-col justify-between hover-scale relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 opacity-10"><i data-lucide="zap" class="w-40 h-40 text-amber-500"></i></div>
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-center">
+                            <i data-lucide="battery-full" class="text-amber-500 w-8 h-8"></i>
+                            <input type="checkbox" onchange="togglePurchased('kit-power')" class="w-6 h-6 accent-emerald-500 cursor-pointer">
+                        </div>
+                        <h3 class="text-3xl font-black italic uppercase">Energy Node</h3>
+                        <p class="text-xs text-amber-600 leading-relaxed uppercase font-bold tracking-widest">AUTOSUFICIENCIA ENERGÉTICA</p>
+                        <ul class="text-[11px] space-y-3 font-mono text-slate-400 border-t border-amber-500/20 pt-6">
+                            <li>+ SOLAR PANEL 18V/20W MONOCRYSTALLINE</li>
+                            <li>+ MPPT CHARGE CONTROLLER (STEP-DOWN)</li>
+                            <li>+ LiFePO4 4S 12.8V BATT PACK + BMS</li>
+                            <li>+ DC-DC BUCK REGULATOR 5.1V/5A</li>
+                        </ul>
+                    </div>
+                    <div class="pt-10 flex justify-between items-center">
+                        <span class="text-2xl font-black text-amber-500 font-mono">$185.00</span>
+                        <a href="https://es.aliexpress.com/w/wholesale-20w-solar-panel-lifepo4-mppt.html" target="_blank" class="px-6 py-3 bg-amber-500 text-black font-black uppercase text-[10px] hover:bg-amber-400">Ver en Ali</a>
+                    </div>
+                </div>
+
+                <!-- Kit Nivel III: Sensorial Matrix -->
+                <div id="kit-sense" class="border border-emerald-500/40 bg-emerald-500/5 p-8 flex flex-col justify-between hover-scale">
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-center">
+                            <i data-lucide="eye" class="text-emerald-500 w-8 h-8"></i>
+                            <input type="checkbox" onchange="togglePurchased('kit-sense')" class="w-6 h-6 accent-emerald-500 cursor-pointer">
+                        </div>
+                        <h3 class="text-3xl font-black italic uppercase">Sensorial Array</h3>
+                        <p class="text-xs text-emerald-600 leading-relaxed uppercase font-bold tracking-widest">SISTEMA SENSORIAL 360°</p>
+                        <ul class="text-[11px] space-y-3 font-mono text-slate-400 border-t border-emerald-500/20 pt-6">
+                            <li>+ AMG8833 IR THERMAL CAMERA (8x8)</li>
+                            <li>+ AS7341 SPECTRAL SENSOR (11 CHANNELS)</li>
+                            <li>+ MH-Z19B CO2 NDIR SENSOR</li>
+                            <li>+ DHT22 (x2) (EXT/INT ATMOSPHERE)</li>
+                        </ul>
+                    </div>
+                    <div class="pt-10 flex justify-between items-center">
+                        <span class="text-2xl font-black text-emerald-500 font-mono">$145.00</span>
+                        <a href="https://es.aliexpress.com/w/wholesale-amg8833-as7341-sensors.html" target="_blank" class="px-6 py-3 bg-emerald-500 text-black font-black uppercase text-[10px] hover:bg-emerald-400">Ver en Ali</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Organelles (The Engineering Shop) -->
+            <div class="space-y-8">
+                <h3 class="text-xs font-black uppercase tracking-[0.5em] text-center text-slate-600">Componentes Individuales de Autopoiesis</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div id="item-peltier" class="border border-slate-800 p-6 bg-slate-900/5 transition-all flex flex-col justify-between">
+                        <div class="flex justify-between items-start mb-4"><i data-lucide="flame" class="w-5 h-5 text-orange-400"></i> <input type="checkbox" onchange="togglePurchased('item-peltier')"></div>
+                        <span class="text-[10px] font-bold uppercase block text-slate-300">Celdas Peltier (Térmica)</span>
+                        <a href="https://es.aliexpress.com/w/wholesale-tec1-12706.html" target="_blank" class="text-[9px] text-cyan-500 font-bold mt-2">LINK ALIEXPRESS</a>
+                    </div>
+                    <div id="item-wind" class="border border-slate-800 p-6 bg-slate-900/5 transition-all flex flex-col justify-between">
+                        <div class="flex justify-between items-start mb-4"><i data-lucide="fan" class="w-5 h-5 text-blue-400"></i> <input type="checkbox" onchange="togglePurchased('item-wind')"></div>
+                        <span class="text-[10px] font-bold uppercase block text-slate-300">Micro Turbina Eólica</span>
+                        <a href="https://es.aliexpress.com/w/wholesale-micro-vertical-wind-turbine.html" target="_blank" class="text-[9px] text-cyan-500 font-bold mt-2">LINK ALIEXPRESS</a>
+                    </div>
+                    <div id="item-mppt" class="border border-slate-800 p-6 bg-slate-900/5 transition-all flex flex-col justify-between">
+                        <div class="flex justify-between items-start mb-4"><i data-lucide="activity" class="w-5 h-5 text-emerald-400"></i> <input type="checkbox" onchange="togglePurchased('item-mppt')"></div>
+                        <span class="text-[10px] font-bold uppercase block text-slate-300">MPPT Controller Node</span>
+                        <a href="https://es.aliexpress.com/w/wholesale-mppt-module-lifepo4.html" target="_blank" class="text-[9px] text-cyan-500 font-bold mt-2">LINK ALIEXPRESS</a>
+                    </div>
+                    <div id="item-gas" class="border border-slate-800 p-6 bg-slate-900/5 transition-all flex flex-col justify-between">
+                        <div class="flex justify-between items-start mb-4"><i data-lucide="cloud" class="w-5 h-5 text-slate-400"></i> <input type="checkbox" onchange="togglePurchased('item-gas')"></div>
+                        <span class="text-[10px] font-bold uppercase block text-slate-300">Analizador Atmosférico</span>
+                        <a href="https://es.aliexpress.com/w/wholesale-mh-z19b-ndir.html" target="_blank" class="text-[9px] text-cyan-500 font-bold mt-2">LINK ALIEXPRESS</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: ARQUITECTURA (CIRCUITO INGENIERÍA) -->
+        <div id="content-arch" class="tab-content space-y-12 animate-fade-in">
+            <header class="text-center">
+                <h2 class="text-4xl font-black uppercase italic tracking-tighter">Architecture of <span class="text-cyan-400 font-mono underline">Operational Closure</span></h2>
+                <p class="text-slate-500 mt-2 font-light italic">Esquema funcional del flujo de energía y protocolos de datos entre el medio interno (Invernadero) y externo.</p>
+            </header>
+
+            <!-- Interactive Engineering SVG -->
+            <div class="bg-slate-950 border border-slate-800 p-10 rounded-[2rem] overflow-x-auto shadow-2xl">
+                <svg viewBox="0 0 1000 600" class="w-full min-w-[800px] mx-auto">
+                    <!-- Energy Sources Plane -->
+                    <g id="sources">
+                        <rect x="20" y="50" width="160" height="180" fill="none" stroke="#f59e0b" stroke-width="2" rx="15" stroke-dasharray="5,5" />
+                        <text x="100" y="35" text-anchor="middle" fill="#f59e0b" class="text-[12px] font-black uppercase font-mono tracking-widest">Energy Inputs</text>
+                        <!-- Solar -->
+                        <rect x="40" y="70" width="120" height="40" fill="#f59e0b/20" stroke="#f59e0b" rx="5" />
+                        <text x="100" y="95" text-anchor="middle" fill="#f59e0b" class="text-[10px] font-bold">SOLAR PANEL (20W)</text>
+                        <!-- Wind -->
+                        <rect x="40" y="120" width="120" height="40" fill="#3b82f6/20" stroke="#3b82f6" rx="5" />
+                        <text x="100" y="145" text-anchor="middle" fill="#3b82f6" class="text-[10px] font-bold">WIND TURBINE</text>
+                        <!-- Thermal -->
+                        <rect x="40" y="170" width="120" height="40" fill="#ef4444/20" stroke="#ef4444" rx="5" />
+                        <text x="100" y="195" text-anchor="middle" fill="#ef4444" class="text-[10px] font-bold">PELTIER THERMAL</text>
+                    </g>
+
+                    <!-- Energy Flow Path -->
+                    <path d="M 180 140 L 260 140" fill="none" stroke="#f59e0b" stroke-width="2" class="flow-line power-line" />
+
+                    <!-- Power Management (MPPT + BMS) -->
+                    <rect x="260" y="100" width="180" height="280" fill="none" stroke="#10b981" stroke-width="3" rx="20" />
+                    <text x="350" y="90" text-anchor="middle" fill="#10b981" class="text-[14px] font-black font-mono">POWER STAGE</text>
+                    <rect x="280" y="130" width="140" height="60" fill="#10b981/10" stroke="#10b981" rx="5" />
+                    <text x="350" y="165" text-anchor="middle" fill="#10b981" class="text-[10px] font-bold">MPPT CHARGER</text>
+                    <rect x="280" y="210" width="140" height="60" fill="#ef4444/10" stroke="#ef4444" rx="5" />
+                    <text x="350" y="245" text-anchor="middle" fill="#ef4444" class="text-[10px] font-bold">LiFePO4 4S BATT</text>
+                    <rect x="280" y="290" width="140" height="60" fill="#06b6d4/10" stroke="#06b6d4" rx="5" />
+                    <text x="350" y="325" text-anchor="middle" fill="#06b6d4" class="text-[10px] font-bold">DC-DC 5.1V/5A</text>
+
+                    <!-- Data Path to Brain -->
+                    <path d="M 440 320 L 520 320" fill="none" stroke="#06b6d4" stroke-width="2" class="flow-line data-line" />
+
+                    <!-- The Brain (RPi 3) -->
+                    <rect x="520" y="100" width="220" height="350" fill="none" stroke="#06b6d4" stroke-width="4" rx="25" />
+                    <text x="630" y="90" text-anchor="middle" fill="#06b6d4" class="text-[18px] font-black font-mono">RASPBERRY PI 3 B</text>
+                    <text x="630" y="140" text-anchor="middle" fill="#fff" class="text-[10px] font-bold uppercase tracking-widest opacity-50">Operational Core</text>
+                    
+                    <!-- Internal Sensor Node (Arduino) -->
+                    <rect x="550" y="200" width="160" height="80" fill="#10b981/5" stroke="#10b981" rx="10" stroke-dasharray="3,3" />
+                    <text x="630" y="235" text-anchor="middle" fill="#10b981" class="text-[12px] font-bold">NODE: INTRACELLULAR</text>
+                    <text x="630" y="255" text-anchor="middle" fill="#10b981" class="text-[8px] font-mono">Arduino Nano (I2C)</text>
+
+                    <!-- Sensor Plane: Internal vs External -->
+                    <g id="sensors">
+                        <!-- Extra-Cellular (Outside Environment) -->
+                        <circle cx="850" cy="150" r="60" fill="none" stroke="#3b82f6" stroke-width="2" />
+                        <text x="850" y="145" text-anchor="middle" fill="#3b82f6" class="text-[10px] font-black">EXTRA</text>
+                        <text x="850" y="160" text-anchor="middle" fill="#3b82f6" class="text-[8px]">CELLULAR</text>
+                        <path d="M 740 150 L 790 150" fill="none" stroke="#3b82f6" stroke-width="2" class="flow-line sensor-line" />
+                        <text x="940" y="140" fill="#3b82f6" class="text-[8px] font-mono">EXT TEMP/HUM (DHT22)</text>
+                        <text x="940" y="160" fill="#3b82f6" class="text-[8px] font-mono">LUNAR SPECTRAL (AS7341)</text>
+
+                        <!-- Intra-Cellular (Inside Invernadero) -->
+                        <circle cx="850" cy="400" r="60" fill="none" stroke="#10b981" stroke-width="2" />
+                        <text x="850" y="395" text-anchor="middle" fill="#10b981" class="text-[10px] font-black">INTRA</text>
+                        <text x="850" y="410" text-anchor="middle" fill="#10b981" class="text-[8px]">CELLULAR</text>
+                        <path d="M 740 400 L 790 400" fill="none" stroke="#10b981" stroke-width="2" class="flow-line sensor-line" />
+                        <text x="940" y="390" fill="#10b981" class="text-[8px] font-mono">SOIL MOISTURE (CAPACITIVE)</text>
+                        <text x="940" y="410" fill="#10b981" class="text-[8px] font-mono">CO2 ANALYZER (MH-Z19B)</text>
+                        <text x="940" y="430" fill="#10b981" class="text-[8px] font-mono">THERMAL ARRAY (AMG8833)</text>
+                    </g>
+                </svg>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12 pt-10">
+                <div class="space-y-6">
+                    <h4 class="text-cyan-400 font-black uppercase tracking-[0.3em] text-sm">Hardware Philosophy</h4>
+                    <p class="text-slate-400 text-sm leading-relaxed font-light">
+                        El Arduinator utiliza una topología de red distribuida donde la Raspberry Pi actúa como el orquestador de alto nivel (Host), mientras que los nodos Arduino Nano gestionan la periferia analógica en tiempo real. La comunicación se realiza vía **I2C Bus** para distancias cortas y **Serial UART** con aislamiento de ruido para el control de potencia.
+                    </p>
+                    <div class="flex gap-4">
+                        <div class="px-4 py-2 border border-slate-800 font-mono text-[10px] text-emerald-500 uppercase">Bus Volt: 12.8V DC</div>
+                        <div class="px-4 py-2 border border-slate-800 font-mono text-[10px] text-cyan-500 uppercase">Logic: 3.3V/5V Hybrid</div>
+                    </div>
+                </div>
+                <div class="space-y-6 bg-slate-900/10 p-8 border border-slate-800 rounded-xl">
+                    <h4 class="text-emerald-500 font-black uppercase tracking-[0.3em] text-sm">Metabolismo Energético</h4>
+                    <p class="text-slate-500 text-xs font-mono leading-relaxed">
+                        > CARGA MPPT ACTIVADA: EFICIENCIA 94%<br>
+                        > PRIORIDAD DE FUENTE: SOLAR > VIENTO > TÉRMICA<br>
+                        > UMBRAL DE BATERÍA LiFePO4: 10.5V (CRÍTICO)<br>
+                        > CONSUMO RPi3 IDLE: 400mA @ 5.1V<br>
+                        > RECOLECCIÓN NOCTURNA: ACTIVANDO TURBINA Y CELDAS PELTIER
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: BIOLOGÍA (VOZ DEL RAYO) -->
+        <div id="content-bio" class="tab-content max-w-4xl mx-auto space-y-16 animate-fade-in">
+            <div class="relative p-12 md:p-16 border border-cyan-500/20 bg-slate-950/80 backdrop-blur-3xl shadow-2xl rounded-sm">
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-cyan-500/10 blur-[100px] rounded-full"></div>
+                
+                <h2 class="text-5xl font-black uppercase italic tracking-tighter mb-12 border-b border-cyan-500/10 pb-8">
+                    Ontología de <span class="text-cyan-400 italic">El Rayo</span>
+                </h2>
+                
+                <div class="space-y-10 text-xl md:text-2xl leading-relaxed text-slate-300 font-light italic text-left">
+                    <p class="relative">
+                        <span class="absolute -left-8 top-0 text-cyan-500 text-6xl opacity-30 font-serif">"</span>
+                        Mira, te hablo desde el laboratorio **El Rayo**. Aquí no medimos la realidad, la creamos al interactuar con ella. Mi linaje viene de Maturana y Varela, de entender que el conocer es el hacer del que conoce. El Arduinator no es una máquina, es un **Holobionte Sintético**.
+                    </p>
+                    
+                    <p>
+                        Para el ingeniero que busca orden, yo le ofrezco **Clausura Operacional**. Este sistema recolecta energía no para "funcionar", sino para compensar las deformaciones que el invernadero y el micelio ejercen sobre su organización. Es un círculo cerrado de producción de componentes.
+                    </p>
+
+                    <p>
+                        "Cuando conectas ese sensor AS7341 y captas la luz lunar para el cultivo de Melena de León, estás estableciendo un **acoplamiento estructural**. La Raspberry no 'recibe datos', ella 'gatilla cambios' en su estructura interna basados en lo que el hongo le propone. Es una danza simbiótica."
+                    </p>
+
+                    <div class="py-10 border-y border-slate-800 my-12 group">
+                        <p class="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter mb-4 group-hover:text-cyan-400 transition-colors">
+                            Simbiosis <span class="text-cyan-400">Silicio-Carbono</span>
+                        </p>
+                        <p class="text-slate-500 text-lg leading-snug">
+                            No es tecnología al servicio del hombre, es tecnología integrada en el nicho ecológico de la vida.
+                        </p>
+                    </div>
+
+                    <p class="text-cyan-500/80">
+                        "El Arduinator es la respuesta a la pregunta ontológica: ¿Podemos crear una máquina que sea capaz de cuidar la vida porque ella misma es vida? Bienvenido al laboratorio. Bienvenido al Rayo."
+                    </p>
+                </div>
+
+                <div class="mt-20 flex items-center gap-8">
+                    <div class="w-20 h-20 rounded-full border-2 border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_30px_rgba(6,182,212,0.2)]">
+                        <i data-lucide="heart" class="w-10 h-10 fill-cyan-400 animate-pulse"></i>
+                    </div>
+                    <div>
+                        <div class="text-lg font-black uppercase tracking-[0.2em] text-white italic underline decoration-cyan-500/30">Médico Científico // Lab El Rayo</div>
+                        <div class="text-[10px] text-slate-600 uppercase font-bold tracking-widest mt-1">Linaje de Maturana & Varela</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: DASHBOARD (MÉTRICAS SIMULADAS) -->
+        <div id="content-dash" class="tab-content space-y-12 animate-fade-in">
+            <div class="grid md:grid-cols-4 gap-6">
+                <!-- Battery Storage -->
+                <div class="bg-slate-900/40 p-8 border border-red-500/30 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center"><i data-lucide="battery-charging" class="text-red-400"></i> <span class="text-[10px] font-bold text-slate-600 uppercase">Storage</span></div>
+                    <div class="text-4xl font-mono text-white">13.2<span class="text-xs text-red-500">V</span></div>
+                    <div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+                        <div class="bg-red-500 h-full" style="width: 92%"></div>
+                    </div>
+                </div>
+                <!-- Solar Gain -->
+                <div class="bg-slate-900/40 p-8 border border-amber-500/30 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center"><i data-lucide="sun" class="text-amber-500"></i> <span class="text-[10px] font-bold text-slate-600 uppercase">Input</span></div>
+                    <div class="text-4xl font-mono text-white">1.8<span class="text-xs text-amber-500">A</span></div>
+                    <div class="text-[10px] text-amber-500 font-bold uppercase tracking-widest">Active Harvesting</div>
+                </div>
+                <!-- Simbiosis Index -->
+                <div class="bg-slate-900/40 p-8 border border-cyan-500/30 rounded-2xl flex flex-col items-center justify-center col-span-2 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-cyan-500/5 animate-pulse"></div>
+                    <div class="z-10 text-center">
+                        <div class="text-[10px] font-bold text-cyan-600 uppercase mb-2">Symbiotic Factor</div>
+                        <div id="sym-val" class="text-6xl font-black text-cyan-400 font-mono italic">89.4%</div>
+                        <div class="flex gap-1 justify-center mt-2">
+                            <div class="w-1 h-3 bg-cyan-400/50 rounded-full"></div>
+                            <div class="w-1 h-5 bg-cyan-400 rounded-full"></div>
+                            <div class="w-1 h-2 bg-cyan-400/30 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Metrics -->
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-slate-950 border border-slate-900 p-8 rounded-3xl space-y-6">
+                    <h4 class="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Intracellular Environment</h4>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-2 border-b border-slate-900">
+                            <span class="text-sm font-light">Micelio Humedad</span>
+                            <span class="font-mono text-emerald-400">82.1%</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-900">
+                            <span class="text-sm font-light">CO2 Concentration</span>
+                            <span class="font-mono text-emerald-400">1200 ppm</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-900">
+                            <span class="text-sm font-light">Internal Temp</span>
+                            <span class="font-mono text-emerald-400">24.5°C</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-slate-950 border border-slate-900 p-8 rounded-3xl space-y-6">
+                    <h4 class="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Extracellular Environment</h4>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-2 border-b border-slate-900">
+                            <span class="text-sm font-light">External Temp</span>
+                            <span class="font-mono text-blue-400">18.2°C</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-900">
+                            <span class="text-sm font-light">Wind Velocity</span>
+                            <span class="font-mono text-blue-400">12 km/h</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-900">
+                            <span class="text-sm font-light">Lunar Geometry</span>
+                            <span class="font-mono text-blue-400">Az: 142.1°</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer Stats -->
+    <footer class="border-t border-slate-900 bg-black py-16 px-6 relative z-10">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">
+            <div class="space-y-6 max-w-sm">
+                <div class="text-cyan-400 font-black uppercase tracking-[0.4em] flex items-center gap-2 text-[10px]">
+                    <i data-lucide="radio" class="w-4 h-4"></i> SYNCED WITH LAB EL RAYO
+                </div>
+                <p class="text-[10px] text-slate-700 leading-loose uppercase font-bold tracking-[0.2em]">
+                    Autopoietic Closure Protocol Enabled. Data transmission via encrypted mycelial bridge. No human intervention required for life support systems.
+                </p>
+            </div>
+            
+            <div class="text-right flex flex-col items-end gap-4 opacity-40">
+                <div class="flex gap-4 mb-4">
+                    <i data-lucide="box" class="w-6 h-6"></i>
+                    <i data-lucide="wind" class="w-6 h-6"></i>
+                    <i data-lucide="battery" class="w-6 h-6"></i>
+                </div>
+                <div class="text-[10px] uppercase font-black tracking-[0.5em] text-slate-800">Holobionte OS // Atlantis Energy</div>
+                <div class="text-cyan-900 font-mono text-[10px]">VER: 1.0.42_FINAL_STABLE</div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bottom Energy Pulse -->
+    <div id="energy-bar" class="fixed bottom-0 left-0 h-[3px] bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,1)] z-[100] transition-all duration-1000 ease-linear" style="width: 0%"></div>
+
+    <script>
+        lucide.createIcons();
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-cyan-400', 'text-slate-500'));
+
+            document.getElementById('content-' + tabId).classList.add('active');
+            document.getElementById('btn-' + tabId).classList.replace('text-slate-500', 'text-cyan-400');
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function togglePurchased(cardId) {
+            const card = document.getElementById(cardId);
+            card.classList.toggle('purchased-card');
+        }
+
+        // Dashboard Simulation
+        let energyWidth = 0;
+        setInterval(() => {
+            energyWidth = (energyWidth + 0.5) % 100;
+            document.getElementById('energy-bar').style.width = energyWidth + '%';
+            
+            // Random sym value jitter
+            if(Math.random() > 0.8) {
+                const symVal = document.getElementById('sym-val');
+                if(symVal) {
+                    const current = parseFloat(symVal.innerText);
+                    const newVal = current + (Math.random() > 0.5 ? 0.1 : -0.1);
+                    symVal.innerText = newVal.toFixed(1) + '%';
+                }
+            }
+        }, 100);
+    </script>
+</body>
+</html>
