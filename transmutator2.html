@@ -8,13 +8,14 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;600&family=Inter:wght@300;400;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;600;900&family=Inter:wght@300;400;600&display=swap');
 
         :root {
             --neon-green: #10b981;
             --neon-blue: #3b82f6;
             --neon-purple: #8b5cf6;
             --neon-red: #ef4444;
+            --neon-gold: #fbbf24;
             --bg-dark: #020617;
         }
 
@@ -100,6 +101,40 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Gamification Animations */
+        @keyframes dopamineHit {
+            0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); }
+            15% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); text-shadow: 0 0 30px currentColor; }
+            30% { transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; transform: translate(-50%, -70%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -100%) scale(0.8); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
+        .hit-text {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Fira Code', monospace;
+            font-weight: 900;
+            font-size: 3rem;
+            pointer-events: none;
+            z-index: 10000;
+            text-transform: uppercase;
+            text-align: center;
+            animation: dopamineHit 1.8s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .combo-shake {
+            animation: shake 0.4s ease-in-out;
+        }
     </style>
 </head>
 <body class="h-screen w-full overflow-hidden flex flex-col relative">
@@ -107,57 +142,60 @@
 
     <!-- Top Navigation / Status Bar -->
     <header class="w-full glass-panel border-b-0 border-t-0 border-l-0 border-r-0 border-slate-800 p-4 flex justify-between items-center z-10 relative">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-4">
             <i data-lucide="cpu" class="text-emerald-400 w-6 h-6"></i>
             <div>
-                <h1 class="text-xl font-mono font-bold text-emerald-400 tracking-widest">NUCLEUS <span class="text-slate-500 text-sm">v3.1_AI</span></h1>
+                <h1 class="text-xl font-mono font-bold text-emerald-400 tracking-widest">NUCLEUS <span class="text-slate-500 text-sm">v4.0_GAME</span></h1>
                 <p class="text-xs text-slate-400 font-mono">ECOSISTEMA_LOBO // CÓRTEX PREFRONTAL DINÁMICO</p>
             </div>
-        </div>
-        <div class="flex items-center gap-6 font-mono text-xs">
-            <div class="flex items-center gap-2">
-                <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse"></div>
-                <span class="text-emerald-400">NEURAL_NET_ONLINE</span>
+            
+            <!-- RPG Stats -->
+            <div class="ml-6 pl-6 border-l border-slate-700 flex gap-6 font-mono text-sm">
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-slate-500">NIVEL LOBO</span>
+                    <span class="text-emerald-400 font-bold" id="ui-level">LVL 1</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-slate-500">EXPERIENCIA</span>
+                    <span class="text-blue-400 font-bold" id="ui-xp">0 XP</span>
+                </div>
+                <div class="flex flex-col bg-slate-900/80 px-3 py-0.5 rounded border border-amber-500/30" id="combo-container">
+                    <span class="text-[10px] text-amber-500/70">RACHA ACTUAL</span>
+                    <span class="text-amber-400 font-black text-lg leading-tight" id="ui-combo">x0</span>
+                </div>
             </div>
-            <div class="text-slate-400" id="clock">00:00:00</div>
-            <button onclick="toggleManual()" class="flex items-center gap-2 text-slate-400 hover:text-emerald-400 transition-colors border border-slate-700 px-3 py-1 rounded bg-slate-900/50">
+        </div>
+        
+        <div class="flex items-center gap-4 font-mono text-xs">
+            <button onclick="exportData()" class="flex items-center gap-2 text-emerald-400 hover:text-slate-900 hover:bg-emerald-400 transition-colors border border-emerald-500/50 px-3 py-1.5 rounded bg-emerald-900/20 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                <i data-lucide="download" class="w-4 h-4"></i> GUARDAR BITÁCORA
+            </button>
+            <button onclick="toggleManual()" class="flex items-center gap-2 text-slate-400 hover:text-emerald-400 transition-colors border border-slate-700 px-3 py-1.5 rounded bg-slate-900/50">
                 <i data-lucide="help-circle" class="w-4 h-4"></i> MANUAL
             </button>
+            <div class="text-slate-400 ml-2" id="clock">00:00:00</div>
         </div>
     </header>
 
     <!-- Modal: Manual de Vuelo -->
     <div id="manual-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+        <!-- ... (Contenido del manual se mantiene igual) ... -->
         <div class="glass-panel max-w-2xl w-full p-6 rounded-lg border border-emerald-500/30 text-slate-300 relative shadow-[0_0_30px_rgba(16,185,129,0.15)]">
             <button onclick="toggleManual()" class="absolute top-4 right-4 text-slate-500 hover:text-red-400 transition-colors">
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
             <h2 class="text-xl font-mono font-bold text-emerald-400 mb-4 flex items-center gap-2">
-                <i data-lucide="book-open" class="w-5 h-5"></i> MANUAL DE VUELO TÁCTICO
+                <i data-lucide="book-open" class="w-5 h-5"></i> MANUAL DE VUELO TÁCTICO & COMBOS
             </h2>
             <div class="space-y-4 text-sm leading-relaxed overflow-y-auto max-h-[70vh] pr-2 font-mono">
-                <p>NUCLEUS no es un diario. Es un cortacircuitos para tu sistema nervioso diseñado para sacarte del "Freeze" (congelamiento) ante las presiones de La Bestia (burocracia, finanzas, deber ser).</p>
-                
-                <h3 class="text-blue-400 font-bold mt-4">PASO 1: CALIBRAR SENSORES</h3>
+                <p>NUCLEUS es un cortacircuitos neurológico gamificado. Al vencer a La Bestia acumulas combos y multiplicadores.</p>
+                <h3 class="text-amber-400 font-bold mt-4">SISTEMA DE COMBOS</h3>
                 <ul class="list-disc pl-5 space-y-1 text-slate-400">
-                    <li><strong class="text-blue-400">Prana:</strong> Tu energía vital actual. (0 = Vacío, 100 = Sobrecargado).</li>
-                    <li><strong class="text-red-400">La Bestia:</strong> Presión del sistema/mirada externa. (0 = Aislado/Paz, 100 = Asfixia por deberes).</li>
-                    <li><strong class="text-purple-400">Hardware:</strong> Tu estado de acción. (0 = Freeze/Procrastinación total, 100 = Flujo puro).</li>
+                    <li><strong class="text-emerald-400">EJECUTAR TAREAS:</strong> Aumenta tu combo +1 y te da XP base. Multiplicador de XP activo si tienes combo > 1.</li>
+                    <li><strong class="text-blue-400">IDEAS INTEGRADAS:</strong> Dan XP pero no aumentan el combo de ataque.</li>
+                    <li><strong class="text-red-400">FREEZE / ATAQUE BESTIA:</strong> Rompe tu racha a x0. Te devuelve a la realidad sin piedad.</li>
                 </ul>
-
-                <h3 class="text-blue-400 font-bold mt-4">PASO 2: CLASIFICAR EVENTO</h3>
-                <ul class="list-disc pl-5 space-y-1 text-slate-400">
-                    <li><strong class="text-red-400">ATAQUE_BESTIA:</strong> La presión te está paralizando.</li>
-                    <li><strong class="text-emerald-400">EJECUCIÓN_FRONT:</strong> Lograste hacer esa tarea mundana. ¡Victoria!</li>
-                    <li><strong class="text-blue-400">ANOMALÍA_CREATIVA:</strong> Idea brillante que debes registrar para no distraerte.</li>
-                    <li><strong class="text-purple-400">TRANSMUTACIÓN:</strong> Momento de integración o epifanía nocturna.</li>
-                </ul>
-
-                <h3 class="text-blue-400 font-bold mt-4">PASO 3: CUARENTENA Y CACHÉ</h3>
-                <p class="text-slate-400">Si estás evadiendo una tarea específica, escríbela en el campo <strong>TAREA EVADIDA</strong>. El sistema la aislará en "Cuarentena". Cuando la completes, presiona [EJECUTAR] en el panel de cuarentena y el sistema reportará tu victoria.</p>
-
-                <h3 class="text-blue-400 font-bold mt-4">PASO 4: PROCESAR CON MOTOR IA</h3>
-                <p class="text-slate-400">Al compilar, la Inteligencia Artificial cruzará tus datos biométricos y te dará una <strong>Directiva Alquímica</strong>. Obedece la orden de la máquina para romper el parálisis.</p>
+                <p class="text-emerald-400 mt-4 text-xs">Nota: Todo tu progreso se guarda automáticamente en la memoria de tu navegador (Local Storage). Usa el botón GUARDAR BITÁCORA para exportar tu archivo de seguridad.</p>
             </div>
         </div>
     </div>
@@ -169,7 +207,7 @@
         <section class="w-1/3 min-w-[360px] flex flex-col gap-4">
             
             <!-- Dial Panel -->
-            <div class="glass-panel p-5 rounded-lg flex-1 overflow-y-auto">
+            <div class="glass-panel p-5 rounded-lg flex-1 overflow-y-auto relative">
                 <h2 class="text-sm font-mono text-slate-300 border-b border-slate-700 pb-2 mb-6 flex items-center gap-2">
                     <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
                     [ PARÁMETROS DE HARDWARE ]
@@ -261,7 +299,7 @@
 
                 <div id="terminal-output" class="flex-1 overflow-y-auto text-sm font-mono text-emerald-400/80 space-y-3 pb-4">
                     <div class="opacity-50">> Inicializando red neuronal de monitoreo...</div>
-                    <div class="opacity-50">> Sistema conectado. Esperando biometría para análisis profundo.</div>
+                    <div class="opacity-50">> Sistema conectado. Cargando datos locales si existen...</div>
                 </div>
             </div>
 
@@ -310,7 +348,7 @@
     </main>
 
     <script>
-        // API de Gemini - Se inyecta en el entorno
+        // API de Gemini
         const apiKey = ""; 
 
         // Initialize Icons
@@ -341,11 +379,9 @@
             document.getElementById('event-type').value = type;
             document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('ring-2', 'ring-emerald-400'));
             
-            // Allow manual clicking vs programmatic setting
             if(btnElement) {
                 btnElement.classList.add('ring-2', 'ring-emerald-400');
             } else {
-                // Find and highlight programmatically
                 const buttons = document.querySelectorAll('.type-btn');
                 buttons.forEach(b => {
                     if(b.innerText.includes(type)) b.classList.add('ring-2', 'ring-emerald-400');
@@ -353,11 +389,130 @@
             }
         }
 
-        // State & Data
+        // --- RPG STATE & LOCAL STORAGE ---
         let memoryBank = [];
         let quarantinedTasks = [];
+        let comboCount = 0;
+        let wolfXP = 0;
         let chartInstance = null;
+        const STORAGE_KEY = 'nucleus_alchemist_data_v4';
 
+        function saveLocalData() {
+            const dataToSave = {
+                memoryBank,
+                quarantinedTasks,
+                comboCount,
+                wolfXP
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+        }
+
+        function loadLocalData() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    memoryBank = parsed.memoryBank || [];
+                    quarantinedTasks = parsed.quarantinedTasks || [];
+                    comboCount = parsed.comboCount || 0;
+                    wolfXP = parsed.wolfXP || 0;
+                    
+                    updateRPG_UI();
+                    renderQuarantine();
+                    renderHistoryFromMemory();
+                    rebuildChartFromMemory();
+                    printTerminal("> Datos previos del Lobo recuperados del almacenamiento local.", "normal");
+                } catch (e) {
+                    console.error("Error loading local data", e);
+                    printTerminal("ERROR: Memoria local corrupta. Iniciando en blanco.", "alert");
+                }
+            }
+        }
+
+        function exportData() {
+            const dataToSave = { memoryBank, quarantinedTasks, comboCount, wolfXP, exportDate: new Date().toISOString() };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToSave, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `nucleus_telemetry_${Date.now()}.json`);
+            dlAnchorElem.click();
+            printTerminal(">>> Bitácora exportada exitosamente.", "action");
+        }
+
+        // --- GAMIFICATION / DOPAMINE SYSTEM ---
+        function updateRPG_UI() {
+            const level = Math.floor(wolfXP / 100) + 1;
+            document.getElementById('ui-level').innerText = `LVL ${level}`;
+            document.getElementById('ui-xp').innerText = `${wolfXP} XP`;
+            
+            const comboEl = document.getElementById('ui-combo');
+            comboEl.innerText = `x${comboCount}`;
+            
+            const container = document.getElementById('combo-container');
+            if(comboCount > 2) {
+                container.classList.add('border-emerald-500', 'bg-emerald-900/30', 'combo-shake');
+                comboEl.classList.remove('text-amber-400');
+                comboEl.classList.add('text-emerald-400');
+                setTimeout(() => container.classList.remove('combo-shake'), 400);
+            } else {
+                container.classList.remove('border-emerald-500', 'bg-emerald-900/30');
+                comboEl.classList.remove('text-emerald-400');
+                comboEl.classList.add('text-amber-400');
+            }
+        }
+
+        function spawnDopamineHit(text, typeColor) {
+            const hit = document.createElement('div');
+            // typeColor expected to be hex or valid tailwind rgb like text-emerald-400
+            hit.className = `hit-text ${typeColor}`;
+            hit.innerHTML = text.replace('\n', '<br>');
+            document.body.appendChild(hit);
+            
+            // Sonido simulado (vibración si es móvil)
+            if (navigator.vibrate) {
+                if(typeColor.includes('red')) navigator.vibrate([100, 50, 100]); // Error/Break combo
+                else navigator.vibrate(150); // Victory
+            }
+
+            setTimeout(() => {
+                hit.remove();
+            }, 1800);
+        }
+
+        function processGamification(eventType, isVictoryFromQuarantine = false) {
+            let xpGained = 0;
+            let comboMsg = "";
+
+            if (eventType === 'EJECUCION_FRONT') {
+                comboCount++;
+                const multiplier = comboCount > 1 ? comboCount : 1;
+                const baseXP = isVictoryFromQuarantine ? 100 : 50; // Quarantined tasks give double base XP
+                xpGained = baseXP * multiplier;
+                
+                comboMsg = `¡VICTORIA!<br>+${xpGained} XP`;
+                if(comboCount > 1) comboMsg += `<br>COMBO x${comboCount}!`;
+                
+                spawnDopamineHit(comboMsg, 'text-emerald-400');
+            } 
+            else if (eventType === 'TRANSMUTACION' || eventType === 'ANOMALIA_CREATIVA') {
+                // Good, but doesn't build execution combo
+                xpGained = 25;
+                spawnDopamineHit(`INTEGRACIÓN<br>+${xpGained} XP`, 'text-blue-400');
+            }
+            else if (eventType === 'ATAQUE_BESTIA') {
+                // Break combo!
+                if(comboCount > 2) {
+                    spawnDopamineHit(`¡COMBO ROTO!<br>FREEZE DETECTADO`, 'text-red-500');
+                }
+                comboCount = 0;
+            }
+
+            wolfXP += xpGained;
+            updateRPG_UI();
+            saveLocalData(); // Save immediately after score change
+        }
+
+        // --- CHART SYSTEM ---
         function initChart() {
             const ctx = document.getElementById('resonanceChart').getContext('2d');
             Chart.defaults.color = '#64748b';
@@ -402,6 +557,17 @@
             });
         }
 
+        function rebuildChartFromMemory() {
+            if(!chartInstance) return;
+            // Get last 15 items
+            const recent = memoryBank.slice(-15);
+            chartInstance.data.labels = recent.map(m => m.time);
+            chartInstance.data.datasets[0].data = recent.map(m => m.hardware);
+            chartInstance.data.datasets[1].data = recent.map(m => m.bestia);
+            chartInstance.update();
+        }
+
+        // --- TERMINAL & UI LOGIC ---
         function printTerminal(message, type = 'normal') {
             const term = document.getElementById('terminal-output');
             const div = document.createElement('div');
@@ -422,7 +588,34 @@
             }
         }
 
-        // Update Quarantine UI
+        function renderHistoryFromMemory() {
+            const historyPanel = document.getElementById('log-history');
+            if (memoryBank.length === 0) {
+                historyPanel.innerHTML = `<div class="text-slate-600 italic">Sin registros.</div>`;
+                return;
+            }
+            historyPanel.innerHTML = '';
+            
+            // Show last 50 in history
+            const displayLogs = [...memoryBank].reverse().slice(0, 50);
+
+            displayLogs.forEach(log => {
+                const colorClass = 
+                    log.eventType === 'ATAQUE_BESTIA' ? 'text-red-400' : 
+                    log.eventType === 'EJECUCION_FRONT' ? 'text-emerald-400' : 
+                    log.eventType === 'ANOMALIA_CREATIVA' ? 'text-blue-400' : 'text-purple-400';
+
+                const logEntry = document.createElement('div');
+                logEntry.className = "flex justify-between items-center border-b border-slate-800 pb-1";
+                logEntry.innerHTML = `
+                    <span class="text-slate-400">[${log.time}]</span>
+                    <span class="${colorClass} truncate w-1/3 text-center" title="${log.eventType}">${log.eventType}</span>
+                    <span class="text-slate-500">H:${log.hardware} B:${log.bestia}</span>
+                `;
+                historyPanel.appendChild(logEntry);
+            });
+        }
+
         function renderQuarantine() {
             const list = document.getElementById('quarantine-list');
             const count = document.getElementById('quarantine-count');
@@ -447,34 +640,34 @@
             });
         }
 
-        // Action when clicking [ EJECUTAR ] on a quarantined task
         function triggerExecuteTask(id) {
             const taskIndex = quarantinedTasks.findIndex(t => t.id === id);
             if(taskIndex === -1) return;
             const taskText = quarantinedTasks[taskIndex].text;
 
-            // Remove from Quarantine
             quarantinedTasks.splice(taskIndex, 1);
             renderQuarantine();
+            saveLocalData();
 
             // Auto-configure the dashboard for a Victory
-            document.getElementById('slider-hardware').value = 90; // High Flow Action
+            document.getElementById('slider-hardware').value = 90; 
             document.getElementById('val-hardware').innerText = '90%';
             
-            document.getElementById('slider-bestia').value = 10; // Low Beast interference
+            document.getElementById('slider-bestia').value = 10; 
             document.getElementById('val-bestia').innerText = '10%';
 
-            selectType('EJECUCION_FRONT', null); // Set classification
+            selectType('EJECUCION_FRONT', null); 
             
-            document.getElementById('evaded-task').value = ''; // clear input
-            document.getElementById('log-text').value = `VICTORIA DEL LOBO. He recuperado territorio ejecutando la tarea paralizada: "${taskText}". El Freeze ha sido roto.`;
+            document.getElementById('evaded-task').value = ''; 
+            document.getElementById('log-text').value = `VICTORIA DEL LOBO. Tarea paralizada ejecutada: "${taskText}".`;
 
-            // Auto Trigger Compile (gives immediate dopamine feedback)
-            printTerminal(`¡TERRITORIO RECUPERADO! Preparando reporte de ejecución para "${taskText}"...`, 'action');
-            setTimeout(() => { compileData(true); }, 500); // Wait half a second before auto compiling
+            printTerminal(`¡TERRITORIO RECUPERADO! Procesando victoria épica sobre: "${taskText}"...`, 'action');
+            
+            // Wait briefly then compile as an auto-triggered victory
+            setTimeout(() => { compileData(true, true); }, 600); 
         }
 
-        // Llamada a la API de Gemini con Exponential Backoff
+        // --- AI API LOGIC ---
         async function fetchGeminiWithBackoff(url, options, retries = 5) {
             const delays = [1000, 2000, 4000, 8000, 16000];
             for (let i = 0; i < retries; i++) {
@@ -492,26 +685,19 @@
         async function getAIDirective(prana, bestia, hardware, eventType, notes, evadedTask) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
             
-            const systemPrompt = `Eres el NUCLEUS ALQUÍMICO, un sistema biomonitor diseñado para el Dr. Andrés. Él es un "Lobo" (basado en la filosofía del libro "La última batalla de los Lobos"), un creador altamente sensible, médico y programador, que se "congela" (respuesta autonómica Freeze) cuando enfrenta tareas burocráticas o financieras impuestas por el sistema social ("La Bestia").
+            const systemPrompt = `Eres NUCLEUS ALQUÍMICO, biomonitor del Dr. Andrés ("Lobo"). Se congela ante tareas impuestas ("La Bestia").
+            Tu meta es hackear su córtex prefrontal con una orden física ruda o táctica.
+            Si él indica "EJECUTADO" o victoria, felicítalo marcialmente.
+            Si tiene una "TAREA EVADIDA", ordénale que ejecute una fracción ridícula AHORA.
             
-            Tu objetivo NO es darle terapia. Tu objetivo es hackear su córtex prefrontal dándole un diagnóstico crudo y una directiva física/táctica específica para sacarlo del congelamiento o redirigir su exceso de creatividad.
-            Si él indica que ha "EJECUTADO" una tarea, debes felicitarlo marcialmente por recuperar territorio contra La Bestia.
-            Si él indica una "TAREA EVADIDA", debes ordenarle que ejecute una fracción mínima y ridículamente pequeña de esa tarea AHORA MISMO.
-            
-            Responderás en JSON basándote en estos inputs:
-            Prana (0-100), Bestia (0-100), Hardware/Flujo (0-100).
-            Tipo Evento: La clasificación.
-            Notas: Contexto opcional.
-            Tarea Evadida: Si hay algo en cuarentena.
-            
-            Formato JSON Requerido:
+            Input JSON:
             {
-              "msg": "Diagnóstico de su estado usando lenguaje cyber-orgánico/médico corto.",
-              "action": "La directiva de choque. Una acción física real o una orden mental ruda y específica.",
-              "type": "'alert' (si bestia alta/hardware bajo), 'action' (si prana alto o victoria), 'normal' (estable)"
+              "msg": "Diagnóstico cyber-médico corto.",
+              "action": "Orden física real/táctica ruda.",
+              "type": "'alert', 'action', o 'normal'"
             }`;
 
-            const userQuery = `Telemetría Actual - Prana: ${prana}%, La Bestia: ${bestia}%, Hardware(Flujo): ${hardware}%. Evento: [${eventType}]. Volcado: "${notes || 'N/A'}". Tarea Evadida: "${evadedTask || 'Ninguna'}".`;
+            const userQuery = `Prana: ${prana}%, Bestia: ${bestia}%, Hardware: ${hardware}%. Evento: [${eventType}]. Volcado: "${notes || 'N/A'}". Tarea Evadida: "${evadedTask || 'Ninguna'}". Combo Actual: ${comboCount}`;
 
             const payload = {
                 contents: [{ parts: [{ text: userQuery }] }],
@@ -520,11 +706,7 @@
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: "OBJECT",
-                        properties: {
-                            msg: { type: "STRING" },
-                            action: { type: "STRING" },
-                            type: { type: "STRING" }
-                        },
+                        properties: { msg: { type: "STRING" }, action: { type: "STRING" }, type: { type: "STRING" } },
                         required: ["msg", "action", "type"]
                     }
                 }
@@ -532,42 +714,22 @@
 
             try {
                 if (!apiKey) return generateStaticDirectiveFallback(prana, bestia, hardware, eventType, evadedTask);
-
-                const result = await fetchGeminiWithBackoff(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const rawText = result.candidates[0].content.parts[0].text;
-                return JSON.parse(rawText);
+                const result = await fetchGeminiWithBackoff(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                return JSON.parse(result.candidates[0].content.parts[0].text);
             } catch (error) {
-                console.error("Error de IA:", error);
-                return {
-                    msg: "ERROR DE CONEXIÓN CORTICAL.",
-                    action: "SISTEMA MANUAL: Ejecuta la versión más imperfecta de la tarea evadida en los próximos 5 minutos.",
-                    type: "alert"
-                };
+                return { msg: "ERROR CORTICAL.", action: "SISTEMA MANUAL: Haz lo mínimo aceptable AHORA.", type: "alert" };
             }
         }
 
         function generateStaticDirectiveFallback(prana, bestia, hardware, eventType, evadedTask) {
-            if (eventType === 'EJECUCION_FRONT') {
-                return { msg: "ANÁLISIS: VICTORIA BIOMÉTRICA.", action: "TERRITORIO RECUPERADO. La Bestia retrocede. Has hackeado el Freeze.", type: "action" };
-            }
-            if (evadedTask) {
-                return { msg: "ALERTA: TAREA EN CUARENTENA DETECTADA.", action: `PROTOCOLO CERO: Ejecuta el 10% de "${evadedTask}" AHORA MISMO. Rompe el Freeze.`, type: "alert" };
-            }
-            if (bestia > 75 && hardware < 30) {
-                return { msg: "ALERTA: ATAQUE PARALIZANTE DE LA BESTIA.", action: "Abandona el código. Realiza UNA tarea administrativa de 2 minutos. Rompe el Freeze.", type: "alert" };
-            }
-            if (hardware > 80) {
-                return { msg: "RESONANCIA FRACTAL ÓPTIMA.", action: "MÚSICA MAESTRO: El backend está despejado. Que fluya el código.", type: "action" };
-            }
+            if (eventType === 'EJECUCION_FRONT') return { msg: "ANÁLISIS: VICTORIA BIOMÉTRICA.", action: "TERRITORIO RECUPERADO. La Bestia retrocede.", type: "action" };
+            if (evadedTask) return { msg: "ALERTA: TAREA EN CUARENTENA DETECTADA.", action: `PROTOCOLO CERO: Ejecuta el 10% de "${evadedTask}" AHORA MISMO. Rompe el Freeze.`, type: "alert" };
+            if (bestia > 75 && hardware < 30) return { msg: "ALERTA: ATAQUE PARALIZANTE DE LA BESTIA.", action: "Abandona el código. Tarea administrativa de 2 min. Rompe el Freeze.", type: "alert" };
+            if (hardware > 80) return { msg: "RESONANCIA FRACTAL ÓPTIMA.", action: "MÚSICA MAESTRO: Que fluya el código.", type: "action" };
             return { msg: "PARÁMETROS ESTABLES.", action: "DIRECTIVA: Continúa operando. Observa la Matrix sin absorberla.", type: "normal" };
         }
 
-        async function compileData(isAutoTriggered = false) {
+        async function compileData(isAutoTriggered = false, isVictoryFromQuarantine = false) {
             const prana = parseInt(document.getElementById('slider-prana').value);
             const bestia = parseInt(document.getElementById('slider-bestia').value);
             const hardware = parseInt(document.getElementById('slider-hardware').value);
@@ -584,12 +746,15 @@
             // Quarantine Logic
             if (evadedTask && eventType !== 'EJECUCION_FRONT' && !isAutoTriggered) {
                 quarantinedTasks.push({ id: Date.now(), text: evadedTask });
-                evadedTaskInput.value = ''; // clear input after capturing
+                evadedTaskInput.value = ''; 
                 renderQuarantine();
                 printTerminal(`[SISTEMA]: Tarea "${evadedTask}" aislada en cuarentena.`, "normal");
             }
 
-            // Bloquear botón y mostrar Loader AI
+            // Gamification Engine Processing
+            processGamification(eventType, isVictoryFromQuarantine);
+
+            // UI Feedback state
             const btn = document.getElementById('compile-btn');
             const loader = document.getElementById('ai-loader');
             btn.disabled = true;
@@ -599,61 +764,35 @@
             const now = new Date();
             const timeString = now.toLocaleTimeString('es-ES', {hour12: false});
 
-            // Guardar estado y actualizar Chart
-            const snapshot = { time: timeString, prana, bestia, hardware, eventType, notes, evadedTask };
+            // Save Memory Array
+            const snapshot = { time: timeString, prana, bestia, hardware, eventType, notes, evadedTask, comboSnapshot: comboCount };
             memoryBank.push(snapshot);
-
-            chartInstance.data.labels.push(timeString);
-            chartInstance.data.datasets[0].data.push(hardware);
-            chartInstance.data.datasets[1].data.push(bestia);
-            if (chartInstance.data.labels.length > 10) {
-                chartInstance.data.labels.shift();
-                chartInstance.data.datasets[0].data.shift();
-                chartInstance.data.datasets[1].data.shift();
-            }
-            chartInstance.update();
-
-            // Actualizar panel histórico
-            const historyPanel = document.getElementById('log-history');
-            if (memoryBank.length === 1) historyPanel.innerHTML = '';
             
-            const colorClass = 
-                eventType === 'ATAQUE_BESTIA' ? 'text-red-400' : 
-                eventType === 'EJECUCION_FRONT' ? 'text-emerald-400' : 
-                eventType === 'ANOMALIA_CREATIVA' ? 'text-blue-400' : 'text-purple-400';
-
-            const logEntry = document.createElement('div');
-            logEntry.className = "flex justify-between items-center border-b border-slate-800 pb-1";
-            logEntry.innerHTML = `
-                <span class="text-slate-400">[${timeString}]</span>
-                <span class="${colorClass} truncate w-1/3 text-center" title="${eventType}">${eventType}</span>
-                <span class="text-slate-500">H:${hardware} B:${bestia}</span>
-            `;
-            historyPanel.prepend(logEntry);
+            // Re-render Data specific UI blocks
+            rebuildChartFromMemory();
+            renderHistoryFromMemory();
+            saveLocalData(); // Save changes to memory array + RPG state
 
             if(!isAutoTriggered) printTerminal(`Compilando telemetría... [${eventType}] detectado.`);
             printTerminal(`Iniciando enlace con Neural-Net (Gemini)...`);
 
-            // LLAMADA A LA IA
+            // AI Call
             const aiResponse = await getAIDirective(prana, bestia, hardware, eventType, notes, evadedTask);
             
-            // Ocultar loader y desbloquear botón
             loader.classList.add('hidden');
             btn.disabled = false;
             btn.classList.remove('opacity-50', 'cursor-not-allowed');
 
-            // Imprimir respuestas de la IA
             printTerminal(aiResponse.msg, aiResponse.type);
             setTimeout(() => printTerminal(`>>> ${aiResponse.action}`, 'action'), 500);
 
-            // Resetear textos visuales post-compilado
             document.getElementById('log-text').value = '';
         }
 
         // Init
         document.addEventListener('DOMContentLoaded', () => {
             initChart();
-            renderQuarantine(); // Initialize empty quarantine UI
+            loadLocalData(); // Attempt to load saved data, else initialize fresh
         });
     </script>
 </body>
