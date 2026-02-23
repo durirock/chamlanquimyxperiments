@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUCLEUS // ALCHEMIST-LOG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;600&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --neon-green: #10b981;
+            --neon-blue: #3b82f6;
+            --neon-purple: #8b5cf6;
+            --neon-red: #ef4444;
+            --bg-dark: #020617;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.05), transparent 25%);
+        }
+
+        .font-mono { font-family: 'Fira Code', monospace; }
+
+        /* Cyber Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 8px;
+            background: var(--neon-green);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-green);
+            border-radius: 2px;
+            margin-top: -8px;
+        }
+        input[type=range].slider-red::-webkit-slider-thumb { background: var(--neon-red); box-shadow: 0 0 10px var(--neon-red); }
+        input[type=range].slider-blue::-webkit-slider-thumb { background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); }
+        
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #1e293b;
+            border-radius: 2px;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 9999;
+            position: absolute;
+            pointer-events: none;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(16,185,129,0.1) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1;
+            animation: scanline 8s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { top: -100px; }
+            100% { top: 100%; }
+        }
+
+        .terminal-text::after {
+            content: '_';
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="h-screen w-full overflow-hidden flex flex-col relative">
+    <div class="scanline"></div>
+
+    <!-- Top Navigation / Status Bar -->
+    <header class="w-full glass-panel border-b-0 border-t-0 border-l-0 border-r-0 border-slate-800 p-4 flex justify-between items-center z-10 relative">
+        <div class="flex items-center gap-3">
+            <i data-lucide="cpu" class="text-emerald-400 w-6 h-6"></i>
+            <div>
+                <h1 class="text-xl font-mono font-bold text-emerald-400 tracking-widest">NUCLEUS <span class="text-slate-500 text-sm">v2.0</span></h1>
+                <p class="text-xs text-slate-400 font-mono">ECOSISTEMA_LOBO // MONITOREO DE RED INTERNA</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-6 font-mono text-xs">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse"></div>
+                <span class="text-emerald-400">SYS_ONLINE</span>
+            </div>
+            <div class="text-slate-400" id="clock">00:00:00</div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex overflow-hidden p-4 gap-4 z-10 relative">
+        
+        <!-- Left Column: Input Telemetry -->
+        <section class="w-1/3 min-w-[350px] flex flex-col gap-4">
+            
+            <!-- Dial Panel -->
+            <div class="glass-panel p-5 rounded-lg flex-1 overflow-y-auto">
+                <h2 class="text-sm font-mono text-slate-300 border-b border-slate-700 pb-2 mb-6 flex items-center gap-2">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                    [ PARÁMETROS DE HARDWARE Y PSIQUE ]
+                </h2>
+
+                <div class="space-y-6">
+                    <!-- Metric 1: Prana/Energy -->
+                    <div>
+                        <div class="flex justify-between text-xs font-mono mb-2">
+                            <span class="text-blue-400 flex items-center gap-1"><i data-lucide="battery" class="w-3 h-3"></i> Nivel de Prana (Batería)</span>
+                            <span id="val-prana" class="text-slate-300">50%</span>
+                        </div>
+                        <input type="range" id="slider-prana" class="slider-blue" min="0" max="100" value="50">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>Agotamiento</span><span>Sobrecarga</span>
+                        </div>
+                    </div>
+
+                    <!-- Metric 2: The Beast (Bureaucracy/Social Pressure) -->
+                    <div>
+                        <div class="flex justify-between text-xs font-mono mb-2">
+                            <span class="text-red-400 flex items-center gap-1"><i data-lucide="eye" class="w-3 h-3"></i> Interferencia de La Bestia</span>
+                            <span id="val-bestia" class="text-slate-300">50%</span>
+                        </div>
+                        <input type="range" id="slider-bestia" class="slider-red" min="0" max="100" value="50">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>Aislamiento Puro</span><span>Coerción/Deber Ser</span>
+                        </div>
+                    </div>
+
+                    <!-- Metric 3: Hardware State (Freeze vs Action) -->
+                    <div>
+                        <div class="flex justify-between text-xs font-mono mb-2">
+                            <span class="text-purple-400 flex items-center gap-1"><i data-lucide="activity" class="w-3 h-3"></i> Estado Autonómico</span>
+                            <span id="val-hardware" class="text-slate-300">50%</span>
+                        </div>
+                        <input type="range" id="slider-hardware" min="0" max="100" value="50">
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>Freeze (Congelado)</span><span>Flujo de Acción</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <label class="text-xs font-mono text-slate-400 block mb-2">CLASIFICACIÓN DEL EVENTO</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="selectType('ATAQUE_BESTIA', this)" class="type-btn border border-red-900/50 bg-red-900/10 text-red-400 text-xs py-2 rounded hover:bg-red-900/30 transition-colors font-mono">
+                            [ATAQUE_BESTIA]
+                        </button>
+                        <button onclick="selectType('EJECUCION_FRONT', this)" class="type-btn border border-emerald-900/50 bg-emerald-900/10 text-emerald-400 text-xs py-2 rounded hover:bg-emerald-900/30 transition-colors font-mono">
+                            [EJECUCIÓN_FRONT]
+                        </button>
+                        <button onclick="selectType('ANOMALIA_CREATIVA', this)" class="type-btn border border-blue-900/50 bg-blue-900/10 text-blue-400 text-xs py-2 rounded hover:bg-blue-900/30 transition-colors font-mono">
+                            [ANOMALÍA_CREATIVA]
+                        </button>
+                        <button onclick="selectType('TRANSMUTACION', this)" class="type-btn border border-purple-900/50 bg-purple-900/10 text-purple-400 text-xs py-2 rounded hover:bg-purple-900/30 transition-colors font-mono">
+                            [TRANSMUTACIÓN]
+                        </button>
+                    </div>
+                    <input type="hidden" id="event-type" value="">
+                </div>
+
+                <div class="mt-6">
+                    <label class="text-xs font-mono text-slate-400 block mb-2">VOLCADO DE MEMORIA CACHÉ (Opcional)</label>
+                    <textarea id="log-text" class="w-full bg-slate-900/50 border border-slate-700 rounded p-3 text-sm text-slate-300 focus:outline-none focus:border-emerald-500 font-mono resize-none h-24 placeholder-slate-600" placeholder="Ingresa datos del incidente o epifanía..."></textarea>
+                </div>
+
+                <button onclick="compileData()" class="w-full mt-4 bg-emerald-600/20 hover:bg-emerald-500 border border-emerald-500 text-emerald-400 hover:text-slate-900 py-3 rounded font-mono font-bold transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] flex justify-center items-center gap-2">
+                    <i data-lucide="zap" class="w-4 h-4"></i> COMPILAR ESTADO Y TRANSMUTAR
+                </button>
+            </div>
+        </section>
+
+        <!-- Right Column: Visualization & Console -->
+        <section class="flex-1 flex flex-col gap-4">
+            
+            <!-- Terminal / Alchemical Directives -->
+            <div class="glass-panel rounded-lg p-5 h-48 border border-emerald-900/30 flex flex-col">
+                <h2 class="text-sm font-mono text-emerald-500 border-b border-slate-700 pb-2 mb-3 flex items-center gap-2">
+                    <i data-lucide="terminal" class="w-4 h-4"></i>
+                    MOTOR ALQUÍMICO // DIRECTIVAS
+                </h2>
+                <div id="terminal-output" class="flex-1 overflow-y-auto text-sm font-mono text-emerald-400/80 space-y-2">
+                    <div class="opacity-50">> Inicializando monitor de ecosistema...</div>
+                    <div class="opacity-50">> Sensores calibrados. Esperando input biológico.</div>
+                </div>
+            </div>
+
+            <!-- Spectrogram (Chart) -->
+            <div class="glass-panel rounded-lg p-5 flex-1 flex flex-col relative overflow-hidden">
+                <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-50"></div>
+                
+                <h2 class="text-sm font-mono text-slate-300 border-b border-slate-700 pb-2 mb-4 relative z-10 flex justify-between items-center">
+                    <span class="flex items-center gap-2">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-400"></i>
+                        ESPECTROGRAMA DE RESONANCIA
+                    </span>
+                    <span class="text-[10px] text-slate-500">HISTÓRICO DE SESIÓN</span>
+                </h2>
+                
+                <div class="flex-1 relative z-10 w-full">
+                    <canvas id="resonanceChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Recent Logs List (Minimal) -->
+             <div class="glass-panel rounded-lg p-4 h-32 flex flex-col">
+                <h2 class="text-xs font-mono text-slate-500 mb-2">ÚLTIMOS PAQUETES DE DATOS</h2>
+                <div id="log-history" class="overflow-y-auto flex-1 space-y-2 text-xs font-mono">
+                    <!-- Logs will appear here -->
+                    <div class="text-slate-600 italic">No hay registros en la sesión actual.</div>
+                </div>
+             </div>
+
+        </section>
+    </main>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Clock logic
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('es-ES', {hour12: false});
+        }, 1000);
+
+        // Sliders Logic
+        const sliders = ['prana', 'bestia', 'hardware'];
+        sliders.forEach(id => {
+            const el = document.getElementById(`slider-${id}`);
+            const val = document.getElementById(`val-${id}`);
+            el.addEventListener('input', (e) => val.innerText = `${e.target.value}%`);
+        });
+
+        // Event Type Selection
+        function selectType(type, btnElement) {
+            document.getElementById('event-type').value = type;
+            document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('ring-2', 'ring-emerald-400'));
+            btnElement.classList.add('ring-2', 'ring-emerald-400');
+        }
+
+        // State & Data
+        let memoryBank = [];
+        let chartInstance = null;
+
+        // Initialize Chart.js
+        function initChart() {
+            const ctx = document.getElementById('resonanceChart').getContext('2d');
+            
+            Chart.defaults.color = '#64748b';
+            Chart.defaults.font.family = "'Fira Code', monospace";
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [], // Time labels
+                    datasets: [
+                        {
+                            label: 'Flujo Autonómico',
+                            data: [],
+                            borderColor: '#10b981', // Neon green
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#020617',
+                            pointBorderColor: '#10b981'
+                        },
+                        {
+                            label: 'Señal de La Bestia',
+                            data: [],
+                            borderColor: '#ef4444', // Neon red
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            tension: 0.3,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 10, usePointStyle: true } }
+                    },
+                    scales: {
+                        y: { min: 0, max: 100, grid: { color: 'rgba(51, 65, 85, 0.2)' } },
+                        x: { grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                    }
+                }
+            });
+        }
+
+        // Terminal Output Logic
+        function printTerminal(message, type = 'normal') {
+            const term = document.getElementById('terminal-output');
+            const div = document.createElement('div');
+            
+            let color = 'text-emerald-400';
+            if(type === 'alert') color = 'text-red-400';
+            if(type === 'action') color = 'text-blue-400 text-base font-bold';
+            
+            div.className = `${color} terminal-text`;
+            div.innerHTML = `> ${message}`;
+            
+            term.appendChild(div);
+            term.scrollTop = term.scrollHeight;
+            
+            // Remove typing cursor from older elements
+            const children = term.children;
+            if(children.length > 1) {
+                children[children.length - 2].classList.remove('terminal-text');
+            }
+        }
+
+        // Core Alchemical Logic (The Cognitive-Behavioral Engine)
+        function generateDirective(prana, bestia, hardware) {
+            if (bestia > 75 && hardware < 30) {
+                return {
+                    msg: "ALERTA: ATAQUE PARALIZANTE DE LA BESTIA DETECTADO.",
+                    action: "PROTOCOLO CERO: Abandona el código. Realiza UNA tarea administrativa de 2 minutos AHORA MISMO en papel o app estándar. Rompe el Freeze mediante fricción física.",
+                    type: "alert"
+                };
+            }
+            if (prana < 30 && bestia > 60) {
+                return {
+                    msg: "SISTEMA COMPROMETIDO: Batería baja y alta coerción. Riesgo de evasión algorítmica.",
+                    action: "DIRECTIVA ALQUÍMICA: Cierra los ojos 1 minuto. Recuerda que no eres esclavo de su mirada. Delega o pospón la tarea. No crees una app para evitarla.",
+                    type: "alert"
+                };
+            }
+            if (hardware > 80 && prana > 70) {
+                 return {
+                    msg: "RESONANCIA FRACTAL ÓPTIMA.",
+                    action: "MÚSICA MAESTRO: El backend está despejado. Autorización para construir ecosistemas concedida. Que fluya el código.",
+                    type: "action"
+                };
+            }
+            if (bestia < 30 && hardware < 40) {
+                 return {
+                    msg: "ESTADO DE HIBERNACIÓN / DESCONEXIÓN.",
+                    action: "MANTENIMIENTO: El entorno es seguro pero el hardware está lento. Tensión física leve requerida: 10 flexiones o agua fría en el rostro para recalibrar.",
+                    type: "normal"
+                };
+            }
+
+            return {
+                msg: "PARÁMETROS ESTABLES. Tensión normal de superficie.",
+                action: "DIRECTIVA: Continúa operando. Recuerda observar la Matrix sin absorberla.",
+                type: "normal"
+            };
+        }
+
+        // Main action
+        function compileData() {
+            const prana = parseInt(document.getElementById('slider-prana').value);
+            const bestia = parseInt(document.getElementById('slider-bestia').value);
+            const hardware = parseInt(document.getElementById('slider-hardware').value);
+            const eventType = document.getElementById('event-type').value || 'NO_CLASIFICADO';
+            const notes = document.getElementById('log-text').value;
+
+            if (eventType === 'NO_CLASIFICADO') {
+                printTerminal("ERROR: Se requiere clasificar el evento antes de compilar.", "alert");
+                return;
+            }
+
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-ES', {hour12: false});
+
+            // Save state
+            const snapshot = { time: timeString, prana, bestia, hardware, eventType, notes };
+            memoryBank.push(snapshot);
+
+            // Update Chart
+            chartInstance.data.labels.push(timeString);
+            chartInstance.data.datasets[0].data.push(hardware); // Flujo Autonómico
+            chartInstance.data.datasets[1].data.push(bestia); // Bestia
+            if (chartInstance.data.labels.length > 10) {
+                chartInstance.data.labels.shift();
+                chartInstance.data.datasets[0].data.shift();
+                chartInstance.data.datasets[1].data.shift();
+            }
+            chartInstance.update();
+
+            // Update History Panel
+            const historyPanel = document.getElementById('log-history');
+            if (memoryBank.length === 1) historyPanel.innerHTML = ''; // clear placeholder
+            
+            const colorClass = 
+                eventType === 'ATAQUE_BESTIA' ? 'text-red-400' : 
+                eventType === 'EJECUCION_FRONT' ? 'text-emerald-400' : 
+                eventType === 'ANOMALIA_CREATIVA' ? 'text-blue-400' : 'text-purple-400';
+
+            const logEntry = document.createElement('div');
+            logEntry.className = "flex justify-between items-center border-b border-slate-800 pb-1";
+            logEntry.innerHTML = `
+                <span class="text-slate-400">[${timeString}]</span>
+                <span class="${colorClass}">${eventType}</span>
+                <span class="text-slate-500">H:${hardware} B:${bestia}</span>
+            `;
+            historyPanel.prepend(logEntry);
+
+            // Run Alchemical Engine
+            printTerminal(`Compilando estado... [${eventType}] detectado.`);
+            const directive = generateDirective(prana, bestia, hardware);
+            
+            setTimeout(() => {
+                printTerminal(directive.msg, directive.type);
+                setTimeout(() => printTerminal(directive.action, 'action'), 1000);
+            }, 800);
+
+            // Visual Reset
+            document.getElementById('log-text').value = '';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', initChart);
+
+    </script>
+</body>
+</html>
