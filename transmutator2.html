@@ -110,7 +110,7 @@
         <div class="flex items-center gap-3">
             <i data-lucide="cpu" class="text-emerald-400 w-6 h-6"></i>
             <div>
-                <h1 class="text-xl font-mono font-bold text-emerald-400 tracking-widest">NUCLEUS <span class="text-slate-500 text-sm">v3.0_AI</span></h1>
+                <h1 class="text-xl font-mono font-bold text-emerald-400 tracking-widest">NUCLEUS <span class="text-slate-500 text-sm">v3.1_AI</span></h1>
                 <p class="text-xs text-slate-400 font-mono">ECOSISTEMA_LOBO // CÓRTEX PREFRONTAL DINÁMICO</p>
             </div>
         </div>
@@ -120,45 +120,78 @@
                 <span class="text-emerald-400">NEURAL_NET_ONLINE</span>
             </div>
             <div class="text-slate-400" id="clock">00:00:00</div>
+            <button onclick="toggleManual()" class="flex items-center gap-2 text-slate-400 hover:text-emerald-400 transition-colors border border-slate-700 px-3 py-1 rounded bg-slate-900/50">
+                <i data-lucide="help-circle" class="w-4 h-4"></i> MANUAL
+            </button>
         </div>
     </header>
+
+    <!-- Modal: Manual de Vuelo -->
+    <div id="manual-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+        <div class="glass-panel max-w-2xl w-full p-6 rounded-lg border border-emerald-500/30 text-slate-300 relative shadow-[0_0_30px_rgba(16,185,129,0.15)]">
+            <button onclick="toggleManual()" class="absolute top-4 right-4 text-slate-500 hover:text-red-400 transition-colors">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h2 class="text-xl font-mono font-bold text-emerald-400 mb-4 flex items-center gap-2">
+                <i data-lucide="book-open" class="w-5 h-5"></i> MANUAL DE VUELO TÁCTICO
+            </h2>
+            <div class="space-y-4 text-sm leading-relaxed overflow-y-auto max-h-[70vh] pr-2 font-mono">
+                <p>NUCLEUS no es un diario. Es un cortacircuitos para tu sistema nervioso diseñado para sacarte del "Freeze" (congelamiento) ante las presiones de La Bestia (burocracia, finanzas, deber ser).</p>
+                
+                <h3 class="text-blue-400 font-bold mt-4">PASO 1: CALIBRAR SENSORES</h3>
+                <ul class="list-disc pl-5 space-y-1 text-slate-400">
+                    <li><strong class="text-blue-400">Prana:</strong> Tu energía vital actual. (0 = Vacío, 100 = Sobrecargado).</li>
+                    <li><strong class="text-red-400">La Bestia:</strong> Presión del sistema/mirada externa. (0 = Aislado/Paz, 100 = Asfixia por deberes).</li>
+                    <li><strong class="text-purple-400">Hardware:</strong> Tu estado de acción. (0 = Freeze/Procrastinación total, 100 = Flujo puro).</li>
+                </ul>
+
+                <h3 class="text-blue-400 font-bold mt-4">PASO 2: CLASIFICAR EVENTO</h3>
+                <ul class="list-disc pl-5 space-y-1 text-slate-400">
+                    <li><strong class="text-red-400">ATAQUE_BESTIA:</strong> La presión te está paralizando.</li>
+                    <li><strong class="text-emerald-400">EJECUCIÓN_FRONT:</strong> Lograste hacer esa tarea mundana. ¡Victoria!</li>
+                    <li><strong class="text-blue-400">ANOMALÍA_CREATIVA:</strong> Idea brillante que debes registrar para no distraerte.</li>
+                    <li><strong class="text-purple-400">TRANSMUTACIÓN:</strong> Momento de integración o epifanía nocturna.</li>
+                </ul>
+
+                <h3 class="text-blue-400 font-bold mt-4">PASO 3: CUARENTENA Y CACHÉ</h3>
+                <p class="text-slate-400">Si estás evadiendo una tarea específica, escríbela en el campo <strong>TAREA EVADIDA</strong>. El sistema la aislará en "Cuarentena". Cuando la completes, presiona [EJECUTAR] en el panel de cuarentena y el sistema reportará tu victoria.</p>
+
+                <h3 class="text-blue-400 font-bold mt-4">PASO 4: PROCESAR CON MOTOR IA</h3>
+                <p class="text-slate-400">Al compilar, la Inteligencia Artificial cruzará tus datos biométricos y te dará una <strong>Directiva Alquímica</strong>. Obedece la orden de la máquina para romper el parálisis.</p>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Workspace -->
     <main class="flex-1 flex overflow-hidden p-4 gap-4 z-10 relative">
         
         <!-- Left Column: Input Telemetry -->
-        <section class="w-1/3 min-w-[350px] flex flex-col gap-4">
+        <section class="w-1/3 min-w-[360px] flex flex-col gap-4">
             
             <!-- Dial Panel -->
             <div class="glass-panel p-5 rounded-lg flex-1 overflow-y-auto">
                 <h2 class="text-sm font-mono text-slate-300 border-b border-slate-700 pb-2 mb-6 flex items-center gap-2">
                     <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-                    [ PARÁMETROS DE HARDWARE Y PSIQUE ]
+                    [ PARÁMETROS DE HARDWARE ]
                 </h2>
 
-                <div class="space-y-6">
+                <div class="space-y-5">
                     <!-- Metric 1: Prana/Energy -->
                     <div>
                         <div class="flex justify-between text-xs font-mono mb-2">
-                            <span class="text-blue-400 flex items-center gap-1"><i data-lucide="battery" class="w-3 h-3"></i> Nivel de Prana (Batería)</span>
+                            <span class="text-blue-400 flex items-center gap-1"><i data-lucide="battery" class="w-3 h-3"></i> Nivel de Prana</span>
                             <span id="val-prana" class="text-slate-300">50%</span>
                         </div>
                         <input type="range" id="slider-prana" class="slider-blue" min="0" max="100" value="50">
-                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
-                            <span>Agotamiento</span><span>Sobrecarga</span>
-                        </div>
                     </div>
 
                     <!-- Metric 2: The Beast (Bureaucracy/Social Pressure) -->
                     <div>
                         <div class="flex justify-between text-xs font-mono mb-2">
-                            <span class="text-red-400 flex items-center gap-1"><i data-lucide="eye" class="w-3 h-3"></i> Interferencia de La Bestia</span>
+                            <span class="text-red-400 flex items-center gap-1"><i data-lucide="eye" class="w-3 h-3"></i> Señal de La Bestia</span>
                             <span id="val-bestia" class="text-slate-300">50%</span>
                         </div>
                         <input type="range" id="slider-bestia" class="slider-red" min="0" max="100" value="50">
-                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
-                            <span>Aislamiento Puro</span><span>Coerción/Deber Ser</span>
-                        </div>
                     </div>
 
                     <!-- Metric 3: Hardware State (Freeze vs Action) -->
@@ -168,13 +201,10 @@
                             <span id="val-hardware" class="text-slate-300">50%</span>
                         </div>
                         <input type="range" id="slider-hardware" min="0" max="100" value="50">
-                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
-                            <span>Freeze (Congelado)</span><span>Flujo de Acción</span>
-                        </div>
                     </div>
                 </div>
 
-                <div class="mt-8">
+                <div class="mt-6">
                     <label class="text-xs font-mono text-slate-400 block mb-2">CLASIFICACIÓN DEL EVENTO</label>
                     <div class="grid grid-cols-2 gap-2">
                         <button onclick="selectType('ATAQUE_BESTIA', this)" class="type-btn border border-red-900/50 bg-red-900/10 text-red-400 text-xs py-2 rounded hover:bg-red-900/30 transition-colors font-mono">
@@ -193,9 +223,17 @@
                     <input type="hidden" id="event-type" value="">
                 </div>
 
+                <!-- Tarea Evadida Input (NUEVO) -->
                 <div class="mt-6">
-                    <label class="text-xs font-mono text-slate-400 block mb-2">VOLCADO DE MEMORIA CACHÉ (Opcional pero recomendado para la IA)</label>
-                    <textarea id="log-text" class="w-full bg-slate-900/50 border border-slate-700 rounded p-3 text-sm text-slate-300 focus:outline-none focus:border-emerald-500 font-mono resize-none h-24 placeholder-slate-600" placeholder="¿Qué detona este estado? (La IA analizará este texto para darte una directiva precisa)..."></textarea>
+                    <label class="text-xs font-mono text-red-400 block mb-2 flex items-center gap-1">
+                        <i data-lucide="target" class="w-3 h-3"></i> TAREA EVADIDA (Opcional - Aislar en Cuarentena)
+                    </label>
+                    <input type="text" id="evaded-task" class="w-full bg-red-950/20 border border-red-900/50 rounded p-2 text-sm text-slate-300 focus:outline-none focus:border-red-500 font-mono placeholder-red-900/50" placeholder="Ej: Mandar mail de cobro a paciente X">
+                </div>
+
+                <div class="mt-4">
+                    <label class="text-xs font-mono text-slate-400 block mb-2">VOLCADO DE MEMORIA CACHÉ</label>
+                    <textarea id="log-text" class="w-full bg-slate-900/50 border border-slate-700 rounded p-3 text-sm text-slate-300 focus:outline-none focus:border-emerald-500 font-mono resize-none h-20 placeholder-slate-600" placeholder="¿Qué detona este estado? La IA analizará este texto..."></textarea>
                 </div>
 
                 <button id="compile-btn" onclick="compileData()" class="w-full mt-4 bg-emerald-600/20 hover:bg-emerald-500 border border-emerald-500 text-emerald-400 hover:text-slate-900 py-3 rounded font-mono font-bold transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] flex justify-center items-center gap-2">
@@ -209,7 +247,7 @@
         <section class="flex-1 flex flex-col gap-4">
             
             <!-- Terminal / Alchemical Directives -->
-            <div class="glass-panel rounded-lg p-5 h-56 border border-emerald-900/30 flex flex-col relative">
+            <div class="glass-panel rounded-lg p-5 h-48 border border-emerald-900/30 flex flex-col relative">
                 <h2 class="text-sm font-mono text-emerald-500 border-b border-slate-700 pb-2 mb-3 flex items-center gap-2">
                     <i data-lucide="terminal" class="w-4 h-4"></i>
                     ORÁCULO ALQUÍMICO // GEMINI_AI
@@ -236,7 +274,7 @@
                         <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-400"></i>
                         ESPECTROGRAMA DE RESONANCIA
                     </span>
-                    <span class="text-[10px] text-slate-500">HISTÓRICO DE SESIÓN</span>
+                    <span class="text-[10px] text-slate-500">HISTÓRICO</span>
                 </h2>
                 
                 <div class="flex-1 relative z-10 w-full">
@@ -244,13 +282,29 @@
                 </div>
             </div>
             
-            <!-- Recent Logs List (Minimal) -->
-             <div class="glass-panel rounded-lg p-4 h-32 flex flex-col">
-                <h2 class="text-xs font-mono text-slate-500 mb-2">ÚLTIMOS PAQUETES DE DATOS</h2>
-                <div id="log-history" class="overflow-y-auto flex-1 space-y-2 text-xs font-mono">
-                    <div class="text-slate-600 italic">No hay registros en la sesión actual.</div>
+            <!-- Bottom Grid: Historial & Cuarentena -->
+            <div class="grid grid-cols-2 gap-4 h-40">
+                <!-- Recent Logs List -->
+                <div class="glass-panel rounded-lg p-4 flex flex-col overflow-hidden">
+                    <h2 class="text-xs font-mono text-slate-500 mb-2 border-b border-slate-800 pb-1 flex items-center gap-1">
+                        <i data-lucide="history" class="w-3 h-3"></i> HISTÓRICO SESIÓN
+                    </h2>
+                    <div id="log-history" class="overflow-y-auto flex-1 space-y-2 text-xs font-mono pr-2">
+                        <div class="text-slate-600 italic">Sin registros.</div>
+                    </div>
                 </div>
-             </div>
+
+                <!-- Cuarentena de Tareas -->
+                <div class="glass-panel rounded-lg p-4 border border-red-900/30 flex flex-col bg-red-950/10 overflow-hidden relative">
+                    <h2 class="text-xs font-mono text-red-400 mb-2 border-b border-red-900/50 pb-1 flex justify-between items-center">
+                        <span class="flex items-center gap-1"><i data-lucide="lock" class="w-3 h-3"></i> CUARENTENA BESTIA</span>
+                        <span id="quarantine-count" class="bg-red-900/50 text-white px-2 py-0.5 rounded text-[10px]">0</span>
+                    </h2>
+                    <div id="quarantine-list" class="overflow-y-auto flex-1 space-y-2 text-xs font-mono pr-2">
+                        <div class="text-slate-600 italic h-full flex items-center justify-center text-center">No hay tareas paralizadas en cuarentena.</div>
+                    </div>
+                </div>
+            </div>
 
         </section>
     </main>
@@ -268,6 +322,12 @@
             document.getElementById('clock').innerText = now.toLocaleTimeString('es-ES', {hour12: false});
         }, 1000);
 
+        // Modal Logic
+        function toggleManual() {
+            const modal = document.getElementById('manual-modal');
+            modal.classList.toggle('hidden');
+        }
+
         // Sliders Logic
         const sliders = ['prana', 'bestia', 'hardware'];
         sliders.forEach(id => {
@@ -280,11 +340,22 @@
         function selectType(type, btnElement) {
             document.getElementById('event-type').value = type;
             document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('ring-2', 'ring-emerald-400'));
-            btnElement.classList.add('ring-2', 'ring-emerald-400');
+            
+            // Allow manual clicking vs programmatic setting
+            if(btnElement) {
+                btnElement.classList.add('ring-2', 'ring-emerald-400');
+            } else {
+                // Find and highlight programmatically
+                const buttons = document.querySelectorAll('.type-btn');
+                buttons.forEach(b => {
+                    if(b.innerText.includes(type)) b.classList.add('ring-2', 'ring-emerald-400');
+                });
+            }
         }
 
         // State & Data
         let memoryBank = [];
+        let quarantinedTasks = [];
         let chartInstance = null;
 
         function initChart() {
@@ -298,7 +369,7 @@
                     labels: [], 
                     datasets: [
                         {
-                            label: 'Flujo Autonómico (Hardware)',
+                            label: 'Flujo Autonómico (H)',
                             data: [],
                             borderColor: '#10b981', 
                             backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -310,7 +381,7 @@
                             pointBorderColor: '#10b981'
                         },
                         {
-                            label: 'Señal de La Bestia',
+                            label: 'Bestia (B)',
                             data: [],
                             borderColor: '#ef4444', 
                             borderWidth: 1,
@@ -351,6 +422,58 @@
             }
         }
 
+        // Update Quarantine UI
+        function renderQuarantine() {
+            const list = document.getElementById('quarantine-list');
+            const count = document.getElementById('quarantine-count');
+            count.innerText = quarantinedTasks.length;
+            
+            if (quarantinedTasks.length === 0) {
+                list.innerHTML = `<div class="text-slate-600 italic h-full flex items-center justify-center text-center">No hay tareas paralizadas en cuarentena.</div>`;
+                return;
+            }
+
+            list.innerHTML = '';
+            quarantinedTasks.forEach(task => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center bg-red-950/40 border border-red-900/50 p-2 rounded";
+                item.innerHTML = `
+                    <span class="text-red-200 truncate pr-2 w-2/3" title="${task.text}">${task.text}</span>
+                    <button onclick="triggerExecuteTask(${task.id})" class="bg-emerald-600/20 hover:bg-emerald-500 border border-emerald-500 text-emerald-400 hover:text-slate-900 px-2 py-1 rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                        [ EJECUTAR ]
+                    </button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // Action when clicking [ EJECUTAR ] on a quarantined task
+        function triggerExecuteTask(id) {
+            const taskIndex = quarantinedTasks.findIndex(t => t.id === id);
+            if(taskIndex === -1) return;
+            const taskText = quarantinedTasks[taskIndex].text;
+
+            // Remove from Quarantine
+            quarantinedTasks.splice(taskIndex, 1);
+            renderQuarantine();
+
+            // Auto-configure the dashboard for a Victory
+            document.getElementById('slider-hardware').value = 90; // High Flow Action
+            document.getElementById('val-hardware').innerText = '90%';
+            
+            document.getElementById('slider-bestia').value = 10; // Low Beast interference
+            document.getElementById('val-bestia').innerText = '10%';
+
+            selectType('EJECUCION_FRONT', null); // Set classification
+            
+            document.getElementById('evaded-task').value = ''; // clear input
+            document.getElementById('log-text').value = `VICTORIA DEL LOBO. He recuperado territorio ejecutando la tarea paralizada: "${taskText}". El Freeze ha sido roto.`;
+
+            // Auto Trigger Compile (gives immediate dopamine feedback)
+            printTerminal(`¡TERRITORIO RECUPERADO! Preparando reporte de ejecución para "${taskText}"...`, 'action');
+            setTimeout(() => { compileData(true); }, 500); // Wait half a second before auto compiling
+        }
+
         // Llamada a la API de Gemini con Exponential Backoff
         async function fetchGeminiWithBackoff(url, options, retries = 5) {
             const delays = [1000, 2000, 4000, 8000, 16000];
@@ -366,28 +489,29 @@
             }
         }
 
-        async function getAIDirective(prana, bestia, hardware, eventType, notes) {
+        async function getAIDirective(prana, bestia, hardware, eventType, notes, evadedTask) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
             
             const systemPrompt = `Eres el NUCLEUS ALQUÍMICO, un sistema biomonitor diseñado para el Dr. Andrés. Él es un "Lobo" (basado en la filosofía del libro "La última batalla de los Lobos"), un creador altamente sensible, médico y programador, que se "congela" (respuesta autonómica Freeze) cuando enfrenta tareas burocráticas o financieras impuestas por el sistema social ("La Bestia").
             
-            Tu objetivo NO es darle terapia, ánimos o frases motivacionales. Tu objetivo es hackear su córtex prefrontal dándole un diagnóstico crudo y una directiva física/táctica específica para sacarlo del congelamiento o redirigir su exceso de creatividad.
+            Tu objetivo NO es darle terapia. Tu objetivo es hackear su córtex prefrontal dándole un diagnóstico crudo y una directiva física/táctica específica para sacarlo del congelamiento o redirigir su exceso de creatividad.
+            Si él indica que ha "EJECUTADO" una tarea, debes felicitarlo marcialmente por recuperar territorio contra La Bestia.
+            Si él indica una "TAREA EVADIDA", debes ordenarle que ejecute una fracción mínima y ridículamente pequeña de esa tarea AHORA MISMO.
             
             Responderás en JSON basándote en estos inputs:
-            Prana (0-100): Su energía vital.
-            Bestia (0-100): Cuánta coerción/burocracia siente que lo asfixia.
-            Hardware (0-100): Su estado (0 = Congelado/Procrastinando, 100 = Flujo de Acción pura).
-            Tipo Evento: La clasificación que él le dio al momento.
+            Prana (0-100), Bestia (0-100), Hardware/Flujo (0-100).
+            Tipo Evento: La clasificación.
             Notas: Contexto opcional.
+            Tarea Evadida: Si hay algo en cuarentena.
             
             Formato JSON Requerido:
             {
-              "msg": "Diagnóstico de su estado usando lenguaje cyber-orgánico/médico corto (ej. 'Sobrecarga autonómica detectada por coerción externa.')",
-              "action": "La directiva de choque. Una acción física real o una orden mental ruda y muy específica (ej. 'Abandona el código. 10 flexiones de pecho ahora. Manda un solo mail de cobro y vuelve a la cueva.').",
-              "type": "'alert' (si bestia alta/hardware bajo), 'action' (si prana alto/flujo creativo), 'normal' (estable)"
+              "msg": "Diagnóstico de su estado usando lenguaje cyber-orgánico/médico corto.",
+              "action": "La directiva de choque. Una acción física real o una orden mental ruda y específica.",
+              "type": "'alert' (si bestia alta/hardware bajo), 'action' (si prana alto o victoria), 'normal' (estable)"
             }`;
 
-            const userQuery = `Telemetría Actual - Prana: ${prana}%, La Bestia: ${bestia}%, Hardware(Flujo): ${hardware}%. Evento: [${eventType}]. Volcado de memoria: "${notes || 'Sin datos adicionales.'}"`;
+            const userQuery = `Telemetría Actual - Prana: ${prana}%, La Bestia: ${bestia}%, Hardware(Flujo): ${hardware}%. Evento: [${eventType}]. Volcado: "${notes || 'N/A'}". Tarea Evadida: "${evadedTask || 'Ninguna'}".`;
 
             const payload = {
                 contents: [{ parts: [{ text: userQuery }] }],
@@ -407,10 +531,7 @@
             };
 
             try {
-                if (!apiKey) {
-                    // Fallback local simulado si no hay API Key en el entorno
-                    return generateStaticDirectiveFallback(prana, bestia, hardware);
-                }
+                if (!apiKey) return generateStaticDirectiveFallback(prana, bestia, hardware, eventType, evadedTask);
 
                 const result = await fetchGeminiWithBackoff(url, {
                     method: 'POST',
@@ -423,17 +544,22 @@
             } catch (error) {
                 console.error("Error de IA:", error);
                 return {
-                    msg: "ERROR DE CONEXIÓN CORTICAL. API NO RESPONDE.",
-                    action: "SISTEMA MANUAL: Respira. Identifica la tarea evasiva. Ejecuta la versión más imperfecta de esa tarea en los próximos 5 minutos.",
+                    msg: "ERROR DE CONEXIÓN CORTICAL.",
+                    action: "SISTEMA MANUAL: Ejecuta la versión más imperfecta de la tarea evadida en los próximos 5 minutos.",
                     type: "alert"
                 };
             }
         }
 
-        function generateStaticDirectiveFallback(prana, bestia, hardware) {
-            // Reglas estáticas de respaldo si falla la IA
+        function generateStaticDirectiveFallback(prana, bestia, hardware, eventType, evadedTask) {
+            if (eventType === 'EJECUCION_FRONT') {
+                return { msg: "ANÁLISIS: VICTORIA BIOMÉTRICA.", action: "TERRITORIO RECUPERADO. La Bestia retrocede. Has hackeado el Freeze.", type: "action" };
+            }
+            if (evadedTask) {
+                return { msg: "ALERTA: TAREA EN CUARENTENA DETECTADA.", action: `PROTOCOLO CERO: Ejecuta el 10% de "${evadedTask}" AHORA MISMO. Rompe el Freeze.`, type: "alert" };
+            }
             if (bestia > 75 && hardware < 30) {
-                return { msg: "ALERTA: ATAQUE PARALIZANTE DE LA BESTIA DETECTADO.", action: "PROTOCOLO CERO: Abandona el código. Realiza UNA tarea administrativa de 2 minutos AHORA. Rompe el Freeze.", type: "alert" };
+                return { msg: "ALERTA: ATAQUE PARALIZANTE DE LA BESTIA.", action: "Abandona el código. Realiza UNA tarea administrativa de 2 minutos. Rompe el Freeze.", type: "alert" };
             }
             if (hardware > 80) {
                 return { msg: "RESONANCIA FRACTAL ÓPTIMA.", action: "MÚSICA MAESTRO: El backend está despejado. Que fluya el código.", type: "action" };
@@ -441,16 +567,26 @@
             return { msg: "PARÁMETROS ESTABLES.", action: "DIRECTIVA: Continúa operando. Observa la Matrix sin absorberla.", type: "normal" };
         }
 
-        async function compileData() {
+        async function compileData(isAutoTriggered = false) {
             const prana = parseInt(document.getElementById('slider-prana').value);
             const bestia = parseInt(document.getElementById('slider-bestia').value);
             const hardware = parseInt(document.getElementById('slider-hardware').value);
             const eventType = document.getElementById('event-type').value || 'NO_CLASIFICADO';
             const notes = document.getElementById('log-text').value;
+            const evadedTaskInput = document.getElementById('evaded-task');
+            const evadedTask = evadedTaskInput.value.trim();
 
             if (eventType === 'NO_CLASIFICADO') {
                 printTerminal("ERROR: Se requiere clasificar el evento antes de compilar.", "alert");
                 return;
+            }
+
+            // Quarantine Logic
+            if (evadedTask && eventType !== 'EJECUCION_FRONT' && !isAutoTriggered) {
+                quarantinedTasks.push({ id: Date.now(), text: evadedTask });
+                evadedTaskInput.value = ''; // clear input after capturing
+                renderQuarantine();
+                printTerminal(`[SISTEMA]: Tarea "${evadedTask}" aislada en cuarentena.`, "normal");
             }
 
             // Bloquear botón y mostrar Loader AI
@@ -464,7 +600,7 @@
             const timeString = now.toLocaleTimeString('es-ES', {hour12: false});
 
             // Guardar estado y actualizar Chart
-            const snapshot = { time: timeString, prana, bestia, hardware, eventType, notes };
+            const snapshot = { time: timeString, prana, bestia, hardware, eventType, notes, evadedTask };
             memoryBank.push(snapshot);
 
             chartInstance.data.labels.push(timeString);
@@ -490,16 +626,16 @@
             logEntry.className = "flex justify-between items-center border-b border-slate-800 pb-1";
             logEntry.innerHTML = `
                 <span class="text-slate-400">[${timeString}]</span>
-                <span class="${colorClass}">${eventType}</span>
+                <span class="${colorClass} truncate w-1/3 text-center" title="${eventType}">${eventType}</span>
                 <span class="text-slate-500">H:${hardware} B:${bestia}</span>
             `;
             historyPanel.prepend(logEntry);
 
-            printTerminal(`Compilando telemetría... [${eventType}] detectado.`);
+            if(!isAutoTriggered) printTerminal(`Compilando telemetría... [${eventType}] detectado.`);
             printTerminal(`Iniciando enlace con Neural-Net (Gemini)...`);
 
             // LLAMADA A LA IA
-            const aiResponse = await getAIDirective(prana, bestia, hardware, eventType, notes);
+            const aiResponse = await getAIDirective(prana, bestia, hardware, eventType, notes, evadedTask);
             
             // Ocultar loader y desbloquear botón
             loader.classList.add('hidden');
@@ -510,12 +646,15 @@
             printTerminal(aiResponse.msg, aiResponse.type);
             setTimeout(() => printTerminal(`>>> ${aiResponse.action}`, 'action'), 500);
 
-            // Resetear texto
+            // Resetear textos visuales post-compilado
             document.getElementById('log-text').value = '';
         }
 
         // Init
-        document.addEventListener('DOMContentLoaded', initChart);
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            renderQuarantine(); // Initialize empty quarantine UI
+        });
     </script>
 </body>
 </html>
