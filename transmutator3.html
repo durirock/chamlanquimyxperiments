@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUCLEUS // ALCHEMIST-LOG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;600;900&family=Inter:wght@300;400;600&display=swap');
+
+        :root {
+            --neon-green: #10b981;
+            --neon-blue: #3b82f6;
+            --neon-purple: #8b5cf6;
+            --neon-red: #ef4444;
+            --neon-gold: #fbbf24;
+            --bg-dark: #020617;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.05), transparent 25%);
+        }
+
+        .font-mono { font-family: 'Fira Code', monospace; }
+
+        /* Cyber Sliders */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 8px;
+            background: var(--neon-green);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--neon-green);
+            border-radius: 2px;
+            margin-top: -8px;
+        }
+        input[type=range].slider-red::-webkit-slider-thumb { background: var(--neon-red); box-shadow: 0 0 10px var(--neon-red); }
+        input[type=range].slider-blue::-webkit-slider-thumb { background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); }
+        
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #1e293b;
+            border-radius: 2px;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 9999;
+            position: absolute;
+            pointer-events: none;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(16,185,129,0.1) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1;
+            animation: scanline 8s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { top: -100px; }
+            100% { top: 100%; }
+        }
+
+        .terminal-text::after {
+            content: '_';
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        .loader {
+            border-top-color: var(--neon-green);
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Gamification Animations */
+        @keyframes dopamineHit {
+            0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); }
+            15% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); text-shadow: 0 0 30px currentColor; }
+            30% { transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; transform: translate(-50%, -70%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -100%) scale(0.8); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
+        .hit-text {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Fira Code', monospace;
+            font-weight: 900;
+            font-size: 3rem;
+            pointer-events: none;
+            z-index: 10000;
+            text-transform: uppercase;
+            text-align: center;
+            animation: dopamineHit 1.8s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .combo-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+    </style>
+</head>
+<body class="h-screen w-full overflow-hidden flex flex-col relative">
+    <div class="scanline"></div>
+
+    <!-- Top Navigation / Status Bar -->
+    <header class="w-full glass-panel border-b-0 border-t-0 border-l-0 border-r-0 border-slate-800 p-4 flex justify-between items-center z-10 relative">
+        <div class="flex items-center gap-4">
+            <i data-lucide="cpu" class="text-emerald-400 w-6 h-6"></i>
+            <div>
+                <h1 class="text-xl font-mono font-bold text-emerald-400 tracking-widest">NUCLEUS <span class="text-slate-500 text-sm">v4.0_GAME</span></h1>
+                <p class="text-xs text-slate-400 font-mono">ECOSISTEMA_LOBO // CÓRTEX PREFRONTAL DINÁMICO</p>
+            </div>
+            
+            <!-- RPG Stats -->
+            <div class="ml-6 pl-6 border-l border-slate-700 flex gap-6 font-mono text-sm">
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-slate-500">NIVEL LOBO</span>
+                    <span class="text-emerald-400 font-bold" id="ui-level">LVL 1</span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-slate-500">EXPERIENCIA</span>
+                    <span class="text-blue-400 font-bold" id="ui-xp">0 XP</span>
+                </div>
+                <div class="flex flex-col bg-slate-900/80 px-3 py-0.5 rounded border border-amber-500/30" id="combo-container">
+                    <span class="text-[10px] text-amber-500/70">RACHA ACTUAL</span>
+                    <span class="text-amber-400 font-black text-lg leading-tight" id="ui-combo">x0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4 font-mono text-xs">
+            <button onclick="exportData()" class="flex items-center gap-2 text-emerald-400 hover:text-slate-900 hover:bg-emerald-400 transition-colors border border-emerald-500/50 px-3 py-1.5 rounded bg-emerald-900/20 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                <i data-lucide="download" class="w-4 h-4"></i> GUARDAR BITÁCORA
+            </button>
+            <button onclick="toggleManual()" class="flex items-center gap-2 text-slate-400 hover:text-emerald-400 transition-colors border border-slate-700 px-3 py-1.5 rounded bg-slate-900/50">
+                <i data-lucide="help-circle" class="w-4 h-4"></i> MANUAL
+            </button>
+            <div class="text-slate-400 ml-2" id="clock">00:00:00</div>
+        </div>
+    </header>
+
+    <!-- Modal: Manual de Vuelo -->
+    <div id="manual-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+        <!-- ... (Contenido del manual se mantiene igual) ... -->
+        <div class="glass-panel max-w-2xl w-full p-6 rounded-lg border border-emerald-500/30 text-slate-300 relative shadow-[0_0_30px_rgba(16,185,129,0.15)]">
+            <button onclick="toggleManual()" class="absolute top-4 right-4 text-slate-500 hover:text-red-400 transition-colors">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h2 class="text-xl font-mono font-bold text-emerald-400 mb-4 flex items-center gap-2">
+                <i data-lucide="book-open" class="w-5 h-5"></i> MANUAL DE VUELO TÁCTICO & COMBOS
+            </h2>
+            <div class="space-y-4 text-sm leading-relaxed overflow-y-auto max-h-[70vh] pr-2 font-mono">
+                <p>NUCLEUS es un cortacircuitos neurológico gamificado. Al vencer a La Bestia acumulas combos y multiplicadores.</p>
+                <h3 class="text-amber-400 font-bold mt-4">SISTEMA DE COMBOS</h3>
+                <ul class="list-disc pl-5 space-y-1 text-slate-400">
+                    <li><strong class="text-emerald-400">EJECUTAR TAREAS:</strong> Aumenta tu combo +1 y te da XP base. Multiplicador de XP activo si tienes combo > 1.</li>
+                    <li><strong class="text-blue-400">IDEAS INTEGRADAS:</strong> Dan XP pero no aumentan el combo de ataque.</li>
+                    <li><strong class="text-red-400">FREEZE / ATAQUE BESTIA:</strong> Rompe tu racha a x0. Te devuelve a la realidad sin piedad.</li>
+                </ul>
+                <p class="text-emerald-400 mt-4 text-xs">Nota: Todo tu progreso se guarda automáticamente en la memoria de tu navegador (Local Storage). Usa el botón GUARDAR BITÁCORA para exportar tu archivo de seguridad.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex overflow-hidden p-4 gap-4 z-10 relative">
+        
+        <!-- Left Column: Input Telemetry -->
+        <section class="w-1/3 min-w-[360px] flex flex-col gap-4">
+            
+            <!-- Dial Panel -->
+            <div class="glass-panel p-5 rounded-lg flex-1 overflow-y-auto relative">
+                <h2 class="text-sm font-mono text-slate-300 border-b border-slate-700 pb-2 mb-6 flex items-center gap-2">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                    [ PARÁMETROS DE HARDWARE ]
+                </h2>
+
+                <div class="space-y-5">
+                    <!-- Metric 1: Prana/Energy -->
+                    <div>
+                        <div class="flex justify-between text-xs font-mono mb-2">
+                            <span class="text-blue-400 flex items-center gap-1"><i data-lucide="battery" class="w-3 h-3"></i> Nivel de Prana</span>
+                            <span id="val-prana" class="text-slate-300">50%</span>
+                        </div>
+                        <input type="range" id="slider-prana" class="slider-blue" min="0" max="100" value="50">
+                    </div>
+
+                    <!-- Metric 2: The Beast (Bureaucracy/Social Pressure) -->
+                    <div>
+                        <div class="flex justify-between text-xs font-mono mb-2">
+                            <span class="text-red-400 flex items-center gap-1"><i data-lucide="eye" class="w-3 h-3"></i> Señal de La Bestia</span>
+                            <span id="val-bestia" class="text-slate-300">50%</span>
+                        </div>
+                        <input type="range" id="slider-bestia" class="slider-red" min="0" max="100" value="50">
+                    </div>
+
+                    <!-- Metric 3: Hardware State (Freeze vs Action) -->
+                    <div>
+                        <div class="flex justify-between text-xs font-mono mb-2">
+                            <span class="text-purple-400 flex items-center gap-1"><i data-lucide="activity" class="w-3 h-3"></i> Estado Autonómico</span>
+                            <span id="val-hardware" class="text-slate-300">50%</span>
+                        </div>
+                        <input type="range" id="slider-hardware" min="0" max="100" value="50">
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <label class="text-xs font-mono text-slate-400 block mb-2">CLASIFICACIÓN DEL EVENTO</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="selectType('ATAQUE_BESTIA', this)" class="type-btn border border-red-900/50 bg-red-900/10 text-red-400 text-xs py-2 rounded hover:bg-red-900/30 transition-colors font-mono">
+                            [ATAQUE_BESTIA]
+                        </button>
+                        <button onclick="selectType('EJECUCION_FRONT', this)" class="type-btn border border-emerald-900/50 bg-emerald-900/10 text-emerald-400 text-xs py-2 rounded hover:bg-emerald-900/30 transition-colors font-mono">
+                            [EJECUCIÓN_FRONT]
+                        </button>
+                        <button onclick="selectType('ANOMALIA_CREATIVA', this)" class="type-btn border border-blue-900/50 bg-blue-900/10 text-blue-400 text-xs py-2 rounded hover:bg-blue-900/30 transition-colors font-mono">
+                            [ANOMALÍA_CREATIVA]
+                        </button>
+                        <button onclick="selectType('TRANSMUTACION', this)" class="type-btn border border-purple-900/50 bg-purple-900/10 text-purple-400 text-xs py-2 rounded hover:bg-purple-900/30 transition-colors font-mono">
+                            [TRANSMUTACIÓN]
+                        </button>
+                    </div>
+                    <input type="hidden" id="event-type" value="">
+                </div>
+
+                <!-- Tarea Evadida Input (NUEVO) -->
+                <div class="mt-6">
+                    <label class="text-xs font-mono text-red-400 block mb-2 flex items-center gap-1">
+                        <i data-lucide="target" class="w-3 h-3"></i> TAREA EVADIDA (Opcional - Aislar en Cuarentena)
+                    </label>
+                    <input type="text" id="evaded-task" class="w-full bg-red-950/20 border border-red-900/50 rounded p-2 text-sm text-slate-300 focus:outline-none focus:border-red-500 font-mono placeholder-red-900/50" placeholder="Ej: Mandar mail de cobro a paciente X">
+                </div>
+
+                <div class="mt-4">
+                    <label class="text-xs font-mono text-slate-400 block mb-2">VOLCADO DE MEMORIA CACHÉ</label>
+                    <textarea id="log-text" class="w-full bg-slate-900/50 border border-slate-700 rounded p-3 text-sm text-slate-300 focus:outline-none focus:border-emerald-500 font-mono resize-none h-20 placeholder-slate-600" placeholder="¿Qué detona este estado? La IA analizará este texto..."></textarea>
+                </div>
+
+                <button id="compile-btn" onclick="compileData()" class="w-full mt-4 bg-emerald-600/20 hover:bg-emerald-500 border border-emerald-500 text-emerald-400 hover:text-slate-900 py-3 rounded font-mono font-bold transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] flex justify-center items-center gap-2">
+                    <i data-lucide="zap" class="w-4 h-4" id="btn-icon"></i> 
+                    <span id="btn-text">PROCESAR CON MOTOR IA</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Right Column: Visualization & Console -->
+        <section class="flex-1 flex flex-col gap-4">
+            
+            <!-- Terminal / Alchemical Directives -->
+            <div class="glass-panel rounded-lg p-5 h-48 border border-emerald-900/30 flex flex-col relative">
+                <h2 class="text-sm font-mono text-emerald-500 border-b border-slate-700 pb-2 mb-3 flex items-center gap-2">
+                    <i data-lucide="terminal" class="w-4 h-4"></i>
+                    ORÁCULO ALQUÍMICO // GEMINI_AI
+                </h2>
+                
+                <!-- AI Loader -->
+                <div id="ai-loader" class="hidden absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                    <div class="loader border-4 border-slate-700 rounded-full w-8 h-8 mb-2"></div>
+                    <span class="text-xs text-emerald-500 font-mono animate-pulse">ANALIZANDO CÓDIGO FUENTE DEL LOBO...</span>
+                </div>
+
+                <div id="terminal-output" class="flex-1 overflow-y-auto text-sm font-mono text-emerald-400/80 space-y-3 pb-4">
+                    <div class="opacity-50">> Inicializando red neuronal de monitoreo...</div>
+                    <div class="opacity-50">> Sistema conectado. Cargando datos locales si existen...</div>
+                </div>
+            </div>
+
+            <!-- Spectrogram (Chart) -->
+            <div class="glass-panel rounded-lg p-5 flex-1 flex flex-col relative overflow-hidden">
+                <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3N2Zz4=')] opacity-50"></div>
+                
+                <h2 class="text-sm font-mono text-slate-300 border-b border-slate-700 pb-2 mb-4 relative z-10 flex justify-between items-center">
+                    <span class="flex items-center gap-2">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-400"></i>
+                        ESPECTROGRAMA DE RESONANCIA
+                    </span>
+                    <span class="text-[10px] text-slate-500">HISTÓRICO</span>
+                </h2>
+                
+                <div class="flex-1 relative z-10 w-full">
+                    <canvas id="resonanceChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Bottom Grid: Historial & Cuarentena -->
+            <div class="grid grid-cols-2 gap-4 h-40">
+                <!-- Recent Logs List -->
+                <div class="glass-panel rounded-lg p-4 flex flex-col overflow-hidden">
+                    <h2 class="text-xs font-mono text-slate-500 mb-2 border-b border-slate-800 pb-1 flex items-center gap-1">
+                        <i data-lucide="history" class="w-3 h-3"></i> HISTÓRICO SESIÓN
+                    </h2>
+                    <div id="log-history" class="overflow-y-auto flex-1 space-y-2 text-xs font-mono pr-2">
+                        <div class="text-slate-600 italic">Sin registros.</div>
+                    </div>
+                </div>
+
+                <!-- Cuarentena de Tareas -->
+                <div class="glass-panel rounded-lg p-4 border border-red-900/30 flex flex-col bg-red-950/10 overflow-hidden relative">
+                    <h2 class="text-xs font-mono text-red-400 mb-2 border-b border-red-900/50 pb-1 flex justify-between items-center">
+                        <span class="flex items-center gap-1"><i data-lucide="lock" class="w-3 h-3"></i> CUARENTENA BESTIA</span>
+                        <span id="quarantine-count" class="bg-red-900/50 text-white px-2 py-0.5 rounded text-[10px]">0</span>
+                    </h2>
+                    <div id="quarantine-list" class="overflow-y-auto flex-1 space-y-2 text-xs font-mono pr-2">
+                        <div class="text-slate-600 italic h-full flex items-center justify-center text-center">No hay tareas paralizadas en cuarentena.</div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        // API de Gemini
+        const apiKey = ""; 
+
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Clock logic
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('es-ES', {hour12: false});
+        }, 1000);
+
+        // Modal Logic
+        function toggleManual() {
+            const modal = document.getElementById('manual-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        // Sliders Logic
+        const sliders = ['prana', 'bestia', 'hardware'];
+        sliders.forEach(id => {
+            const el = document.getElementById(`slider-${id}`);
+            const val = document.getElementById(`val-${id}`);
+            el.addEventListener('input', (e) => val.innerText = `${e.target.value}%`);
+        });
+
+        // Event Type Selection
+        function selectType(type, btnElement) {
+            document.getElementById('event-type').value = type;
+            document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('ring-2', 'ring-emerald-400'));
+            
+            if(btnElement) {
+                btnElement.classList.add('ring-2', 'ring-emerald-400');
+            } else {
+                const buttons = document.querySelectorAll('.type-btn');
+                buttons.forEach(b => {
+                    if(b.innerText.includes(type)) b.classList.add('ring-2', 'ring-emerald-400');
+                });
+            }
+        }
+
+        // --- RPG STATE & LOCAL STORAGE ---
+        let memoryBank = [];
+        let quarantinedTasks = [];
+        let comboCount = 0;
+        let wolfXP = 0;
+        let chartInstance = null;
+        const STORAGE_KEY = 'nucleus_alchemist_data_v4';
+
+        function saveLocalData() {
+            const dataToSave = {
+                memoryBank,
+                quarantinedTasks,
+                comboCount,
+                wolfXP
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+        }
+
+        function loadLocalData() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    memoryBank = parsed.memoryBank || [];
+                    quarantinedTasks = parsed.quarantinedTasks || [];
+                    comboCount = parsed.comboCount || 0;
+                    wolfXP = parsed.wolfXP || 0;
+                    
+                    updateRPG_UI();
+                    renderQuarantine();
+                    renderHistoryFromMemory();
+                    rebuildChartFromMemory();
+                    printTerminal("> Datos previos del Lobo recuperados del almacenamiento local.", "normal");
+                } catch (e) {
+                    console.error("Error loading local data", e);
+                    printTerminal("ERROR: Memoria local corrupta. Iniciando en blanco.", "alert");
+                }
+            }
+        }
+
+        function exportData() {
+            const dataToSave = { memoryBank, quarantinedTasks, comboCount, wolfXP, exportDate: new Date().toISOString() };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToSave, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `nucleus_telemetry_${Date.now()}.json`);
+            dlAnchorElem.click();
+            printTerminal(">>> Bitácora exportada exitosamente.", "action");
+        }
+
+        // --- GAMIFICATION / DOPAMINE SYSTEM ---
+        function updateRPG_UI() {
+            const level = Math.floor(wolfXP / 100) + 1;
+            document.getElementById('ui-level').innerText = `LVL ${level}`;
+            document.getElementById('ui-xp').innerText = `${wolfXP} XP`;
+            
+            const comboEl = document.getElementById('ui-combo');
+            comboEl.innerText = `x${comboCount}`;
+            
+            const container = document.getElementById('combo-container');
+            if(comboCount > 2) {
+                container.classList.add('border-emerald-500', 'bg-emerald-900/30', 'combo-shake');
+                comboEl.classList.remove('text-amber-400');
+                comboEl.classList.add('text-emerald-400');
+                setTimeout(() => container.classList.remove('combo-shake'), 400);
+            } else {
+                container.classList.remove('border-emerald-500', 'bg-emerald-900/30');
+                comboEl.classList.remove('text-emerald-400');
+                comboEl.classList.add('text-amber-400');
+            }
+        }
+
+        function spawnDopamineHit(text, typeColor) {
+            const hit = document.createElement('div');
+            // typeColor expected to be hex or valid tailwind rgb like text-emerald-400
+            hit.className = `hit-text ${typeColor}`;
+            hit.innerHTML = text.replace('\n', '<br>');
+            document.body.appendChild(hit);
+            
+            // Sonido simulado (vibración si es móvil)
+            if (navigator.vibrate) {
+                if(typeColor.includes('red')) navigator.vibrate([100, 50, 100]); // Error/Break combo
+                else navigator.vibrate(150); // Victory
+            }
+
+            setTimeout(() => {
+                hit.remove();
+            }, 1800);
+        }
+
+        function processGamification(eventType, isVictoryFromQuarantine = false) {
+            let xpGained = 0;
+            let comboMsg = "";
+
+            if (eventType === 'EJECUCION_FRONT') {
+                comboCount++;
+                const multiplier = comboCount > 1 ? comboCount : 1;
+                const baseXP = isVictoryFromQuarantine ? 100 : 50; // Quarantined tasks give double base XP
+                xpGained = baseXP * multiplier;
+                
+                comboMsg = `¡VICTORIA!<br>+${xpGained} XP`;
+                if(comboCount > 1) comboMsg += `<br>COMBO x${comboCount}!`;
+                
+                spawnDopamineHit(comboMsg, 'text-emerald-400');
+            } 
+            else if (eventType === 'TRANSMUTACION' || eventType === 'ANOMALIA_CREATIVA') {
+                // Good, but doesn't build execution combo
+                xpGained = 25;
+                spawnDopamineHit(`INTEGRACIÓN<br>+${xpGained} XP`, 'text-blue-400');
+            }
+            else if (eventType === 'ATAQUE_BESTIA') {
+                // Break combo!
+                if(comboCount > 2) {
+                    spawnDopamineHit(`¡COMBO ROTO!<br>FREEZE DETECTADO`, 'text-red-500');
+                }
+                comboCount = 0;
+            }
+
+            wolfXP += xpGained;
+            updateRPG_UI();
+            saveLocalData(); // Save immediately after score change
+        }
+
+        // --- CHART SYSTEM ---
+        function initChart() {
+            const ctx = document.getElementById('resonanceChart').getContext('2d');
+            Chart.defaults.color = '#64748b';
+            Chart.defaults.font.family = "'Fira Code', monospace";
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [], 
+                    datasets: [
+                        {
+                            label: 'Flujo Autonómico (H)',
+                            data: [],
+                            borderColor: '#10b981', 
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#020617',
+                            pointBorderColor: '#10b981'
+                        },
+                        {
+                            label: 'Bestia (B)',
+                            data: [],
+                            borderColor: '#ef4444', 
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            tension: 0.3,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 10, usePointStyle: true } } },
+                    scales: {
+                        y: { min: 0, max: 100, grid: { color: 'rgba(51, 65, 85, 0.2)' } },
+                        x: { grid: { color: 'rgba(51, 65, 85, 0.2)' } }
+                    }
+                }
+            });
+        }
+
+        function rebuildChartFromMemory() {
+            if(!chartInstance) return;
+            // Get last 15 items
+            const recent = memoryBank.slice(-15);
+            chartInstance.data.labels = recent.map(m => m.time);
+            chartInstance.data.datasets[0].data = recent.map(m => m.hardware);
+            chartInstance.data.datasets[1].data = recent.map(m => m.bestia);
+            chartInstance.update();
+        }
+
+        // --- TERMINAL & UI LOGIC ---
+        function printTerminal(message, type = 'normal') {
+            const term = document.getElementById('terminal-output');
+            const div = document.createElement('div');
+            
+            let color = 'text-emerald-400';
+            if(type === 'alert') color = 'text-red-400 font-bold';
+            if(type === 'action') color = 'text-blue-400 text-base font-bold bg-blue-900/20 p-2 rounded border border-blue-900/50 mt-1';
+            
+            div.className = `${color} terminal-text mb-2`;
+            div.innerHTML = `> ${message}`;
+            
+            term.appendChild(div);
+            term.scrollTop = term.scrollHeight;
+            
+            const children = term.children;
+            if(children.length > 1) {
+                children[children.length - 2].classList.remove('terminal-text');
+            }
+        }
+
+        function renderHistoryFromMemory() {
+            const historyPanel = document.getElementById('log-history');
+            if (memoryBank.length === 0) {
+                historyPanel.innerHTML = `<div class="text-slate-600 italic">Sin registros.</div>`;
+                return;
+            }
+            historyPanel.innerHTML = '';
+            
+            // Show last 50 in history
+            const displayLogs = [...memoryBank].reverse().slice(0, 50);
+
+            displayLogs.forEach(log => {
+                const colorClass = 
+                    log.eventType === 'ATAQUE_BESTIA' ? 'text-red-400' : 
+                    log.eventType === 'EJECUCION_FRONT' ? 'text-emerald-400' : 
+                    log.eventType === 'ANOMALIA_CREATIVA' ? 'text-blue-400' : 'text-purple-400';
+
+                const logEntry = document.createElement('div');
+                logEntry.className = "flex justify-between items-center border-b border-slate-800 pb-1";
+                logEntry.innerHTML = `
+                    <span class="text-slate-400">[${log.time}]</span>
+                    <span class="${colorClass} truncate w-1/3 text-center" title="${log.eventType}">${log.eventType}</span>
+                    <span class="text-slate-500">H:${log.hardware} B:${log.bestia}</span>
+                `;
+                historyPanel.appendChild(logEntry);
+            });
+        }
+
+        function renderQuarantine() {
+            const list = document.getElementById('quarantine-list');
+            const count = document.getElementById('quarantine-count');
+            count.innerText = quarantinedTasks.length;
+            
+            if (quarantinedTasks.length === 0) {
+                list.innerHTML = `<div class="text-slate-600 italic h-full flex items-center justify-center text-center">No hay tareas paralizadas en cuarentena.</div>`;
+                return;
+            }
+
+            list.innerHTML = '';
+            quarantinedTasks.forEach(task => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center bg-red-950/40 border border-red-900/50 p-2 rounded";
+                item.innerHTML = `
+                    <span class="text-red-200 truncate pr-2 w-2/3" title="${task.text}">${task.text}</span>
+                    <button onclick="triggerExecuteTask(${task.id})" class="bg-emerald-600/20 hover:bg-emerald-500 border border-emerald-500 text-emerald-400 hover:text-slate-900 px-2 py-1 rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                        [ EJECUTAR ]
+                    </button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function triggerExecuteTask(id) {
+            const taskIndex = quarantinedTasks.findIndex(t => t.id === id);
+            if(taskIndex === -1) return;
+            const taskText = quarantinedTasks[taskIndex].text;
+
+            quarantinedTasks.splice(taskIndex, 1);
+            renderQuarantine();
+            saveLocalData();
+
+            // Auto-configure the dashboard for a Victory
+            document.getElementById('slider-hardware').value = 90; 
+            document.getElementById('val-hardware').innerText = '90%';
+            
+            document.getElementById('slider-bestia').value = 10; 
+            document.getElementById('val-bestia').innerText = '10%';
+
+            selectType('EJECUCION_FRONT', null); 
+            
+            document.getElementById('evaded-task').value = ''; 
+            document.getElementById('log-text').value = `VICTORIA DEL LOBO. Tarea paralizada ejecutada: "${taskText}".`;
+
+            printTerminal(`¡TERRITORIO RECUPERADO! Procesando victoria épica sobre: "${taskText}"...`, 'action');
+            
+            // Wait briefly then compile as an auto-triggered victory
+            setTimeout(() => { compileData(true, true); }, 600); 
+        }
+
+        // --- AI API LOGIC ---
+        async function fetchGeminiWithBackoff(url, options, retries = 5) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (e) {
+                    if (i === retries - 1) throw e;
+                    await new Promise(res => setTimeout(res, delays[i]));
+                }
+            }
+        }
+
+        async function getAIDirective(prana, bestia, hardware, eventType, notes, evadedTask) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const systemPrompt = `Eres NUCLEUS ALQUÍMICO, biomonitor del Dr. Andrés ("Lobo"). Se congela ante tareas impuestas ("La Bestia").
+            Tu meta es hackear su córtex prefrontal con una orden física ruda o táctica.
+            Si él indica "EJECUTADO" o victoria, felicítalo marcialmente.
+            Si tiene una "TAREA EVADIDA", ordénale que ejecute una fracción ridícula AHORA.
+            
+            Input JSON:
+            {
+              "msg": "Diagnóstico cyber-médico corto.",
+              "action": "Orden física real/táctica ruda.",
+              "type": "'alert', 'action', o 'normal'"
+            }`;
+
+            const userQuery = `Prana: ${prana}%, Bestia: ${bestia}%, Hardware: ${hardware}%. Evento: [${eventType}]. Volcado: "${notes || 'N/A'}". Tarea Evadida: "${evadedTask || 'Ninguna'}". Combo Actual: ${comboCount}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: { msg: { type: "STRING" }, action: { type: "STRING" }, type: { type: "STRING" } },
+                        required: ["msg", "action", "type"]
+                    }
+                }
+            };
+
+            try {
+                if (!apiKey) return generateStaticDirectiveFallback(prana, bestia, hardware, eventType, evadedTask);
+                const result = await fetchGeminiWithBackoff(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                return JSON.parse(result.candidates[0].content.parts[0].text);
+            } catch (error) {
+                return { msg: "ERROR CORTICAL.", action: "SISTEMA MANUAL: Haz lo mínimo aceptable AHORA.", type: "alert" };
+            }
+        }
+
+        function generateStaticDirectiveFallback(prana, bestia, hardware, eventType, evadedTask) {
+            if (eventType === 'EJECUCION_FRONT') return { msg: "ANÁLISIS: VICTORIA BIOMÉTRICA.", action: "TERRITORIO RECUPERADO. La Bestia retrocede.", type: "action" };
+            if (evadedTask) return { msg: "ALERTA: TAREA EN CUARENTENA DETECTADA.", action: `PROTOCOLO CERO: Ejecuta el 10% de "${evadedTask}" AHORA MISMO. Rompe el Freeze.`, type: "alert" };
+            if (bestia > 75 && hardware < 30) return { msg: "ALERTA: ATAQUE PARALIZANTE DE LA BESTIA.", action: "Abandona el código. Tarea administrativa de 2 min. Rompe el Freeze.", type: "alert" };
+            if (hardware > 80) return { msg: "RESONANCIA FRACTAL ÓPTIMA.", action: "MÚSICA MAESTRO: Que fluya el código.", type: "action" };
+            return { msg: "PARÁMETROS ESTABLES.", action: "DIRECTIVA: Continúa operando. Observa la Matrix sin absorberla.", type: "normal" };
+        }
+
+        async function compileData(isAutoTriggered = false, isVictoryFromQuarantine = false) {
+            const prana = parseInt(document.getElementById('slider-prana').value);
+            const bestia = parseInt(document.getElementById('slider-bestia').value);
+            const hardware = parseInt(document.getElementById('slider-hardware').value);
+            const eventType = document.getElementById('event-type').value || 'NO_CLASIFICADO';
+            const notes = document.getElementById('log-text').value;
+            const evadedTaskInput = document.getElementById('evaded-task');
+            const evadedTask = evadedTaskInput.value.trim();
+
+            if (eventType === 'NO_CLASIFICADO') {
+                printTerminal("ERROR: Se requiere clasificar el evento antes de compilar.", "alert");
+                return;
+            }
+
+            // Quarantine Logic
+            if (evadedTask && eventType !== 'EJECUCION_FRONT' && !isAutoTriggered) {
+                quarantinedTasks.push({ id: Date.now(), text: evadedTask });
+                evadedTaskInput.value = ''; 
+                renderQuarantine();
+                printTerminal(`[SISTEMA]: Tarea "${evadedTask}" aislada en cuarentena.`, "normal");
+            }
+
+            // Gamification Engine Processing
+            processGamification(eventType, isVictoryFromQuarantine);
+
+            // UI Feedback state
+            const btn = document.getElementById('compile-btn');
+            const loader = document.getElementById('ai-loader');
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            loader.classList.remove('hidden');
+
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-ES', {hour12: false});
+
+            // Save Memory Array
+            const snapshot = { time: timeString, prana, bestia, hardware, eventType, notes, evadedTask, comboSnapshot: comboCount };
+            memoryBank.push(snapshot);
+            
+            // Re-render Data specific UI blocks
+            rebuildChartFromMemory();
+            renderHistoryFromMemory();
+            saveLocalData(); // Save changes to memory array + RPG state
+
+            if(!isAutoTriggered) printTerminal(`Compilando telemetría... [${eventType}] detectado.`);
+            printTerminal(`Iniciando enlace con Neural-Net (Gemini)...`);
+
+            // AI Call
+            const aiResponse = await getAIDirective(prana, bestia, hardware, eventType, notes, evadedTask);
+            
+            loader.classList.add('hidden');
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            printTerminal(aiResponse.msg, aiResponse.type);
+            setTimeout(() => printTerminal(`>>> ${aiResponse.action}`, 'action'), 500);
+
+            document.getElementById('log-text').value = '';
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            loadLocalData(); // Attempt to load saved data, else initialize fresh
+        });
+    </script>
+</body>
+</html>
