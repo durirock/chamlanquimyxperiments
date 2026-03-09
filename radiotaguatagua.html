@@ -1,0 +1,2375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Musicosmos - Pulsar 8 con Momentum Orbital</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background-color: #000;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        body.touch-active { 
+            overscroll-behavior: none;
+        }
+        canvas { display: block; }
+        .ui-panel {
+            position: absolute;
+            background-color: rgba(20, 20, 40, 0.88);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 100;
+            border: 1px solid rgba(120, 140, 255, 0.5);
+            box-shadow: 0 0 25px rgba(100, 120, 255, 0.6);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #info {
+            top: 10px;
+            width: calc(100% - 40px);
+            max-width: 600px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            padding: 10px;
+            opacity: 1;
+            transition: opacity 1s ease-in-out 7s;
+            z-index: 110; 
+        }
+        .fade-out { opacity: 0 !important; pointer-events: none !important; }
+        #coordinates {
+            top: 15px;
+            left: 15px;
+            font-size: 13px;
+            padding: 8px 12px;
+            background-color: rgba(10,10,20,0.75);
+            z-index: 103; 
+        }
+        #radioControlsPanel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            background-color: rgba(25, 25, 50, 0.9);
+            border-radius: 10px;
+            z-index: 102;
+            border: 1px solid rgba(100, 120, 255, 0.5);
+            box-shadow: 0 0 20px rgba(80, 100, 220, 0.5);
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            gap: 0px;
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out; 
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            width: 320px;
+            box-sizing: border-box;
+        }
+
+        #radioControlsPanel.hidden-completely {
+            opacity: 0;
+            transform: translateX(-50%) translateY(100%); 
+            pointer-events: none;
+            /* display: none will be set by JS after transition */
+        }
+
+        #minimizedPanelToggleSphere {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%) scale(0); 
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(145deg, #5c6bc0, #3f51b5);
+            border-radius: 50%;
+            border: 2px solid rgba(180, 190, 255, 0.8);
+            box-shadow: 0 0 18px rgba(100, 120, 255, 0.7), inset 0 0 10px rgba(255,255,255,0.2);
+            cursor: pointer;
+            z-index: 101; 
+            display: none; 
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        }
+        #minimizedPanelToggleSphere.visible {
+            display: flex; 
+            opacity: 1;
+            transform: translateX(-50%) scale(1); 
+        }
+        #minimizedPanelToggleSphere:hover {
+            background: linear-gradient(145deg, #7986cb, #5c6bc0);
+            transform: translateX(-50%) scale(1.1);
+        }
+        #minimizedPanelToggleSphere svg { 
+            width: 24px;
+            height: 24px;
+        }
+
+        #panelHeader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 10px 15px;
+            cursor: pointer;
+            background-color: rgba(30, 30, 60, 0.9);
+            border-bottom: 1px solid rgba(100, 120, 255, 0.3);
+            box-sizing: border-box;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+        
+        #radioControlsPanel.minimized-content #panelHeader { 
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            border-bottom: none;
+        }
+
+        #panelTitle {
+            font-weight: bold;
+            color: #c0d8ff;
+            font-size: 14px;
+        }
+
+        #toggleControlsPanelButton { 
+            padding: 4px 10px;
+            font-size: 14px;
+            font-weight: bold;
+            background-color: #5c6bc0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #toggleControlsPanelButton:hover {
+            background-color: #7986cb;
+        }
+
+        #panelContentContainer {
+            padding: 10px 15px 15px 15px;
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: max-height 0.4s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
+            overflow: hidden;
+            max-height: 500px; 
+            opacity: 1;
+        }
+
+        #radioControlsPanel.minimized-content #panelContentContainer {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            pointer-events: none;
+            border-top: none; 
+        }
+
+        #playlistSubPanel {
+            background-color: rgba(30, 30, 55, 0.9);
+            padding: 0;
+            border-radius: 6px;
+            border: 1px solid rgba(100, 120, 255, 0.4);
+            overflow: hidden;
+            width: 100%; 
+            box-sizing: border-box;
+            position: relative;
+        }
+        #playlistHeader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: rgba(40, 40, 70, 0.8);
+            cursor: pointer;
+        }
+        #playlistTitle {
+            font-size: 13px;
+            font-weight: bold;
+            color: #d0d8ff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        #togglePlaylistButton {
+            background: none;
+            border: 1px solid #7080cc;
+            color: #c0c8ff;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        #playlistContent {
+            padding: 10px;
+            transition: opacity 0.3s ease-out, padding 0.3s ease-out, max-height 0.4s ease-out;
+            opacity: 1;
+            max-height: 100px; 
+        }
+        #playlistSubPanel.minimized #playlistContent {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0; padding-bottom: 0;
+            pointer-events: none;
+        }
+        
+        #playlistSubPanel.minimized-by-radio #playlistContent {
+             max-height: 0;
+            opacity: 0;
+            padding-top: 0; padding-bottom: 0;
+            pointer-events: none;
+        }
+         #playlistSubPanel.minimized-by-radio #togglePlaylistButton::before {
+            content: '+ ';
+        }
+
+        #cornerRadioDisplay, #cornerRadioDisplayTaguaTagua {
+            position: fixed;
+            right: 20px;
+            background-color: rgba(25, 25, 50, 0.92);
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 105;
+            display: none; 
+            opacity: 0;
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            transform: translateX(100%);
+        }
+        #cornerRadioDisplay {
+            bottom: 20px; color: #c0d0ff;
+            border: 1px solid rgba(100, 120, 255, 0.5); box-shadow: 0 0 15px rgba(80, 100, 200, 0.5);
+        }
+        #cornerRadioDisplayTaguaTagua {
+            bottom: 55px; color: #ffc0d0; 
+            background-color: rgba(50, 25, 25, 0.92); 
+            border: 1px solid rgba(255, 100, 100, 0.5); box-shadow: 0 0 15px rgba(200, 80, 80, 0.5);
+            z-index: 106;
+        }
+        #cornerRadioDisplay.visible, #cornerRadioDisplayTaguaTagua.visible {
+            display: block; opacity: 1; transform: translateX(0);
+        }
+        #cornerRadioDisplay span, #cornerRadioDisplayTaguaTagua span {
+            font-weight: bold; color: #e0e8ff;
+        }
+        #cornerRadioDisplayTaguaTagua span { color: #ffe0e8; }
+
+        #radioActionButtons { display: flex; gap: 10px; margin-top: 5px; }
+        #radioControlsPanel input[type="file"] {
+            background-color: rgba(40,40,70,0.9); color: white; border: 1px solid #6677cc;
+            border-radius: 5px; padding: 10px; cursor: pointer; width: 100%; box-sizing: border-box;
+        }
+        #radioControlsPanel button, .settings-panel button, #taguaTaguaRadioControls button, .settings-panel-toggle { 
+            background-color: #4a569d; color: #e0e0ff; border: none; border-radius: 5px;
+            padding: 10px 18px; cursor: pointer; font-size: 14px; font-weight: bold;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        #radioControlsPanel button:hover, .settings-panel button:hover, #taguaTaguaRadioControls button:hover, .settings-panel-toggle:hover { background-color: #5c6bc0; }
+        #radioControlsPanel button:active, .settings-panel button:active, #taguaTaguaRadioControls button:active, .settings-panel-toggle:active { transform: scale(0.95); }
+        #radioControlsPanel button:disabled, .settings-panel button:disabled, #taguaTaguaRadioControls button:disabled {
+            background-color: #394270; color: #8888aa; cursor: not-allowed;
+        }
+        #radioStatus { font-size: 13px; color: #aabbff; margin-top: 8px; text-align: center;}
+
+        /* ── Radio Tagua Tagua Prominente (arriba) ── */
+        #taguaTaguaHeroSection {
+            width: 100%;
+            background: linear-gradient(135deg, rgba(180, 60, 80, 0.25), rgba(80, 30, 50, 0.4));
+            border: 1px solid rgba(255, 120, 150, 0.5);
+            border-radius: 8px;
+            padding: 14px 12px 12px;
+            box-sizing: border-box;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        #taguaTaguaHeroSection::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at top center, rgba(255,100,130,0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        #taguaTaguaHeroTitle {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffb8c8;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+            text-shadow: 0 0 12px rgba(255, 120, 150, 0.8);
+        }
+        #taguaTaguaHeroSubtitle {
+            font-size: 11px;
+            color: rgba(255, 180, 200, 0.65);
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+        #startTaguaTaguaRadio {
+            background: linear-gradient(135deg, #c0394f, #8b1a2e) !important;
+            border: 1px solid rgba(255,120,150,0.7) !important;
+            box-shadow: 0 0 18px rgba(220, 60, 90, 0.55), inset 0 1px 0 rgba(255,200,210,0.15) !important;
+            font-size: 15px !important;
+            padding: 12px 22px !important;
+            border-radius: 7px !important;
+            letter-spacing: 0.5px;
+            animation: taguaPulse 2.8s ease-in-out infinite;
+        }
+        #startTaguaTaguaRadio:disabled {
+            animation: none !important;
+            background: linear-gradient(135deg, #5a2535, #3d1520) !important;
+            box-shadow: none !important;
+            color: #886672 !important;
+        }
+        #startTaguaTaguaRadio:not(:disabled):hover {
+            background: linear-gradient(135deg, #d94060, #a02040) !important;
+            box-shadow: 0 0 28px rgba(220, 60, 90, 0.8) !important;
+            animation: none;
+        }
+        @keyframes taguaPulse {
+            0%, 100% { box-shadow: 0 0 18px rgba(220, 60, 90, 0.55), inset 0 1px 0 rgba(255,200,210,0.15); }
+            50%       { box-shadow: 0 0 32px rgba(220, 60, 90, 0.9), 0 0 55px rgba(255,80,110,0.35), inset 0 1px 0 rgba(255,200,210,0.2); }
+        }
+        #stopTaguaTaguaRadio {
+            background-color: #4a2535 !important;
+            border: 1px solid rgba(200, 100, 120, 0.4) !important;
+            font-size: 13px !important;
+        }
+        #taguaTaguaRadioStatus {
+            font-size: 12px !important;
+            color: #cc8899 !important;
+            margin-top: 10px !important;
+        }
+        /* ── Separador MP3 ── */
+        #mp3SectionDivider {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(150, 160, 220, 0.45);
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        #mp3SectionDivider::before, #mp3SectionDivider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(100, 120, 255, 0.25);
+        }
+        #loadingMessage {
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 28px; padding: 25px;
+        }
+        .settings-panel {
+            top: 70px; left: 15px; width: 320px; display: none;
+            max-height: calc(100vh - 140px); overflow-y: auto; padding-bottom: 20px;
+        }
+        .settings-panel h3 {
+            margin-top: 0; color: #c0c8ff; font-size: 16px;
+            border-bottom: 1px solid #5c6bc0; padding-bottom: 8px; margin-bottom: 15px;
+        }
+        .settings-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .settings-row label { font-size: 13px; color: #b0b8e0; flex-basis: 130px; flex-shrink: 0; margin-right: 10px;}
+        .settings-row input[type="range"], .settings-row select {
+            flex-grow: 1; background: #303960; border: 1px solid #5c6bc0;
+            color: white; border-radius: 3px; padding: 4px;
+        }
+        .settings-row span { font-size: 12px; color: #a0b0d0; min-width: 35px; text-align: right; margin-left: 5px; }
+        
+        #toggleAudioSettings, #toggleNebulaSettings {
+            padding: 8px; 
+            font-size: 18px; 
+            min-width: auto;
+            width: 40px; 
+            height: 40px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #toggleAudioSettings { top: 15px; right: 15px; }
+        #toggleNebulaSettings { top: 15px; right: 65px; } 
+
+        #nebulaSettingsPanel { right: 15px; left: auto; }
+        #audioSettingsPanel h3 { 
+            color: #add8e6; 
+            border-bottom-color: #70b3ff;
+        }
+
+        #nebulaRadar {
+            position: absolute; top: 55px; left: 15px; width: 60px; height: 60px;
+            background-color: rgba(25, 25, 50, 0.65); border-radius: 50%;
+            border: 1px solid rgba(100, 120, 255, 0.3); display: flex;
+            justify-content: center; align-items: center; z-index: 101;
+            transition: all 0.3s ease-out; box-shadow: 0 0 8px rgba(100,120,255,0.2);
+        }
+        #nebulaRadar.minimized { width: 24px; height: 24px; top: 45px; }
+        #radarDot, #radarDotTaguaTagua { 
+            width: 7px; height: 7px; border-radius: 50%;
+            position: absolute; transition: transform 0.1s linear, opacity 0.2s; opacity: 0;
+        }
+        #radarDot { background-color: #ffdd44; box-shadow: 0 0 7px #ffdd44, 0 0 10px #ffbb00; }
+        #radarDotTaguaTagua { background-color: #ff88aa; box-shadow: 0 0 7px #ff88aa, 0 0 10px #dd6688; } 
+
+        #nebulaRadar.minimized #radarDot, #nebulaRadar.minimized #radarDotTaguaTagua { width: 4px; height: 4px; }
+        #radarArrow {
+            width: 0; height: 0; border-left: 4px solid transparent;
+            border-right: 4px solid transparent; border-bottom: 10px solid #FFD700; 
+            transform-origin: 50% 70%; transition: transform 0.1s linear, opacity 0.2s, border-bottom-color 0.2s; 
+            position: absolute; opacity: 1;
+        }
+        #nebulaRadar.minimized #radarArrow { border-bottom-width: 6px; border-left-width: 2.5px; border-right-width: 2.5px; }
+        #toggleRadarButton {
+            position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+            background-color: rgba(50,50,80,0.9); color: #c0c8ff; border: 1px solid #7080cc;
+            border-radius: 50%; width: 16px; height: 16px; font-size: 8px;
+            line-height: 14px; text-align: center; cursor: pointer;
+        }
+        #nebulaRadar.minimized #toggleRadarButton { width: 12px; height: 12px; font-size: 6px; line-height: 10px; bottom: -3px; }
+
+        /* --- Estilos para Controles Táctiles (Más Pequeños) --- */
+        .touch-controls-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%; 
+            pointer-events: none; 
+            display: none; 
+            z-index: 50; 
+        }
+
+        #joystick-container {
+            position: absolute;
+            bottom: 20px; 
+            left: 20px;   
+            width: 120px; 
+            height: 120px;
+            background-color: rgba(50, 50, 80, 0.3);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto; 
+            border: 2px solid rgba(120, 120, 150, 0.5);
+            user-select: none; 
+            -webkit-user-select: none; 
+            -ms-user-select: none; 
+        }
+
+        #joystick-knob {
+            width: 60px;  
+            height: 60px; 
+            background-color: rgba(100, 100, 150, 0.7);
+            border-radius: 50%;
+            border: 2px solid rgba(180, 180, 220, 0.8);
+            position: absolute; 
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+
+        #action-buttons-container {
+            position: absolute;
+            bottom: 25px; 
+            right: 20px;  
+            display: flex;
+            flex-direction: column;
+            gap: 15px;    
+            pointer-events: auto; 
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .action-button {
+            width: 60px;  
+            height: 60px; 
+            background-color: rgba(100, 100, 150, 0.6);
+            border-radius: 50%;
+            border: 2px solid rgba(180, 180, 220, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px; 
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+        .action-button:active {
+            background-color: rgba(120, 120, 180, 0.8);
+        }
+
+    </style>
+</head>
+<body>
+    <div id="touch-controls-container" class="touch-controls-container">
+        <div id="joystick-container">
+            <div id="joystick-knob"></div>
+        </div>
+        <div id="action-buttons-container">
+            <div id="button-hyperspace" class="action-button">🚀</div> 
+            <div id="button-up" class="action-button">▲</div> 
+            <div id="button-down" class="action-button">▼</div> 
+        </div>
+    </div>
+
+    <div id="loadingMessage" class="ui-panel">Cargando Musicosmos...</div>
+    <div id="info" class="ui-panel">
+        <h1>Musicosmos - Pulsar 8 con Joypad</h1>
+        <p>W,A,S,D/Joypad: Moverse. Q,E: Rotar. Z,X/Botones: Subir/Bajar. Espacio/🚀: Hipersalto. Ratón/Arrastre: Mirar.<br>Carga audio o inicia Radio Tagua Tagua. Ratón/DobleTap sobre nebulosa + 'C' para orbitar. Shift+C/DobleTap para salir.</p>
+    </div>
+    <div id="coordinates" class="ui-panel">X: 0.00, Y: 0.00, Z: 0.00</div>
+
+    <div id="radioControlsPanel" class="ui-panel">
+        <div id="panelHeader">
+            <span id="panelTitle">Controles de Audio</span>
+            <button id="toggleControlsPanelButton">-</button>
+        </div>
+        <div id="panelContentContainer">
+
+            <!-- ══ RADIO TAGUA TAGUA — Sección principal ══ -->
+            <div id="taguaTaguaRadioControls" style="width:100%;">
+                <div id="taguaTaguaHeroSection">
+                    <div id="taguaTaguaHeroTitle">📻 Radio Tagua Tagua</div>
+                    <div id="taguaTaguaHeroSubtitle">Stream en vivo · wildmedicine.cl</div>
+                    <div id="taguaTaguaRadioActionButtons" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <button id="startTaguaTaguaRadio">▶ Iniciar Radio</button>
+                        <button id="stopTaguaTaguaRadio" disabled>■ Detener Stream</button>
+                    </div>
+                    <div id="taguaTaguaRadioStatus">Stream detenido</div>
+                </div>
+            </div>
+
+            <!-- ══ MP3 Local — Sección secundaria ══ -->
+            <div id="mp3SectionDivider">MP3 Local</div>
+
+            <div id="mp3ControlsContainer">
+                <div id="playlistSubPanel">
+                    <div id="playlistHeader">
+                        <span id="playlistTitle">Playlist (MP3 Local)</span>
+                        <button id="togglePlaylistButton">-</button>
+                    </div>
+                    <div id="playlistContent">
+                        <input type="file" id="audioFile" accept="audio/*">
+                    </div>
+                </div>
+                <div id="radioActionButtons">
+                    <button id="startRadio" disabled>Iniciar Radio MP3</button>
+                    <button id="stopRadio" disabled>Detener Radio MP3</button>
+                </div>
+                <div id="radioStatus">Carga un archivo de audio</div>
+            </div>
+
+        </div>
+    </div>
+    <div id="minimizedPanelToggleSphere">
+        <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="40" stroke="white" stroke-width="5"/>
+            <path d="M50 10C60.3074 10 69.4448 15.1081 75.1417 22.5M50 10C39.6926 10 30.5552 15.1081 24.8583 22.5" stroke="white" stroke-width="5" stroke-linecap="round"/>
+            <path d="M22.5 30.5552C15.1081 36.2521 10 45.3894 10 56M22.5 75.1417C15.1081 69.4448 10 60.3074 10 50" stroke="white" stroke-width="5" stroke-linecap="round"/>
+            <path d="M77.5 30.5552C84.8919 36.2521 90 45.3894 90 56M77.5 75.1417C84.8919 69.4448 90 60.3074 90 50" stroke="white" stroke-width="5" stroke-linecap="round"/>
+            <ellipse cx="50" cy="50" rx="12" ry="25" stroke="white" stroke-width="5"/>
+        </svg>
+    </div> 
+    <div id="cornerRadioDisplay"></div>
+    <div id="cornerRadioDisplayTaguaTagua"></div> 
+    <div id="nebulaRadar">
+        <div id="radarDot"></div>
+        <div id="radarDotTaguaTagua"></div> 
+        <div id="radarArrow"></div>
+        <button id="toggleRadarButton">-</button>
+    </div>
+
+    <button id="toggleAudioSettings" class="ui-panel settings-panel-toggle">🔊</button> 
+    <div id="audioSettingsPanel" class="ui-panel settings-panel">
+        <h3>Configuración Audio 3D (Ambas Nebulosas)</h3>
+        <div class="settings-row">
+            <label for="distanceModel">Modelo Distancia:</label>
+            <select id="distanceModel">
+                <option value="inverse" selected>Inversa</option><option value="linear">Lineal</option><option value="exponential">Exponencial</option>
+            </select>
+        </div>
+        <div class="settings-row">
+            <label for="rolloffFactor">Factor Atenuación:</label>
+            <input type="range" id="rolloffFactor" min="0.1" max="10" step="0.1" value="2.5"><span id="rolloffFactorValue">2.5</span>
+        </div>
+        <div class="settings-row">
+            <label for="refDistance">Distancia Ref.:</label>
+            <input type="range" id="refDistance" min="1" max="50" step="1" value="10"><span id="refDistanceValue">10</span>
+        </div>
+        <div class="settings-row">
+            <label for="maxDistance">Distancia Máx. (Silencio):</label>
+            <input type="range" id="maxDistance" min="50" max="500" step="10" value="150"><span id="maxDistanceValue">150</span>
+        </div>
+    </div>
+
+    <button id="toggleNebulaSettings" class="ui-panel settings-panel-toggle">🌌</button> 
+    <div id="nebulaSettingsPanel" class="ui-panel settings-panel">
+        <h3>Configuración Nebulosa (Global)</h3>
+        <div class="settings-row">
+            <label for="nebulaBaseSize">Tamaño Base:</label>
+            <input type="range" id="nebulaBaseSize" min="20" max="120" step="1" value="70"><span id="nebulaBaseSizeValue">70</span>
+        </div>
+        <div class="settings-row">
+            <label for="nebulaPulseIntensity">Intensidad Pulso:</label>
+            <input type="range" id="nebulaPulseIntensity" min="1" max="10" step="0.1" value="5.5"><span id="nebulaPulseIntensityValue">5.5</span>
+        </div>
+        <div class="settings-row">
+            <label for="nebulaPulseSpeedFactor">Velocidad Pulso:</label>
+            <input type="range" id="nebulaPulseSpeedFactor" min="0.005" max="0.05" step="0.001" value="0.010"><span id="nebulaPulseSpeedFactorValue">0.010</span>
+        </div>
+        <div class="settings-row">
+            <label for="nebulaRotationSpeedFactor">Velocidad Rotación:</label>
+            <input type="range" id="nebulaRotationSpeedFactor" min="0.0001" max="0.0050" step="0.0001" value="0.0012"><span id="nebulaRotationSpeedFactorValue">0.0012</span>
+        </div>
+         <div class="settings-row">
+            <label for="nebulaCoreBrightness">Brillo Núcleo:</label>
+            <input type="range" id="nebulaCoreBrightness" min="0.1" max="1.0" step="0.05" value="0.6"><span id="nebulaCoreBrightnessValue">0.6</span>
+        </div>
+        <div class="settings-row">
+            <label for="nebulaGeneralOpacity">Opacidad General:</label>
+            <input type="range" id="nebulaGeneralOpacity" min="0.1" max="1.0" step="0.05" value="0.45"><span id="nebulaGeneralOpacityValue">0.45</span>
+        </div>
+        <div class="settings-row">
+            <label for="nebulaColorIntensity">Intensidad Color Audio:</label>
+            <input type="range" id="nebulaColorIntensity" min="0.0" max="1.0" step="0.05" value="0.3"><span id="nebulaColorIntensityValue">0.3</span>
+        </div>
+         <div class="settings-row">
+            <label for="nebulaCoreColorSpeed">Vel. Color Núcleo:</label>
+            <input type="range" id="nebulaCoreColorSpeed" min="0.05" max="0.5" step="0.01" value="0.18"><span id="nebulaCoreColorSpeedValue">0.18</span>
+        </div>
+        <div class="settings-row">
+            <label for="nebulaOuterColorSpeed">Vel. Color Exterior:</label>
+            <input type="range" id="nebulaOuterColorSpeed" min="0.05" max="0.5" step="0.01" value="0.10"><span id="nebulaOuterColorSpeedValue">0.10</span>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // --- Global Variables ---
+        let scene, camera, renderer, avatarObject;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let moveUp = false, moveDown = false;
+        let rotateViewLeft = false, rotateViewRight = false; 
+        let pitchAngle = 0, yawAngle = 0; 
+        let isDragging = false; 
+        let previousMousePosition = { x: 0, y: 0 };
+        const mouseSensitivity = 0.0020;
+        let baseMovementSpeed = 0.25;
+        let currentMovementSpeed = baseMovementSpeed;
+        let hyperspaceActive = false;
+        const HYPERSPACE_FACTOR = 8;
+        const ROTATION_SPEED = 0.025; 
+
+        let coordsElement, radioStatusElement, startRadioButton, stopRadioButton, audioFileInput;
+        let radioControlsPanel, playlistSubPanel, playlistHeader, playlistTitle, togglePlaylistButton, playlistContent;
+        let mp3ControlsContainer; 
+        let cornerRadioDisplay, cornerRadioDisplayTaguaTagua; 
+        let loadingMessageElement, audioSettingsPanelElement, toggleAudioSettingsButton, nebulaSettingsPanelElement, toggleNebulaSettingsButton;
+        
+        let nebulaRadarElement, radarArrowElement, radarDotElement, radarDotTaguaTaguaElement, toggleRadarButton; 
+
+        let panelHeaderElement, toggleControlsPanelButtonElement; 
+        let minimizedPanelToggleSphereElement; 
+
+        let audioContext;
+        let audioListener;
+
+        let analyserNode; 
+        let audioElement = new Audio(); audioElement.crossOrigin = "anonymous";
+        let currentAudioFileName = "Ninguno";
+        let radioNebulaInstance = null; 
+        let frequencyData, timeDomainData; 
+        let bufferLength; 
+        let isRadioPlaying = false; 
+        const NEBULA_MP3_INITIAL_POS = new THREE.Vector3(0, 30, -250); 
+        let nebulaClickTarget; 
+        let isMouseOverNebulaTarget = false; 
+        let positionalAudio; 
+        let mediaElementSource = null; 
+
+        const TAGUA_TAGUA_STREAM_URL = 'https://stream-165.zeno.fm/lsthmognp16uv'; 
+        const NEBULA_TAGUA_INITIAL_POS = new THREE.Vector3(500, 70, -800); 
+        let audioElementTaguaTagua;
+        let analyserNodeTaguaTagua;
+        let mediaElementSourceTaguaTagua = null;
+        let radioNebulaInstanceTaguaTagua = null;
+        let frequencyDataTaguaTagua, timeDomainDataTaguaTagua;
+        let bufferLengthTaguaTagua;
+        let isTaguaTaguaRadioPlaying = false;
+        let startTaguaTaguaRadioButton, stopTaguaTaguaRadioButton, taguaTaguaRadioStatusElement;
+        let nebulaClickTargetTaguaTagua; 
+        let positionalAudioTaguaTagua; 
+        let isMouseOverNebulaTargetTaguaTagua = false;
+
+        // --- Orbiting Variables ---
+        let isOrbitingNebula = false; 
+        let orbitingNebulaInstance = null; 
+        let orbitDistance = 70;
+        const MIN_ORBIT_DISTANCE = 30; const MAX_ORBIT_DISTANCE = 10000; 
+        const ORBIT_VERTICAL_AMPLITUDE_FACTOR = 0.3; 
+        
+        let currentOrbitPositionAngleH = 0; 
+        let currentOrbitPositionAngleV = Math.PI / 4; 
+
+        // Variables for orbital view momentum
+        let orbitViewVelocityH = 0; // Horizontal angular velocity for orbit view
+        let orbitViewVelocityV = 0; // Vertical angular velocity for orbit view
+        const orbitViewDamping = 0.95; // Damping factor for momentum (e.g., 0.95 means 5% reduction per frame)
+        const orbitViewMouseSensitivity = 0.005; // Sensitivity for mouse/touch adjusting orbit view velocity
+        const orbitViewTouchSensitivity = 0.008; // Slightly higher for touch
+
+        let cameraTransitioning = false; let orbitTransitionAlpha = 0;
+        let targetOrbitPosition = new THREE.Vector3(); let targetOrbitQuaternion = new THREE.Quaternion();
+        let preOrbitQuaternion = new THREE.Quaternion(); let preOrbitPosition = new THREE.Vector3();
+        let currentCameraUp = new THREE.Vector3(0, 1, 0);
+
+        // --- Touch Controls Variables ---
+        let isTouchDevice = false;
+        let joystickActive = false;
+        let joystickInitialFingerPos = { x: 0, y: 0 }; 
+        const joystickMaxDistance = 30; 
+        let touchControlsContainer, joystickContainer, joystickKnob, buttonUpElement, buttonDownElement, buttonHyperspaceElement; 
+
+        let touchCameraActive = false; 
+        let touchCameraInitialFingerPos = { x: 0, y: 0 };
+        let touchIdentifierCamera = null; 
+        let touchIdentifierJoystick = null; 
+
+        let initialPinchDistance = null;
+        let touchIdentifierPinch1 = null;
+        let touchIdentifierPinch2 = null;
+        const pinchZoomSensitivity = 0.08;
+
+        let lastTapTime = 0;
+        let lastTapPosition = { x: 0, y: 0 };
+        const DOUBLE_TAP_TIME_THRESHOLD = 300; 
+        const DOUBLE_TAP_POS_THRESHOLD = 30; 
+
+        const MAJESTIC_NEBULA_COLORS_HSL = [
+            { h: 0.80, s: 0.9, l: 0.60, name: "Magenta Profundo" }, { h: 0.52, s: 0.9, l: 0.55, name: "Cian Eléctrico" },
+            { h: 0.95, s: 0.8, l: 0.65, name: "Rosa Cósmico" }, { h: 0.70, s: 0.85,l: 0.50, name: "Violeta Intenso" },
+            { h: 0.35, s: 0.7, l: 0.50, name: "Verde Esmeralda" }, { h: 0.05, s: 0.9, l: 0.60, name: "Naranja Ígneo" },
+        ];
+        const CORE_PULSATING_COLORS_HSL = [
+            { h: 0.0,  s: 0.0, l: 0.80, name: "Blanco Estelar" }, { h: 0.83, s: 0.90, l: 0.55, name: "Fucsia Radiante" },
+            { h: 0.93, s: 0.90, l: 0.62, name: "Rosa Eléctrico" }, { h: 0.50, s: 0.85,l: 0.60, name: "Calipso Luminoso" },
+            { h: 0.10, s: 0.90, l: 0.53, name: "Oro Brillante" },
+        ];
+        const MAJESTIC_CORONA_COLORS_HSL = [
+            { h: 0.12, s: 1.0, l: 0.75, name: "Oro Solar" },    
+            { h: 0.08, s: 0.9, l: 0.80, name: "Ámbar Brillante" },
+            { h: 0.0,  s: 0.0, l: 0.95, name: "Luz Estelar Pura" } 
+        ];
+
+        const TAGUA_TAGUA_BASE_COLORS_HSL = [
+            { h: 0.95, s: 0.9, l: 0.65, name: "Rosa Cósmico Intenso" }, 
+            { h: 0.85, s: 0.88,l: 0.60, name: "Fucsia Vibrante" },    
+            { h: 0.50, s: 0.85,l: 0.60, name: "Calipso Luminoso" },   
+            { h: 0.0,  s: 0.9, l: 0.55, name: "Rojo Nebular" },       
+            { h: 0.90, s: 0.8, l: 0.70, name: "Magenta Suave" }
+        ];
+        const TAGUA_TAGUA_CORE_COLORS_HSL = [ 
+            { h: 0.93, s: 0.95, l: 0.70, name: "Rosa Eléctrico Nuclear" },
+            { h: 0.0, s: 1.0, l: 0.65, name: "Rojo Corazón Ardiente" },
+            { h: 0.52, s: 0.9, l: 0.65, name: "Cian Estelar" } 
+        ];
+
+        let nebulaConfig = { 
+            baseSize: 70, pulseIntensity: 5.5, pulseSpeedFactor: 0.010, rotationSpeedFactor: 0.0012,
+            coreBrightness: 0.6, generalOpacity: 0.45, colorIntensityAudio: 0.3,
+            coreColorSpeed: 0.18, outerColorSpeed: 0.10
+        };
+
+        class RadioNebula {
+            constructor(scene, initialStaticPosition, analyser, initialConfig, type = 'mp3', isMajestic = false) {
+                this.scene = scene;
+                this.initialStaticPosition = initialStaticPosition.clone(); 
+                this.analyser = analyser;
+                this.config = initialConfig; 
+                this.type = type; 
+                this.isMajestic = isMajestic; 
+
+                this.orbitCenter = this.initialStaticPosition.clone(); 
+                this.orbitAmplitude = new THREE.Vector3(80 + Math.random() * 70, 20 + Math.random() * 30, 80 + Math.random() * 70);
+                this.orbitPhase = new THREE.Vector3(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
+                this.orbitSpeed = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.00015, 
+                    (Math.random() - 0.5) * 0.00008,
+                    (Math.random() - 0.5) * 0.00015
+                );
+                this.currentDynamicPosition = this.initialStaticPosition.clone(); 
+
+                this.baseColorPalette = (type === 'tagua_tagua') ? TAGUA_TAGUA_BASE_COLORS_HSL : MAJESTIC_NEBULA_COLORS_HSL; 
+                this.coreColorPalette = (type === 'tagua_tagua') ? TAGUA_TAGUA_CORE_COLORS_HSL : CORE_PULSATING_COLORS_HSL; 
+
+                this.bufferLength = this.analyser.frequencyBinCount;
+                this.particleCount = 12000; 
+                if (this.isMajestic) this.particleCount = 15000; 
+
+                this.particlesObject = new THREE.Object3D();
+                this.particlesObject.position.copy(this.currentDynamicPosition); 
+                this.scene.add(this.particlesObject);
+                this.geometry = new THREE.BufferGeometry();
+                
+                this.currentBaseColorIndex = Math.floor(Math.random() * this.baseColorPalette.length);
+                this.targetBaseColorIndex = this.currentBaseColorIndex;
+                this.colorTransitionProgress = 1;
+                
+                this.currentCoreColorIndex = Math.floor(Math.random() * this.coreColorPalette.length);
+                this.targetCoreColorIndex = this.currentCoreColorIndex;
+                this.coreColorTransitionProgress = 1;
+                this.currentCoronaColorIndex = 0; 
+
+                const particleTexture = this.createParticleTexture(); 
+                this.material = new THREE.PointsMaterial({
+                    map: particleTexture,
+                    vertexColors: true,
+                    transparent: true,
+                    opacity: 0.9, 
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                    sizeAttenuation: true, 
+                    size: 1.0, 
+                    alphaTest: 0.05 
+                });
+                this.maxExpansionRadius = this.config.baseSize;
+                this.coreRadius = this.config.baseSize * 0.15;
+                this.coronaRadius = this.isMajestic ? this.config.baseSize * 0.35 : 0; 
+                this.coronaParticleRatio = this.isMajestic ? 0.15 : 0; 
+
+                this.baseRotationSpeed = new THREE.Vector3(0.0007, 0.0012, 0.0005);
+                this.particleAttributes = {
+                    positions: new Float32Array(this.particleCount * 3), colors: new Float32Array(this.particleCount * 3),
+                    targetColors: new Float32Array(this.particleCount * 3), alphas: new Float32Array(this.particleCount),
+                    sizes: new Float32Array(this.particleCount), velocities: new Float32Array(this.particleCount * 3),
+                    lifetimes: new Float32Array(this.particleCount), initialDistances: new Float32Array(this.particleCount),
+                    isCoreParticle: new Uint8Array(this.particleCount), 
+                    isTracerParticle: new Uint8Array(this.particleCount),
+                    isCoronaParticle: this.isMajestic ? new Uint8Array(this.particleCount) : null 
+                };
+                this._initParticles();
+                this.points = new THREE.Points(this.geometry, this.material);
+                this.particlesObject.add(this.points);
+                this.lastUpdateTime = Date.now();
+                this.lastColorChangeTime = Date.now();
+                this.lastCoreColorChangeTime = Date.now();
+                const heartGeometry = new THREE.SphereGeometry(this.coreRadius * 0.25, 12, 8);
+                const heartMaterial = new THREE.MeshPhongMaterial({
+                    color: 0xffffff, emissive: 0x555555, transparent: true, opacity: 0.15,
+                    blending: THREE.AdditiveBlending, shininess: 50, specular: 0xaaaaaa
+                });
+                this.nebulaHeart = new THREE.Mesh(heartGeometry, heartMaterial);
+                this.particlesObject.add(this.nebulaHeart);
+            }
+
+            updateOrbitalPosition(time) {
+                this.currentDynamicPosition.x = this.orbitCenter.x + Math.sin(time * this.orbitSpeed.x + this.orbitPhase.x) * this.orbitAmplitude.x;
+                this.currentDynamicPosition.y = this.orbitCenter.y + Math.cos(time * this.orbitSpeed.y + this.orbitPhase.y) * this.orbitAmplitude.y;
+                this.currentDynamicPosition.z = this.orbitCenter.z + Math.sin(time * this.orbitSpeed.z + this.orbitPhase.z) * this.orbitAmplitude.z;
+                this.particlesObject.position.copy(this.currentDynamicPosition);
+            }
+
+
+            applyConfigChange() {
+                this.maxExpansionRadius = this.config.baseSize;
+                this.coreRadius = this.config.baseSize * 0.15;
+                if (this.nebulaHeart) {
+                    this.nebulaHeart.geometry.dispose();
+                    this.nebulaHeart.geometry = new THREE.SphereGeometry(this.coreRadius * 0.25, 12, 8);
+                }
+                if (this.isMajestic) {
+                    this.coronaRadius = this.config.baseSize * 0.35;
+                }
+            }
+
+            createParticleTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 128; 
+                canvas.height = 128;
+                const context = canvas.getContext('2d');
+                context.fillStyle = 'rgba(0,0,0,0)';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const radius = canvas.width / 2 - 2;
+                const gradient = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+                gradient.addColorStop(0, 'rgba(255,255,255,1)');
+                gradient.addColorStop(0.7, 'rgba(255,255,255,0.9)');
+                gradient.addColorStop(0.9, 'rgba(255,255,255,0.3)');
+                gradient.addColorStop(1, 'rgba(255,255,255,0)');
+                context.beginPath();
+                context.arc(centerX, centerY, radius, 0, Math.PI * 2, false);
+                context.fillStyle = gradient;
+                context.fill();
+                const innerGradient = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius * 0.5 );
+                innerGradient.addColorStop(0, 'rgba(255,255,255,0.8)');
+                innerGradient.addColorStop(1, 'rgba(255,255,255,0)');
+                context.beginPath();
+                context.arc(centerX, centerY, radius * 0.5, 0, Math.PI * 2, false);
+                context.fillStyle = innerGradient;
+                context.fill();
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.needsUpdate = true; 
+                return texture;
+            }
+
+
+            _initParticles() {
+                const { positions, colors, targetColors, alphas, sizes, velocities, lifetimes, initialDistances, isCoreParticle, isTracerParticle, isCoronaParticle } = this.particleAttributes;
+                for (let i = 0; i < this.particleCount; i++) { this._spawnParticle(i); }
+                this.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                this.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                this.geometry.setAttribute('alpha', new THREE.BufferAttribute(alphas, 1));
+                this.geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            }
+
+            _spawnParticle(i, forceCore = false) {
+                const { positions, colors, targetColors, alphas, sizes, velocities, lifetimes, initialDistances, isCoreParticle, isTracerParticle, isCoronaParticle } = this.particleAttributes;
+                const i3 = i * 3; let r;
+                
+                isCoreParticle[i] = 0;
+                isTracerParticle[i] = 0;
+                if (this.isMajestic && isCoronaParticle) isCoronaParticle[i] = 0;
+
+                if (this.isMajestic && Math.random() < this.coronaParticleRatio) {
+                    if(isCoronaParticle) isCoronaParticle[i] = 1;
+                    r = this.coreRadius * 0.8 + Math.random() * (this.coronaRadius - this.coreRadius * 0.8); 
+                } else if (forceCore || Math.random() < (0.10 + Math.random() * 0.08)) {
+                    isCoreParticle[i] = 1;
+                    r = Math.pow(Math.random(), 3.0) * this.coreRadius;
+                } else {
+                    const peripheryFactor = 0.80;
+                    r = this.coreRadius + Math.pow(Math.random(), 1.4) * (this.maxExpansionRadius * peripheryFactor - this.coreRadius);
+                    if (!isCoreParticle[i] && (!this.isMajestic || (isCoronaParticle && !isCoronaParticle[i])) && Math.random() < 0.008) { 
+                        isTracerParticle[i] = 1;
+                    }
+                }
+                
+                initialDistances[i] = r;
+                const theta = Math.random() * Math.PI * 2; const phi = Math.acos(2 * Math.random() - 1);
+                positions[i3] = r * Math.sin(phi) * Math.cos(theta); positions[i3 + 1] = r * Math.sin(phi) * Math.sin(theta); positions[i3 + 2] = r * Math.cos(phi);
+                
+                let chosenColorHSL; let finalColor = new THREE.Color();
+
+                if (this.isMajestic && isCoronaParticle && isCoronaParticle[i]) {
+                    chosenColorHSL = MAJESTIC_CORONA_COLORS_HSL[this.currentCoronaColorIndex % MAJESTIC_CORONA_COLORS_HSL.length];
+                    finalColor.setHSL(chosenColorHSL.h, chosenColorHSL.s, chosenColorHSL.l * (0.8 + Math.random() * 0.4)); 
+                    alphas[i] = 0.3 + Math.random() * 0.4; 
+                    sizes[i] = 2.5 + Math.random() * 3.0; 
+                } else if (isTracerParticle[i]) {
+                    const tracerBaseColor = this.baseColorPalette[this.currentBaseColorIndex % this.baseColorPalette.length];
+                    chosenColorHSL = { h: (tracerBaseColor.h + 0.4) % 1, s: 0.08, l: 0.95 }; 
+                    finalColor.setHSL(chosenColorHSL.h, chosenColorHSL.s, chosenColorHSL.l + (Math.random()-0.5)*0.015); alphas[i] = 0.01 + Math.random() * 0.20;
+                    sizes[i] = 3.0 + Math.random() * 2.5;
+                } else if (isCoreParticle[i]) {
+                    chosenColorHSL = this.coreColorPalette[this.currentCoreColorIndex % this.coreColorPalette.length];
+                    const coreLuminosity = chosenColorHSL.l + (Math.random() - 0.5) * 0.005;
+                    finalColor.setHSL(chosenColorHSL.h, chosenColorHSL.s, coreLuminosity); alphas[i] = 0.5 + Math.random() * 0.3;
+                    sizes[i] = 0.7 + Math.random() * 2.0;
+                } else { 
+                    chosenColorHSL = this.baseColorPalette[this.currentBaseColorIndex % this.baseColorPalette.length];
+                    finalColor.setHSL(chosenColorHSL.h, chosenColorHSL.s, chosenColorHSL.l + (Math.random()-0.5)*0.015); alphas[i] = 0.01 + Math.random() * 0.20;
+                    sizes[i] = 0.7 + Math.random() * 2.0;
+                }
+                colors[i3] = finalColor.r; colors[i3 + 1] = finalColor.g; colors[i3 + 2] = finalColor.b;
+                targetColors[i3] = finalColor.r; targetColors[i3+1] = finalColor.g; targetColors[i3+2] = finalColor.b;
+                
+                const speedFactor = (this.isMajestic && isCoronaParticle && isCoronaParticle[i]) ? (0.005 + Math.random() * 0.02) : (0.015 + Math.random() * 0.08); 
+                 if (r > 0.01) { velocities[i3] = positions[i3] / r * speedFactor * 0.015; velocities[i3 + 1] = positions[i3 + 1] / r * speedFactor * 0.015; velocities[i3 + 2] = positions[i3 + 2] / r * speedFactor * 0.015;} 
+                 else { velocities[i3] = (Math.random() - 0.5) * 0.0015; velocities[i3+1] = (Math.random() - 0.5) * 0.0015; velocities[i3+2] = (Math.random() - 0.5) * 0.0015;}
+                velocities[i3] += (Math.random() - 0.5) * 0.01; velocities[i3 + 1] += (Math.random() - 0.5) * 0.01; velocities[i3 + 2] += (Math.random() - 0.5) * 0.01;
+                lifetimes[i] = (this.isMajestic && isCoronaParticle && isCoronaParticle[i]) ? (15 + Math.random() * 10) : (7 + Math.random() * 15); 
+            }
+
+            update(currentFrequencyData, currentTimeDomainData, deltaTime) { 
+                 if (!this.analyser || !this.points) return;
+                const now = Date.now();
+                this.analyser.getByteFrequencyData(currentFrequencyData);
+                this.analyser.getByteTimeDomainData(currentTimeDomainData);
+
+                let sumAmplitudes = 0;
+                for (let i = 0; i < currentTimeDomainData.length; i++) { sumAmplitudes += Math.abs(currentTimeDomainData[i] - 128); }
+                const averageVolume = Math.min(1, (sumAmplitudes / currentTimeDomainData.length) / 40);
+                
+                const bass = (currentFrequencyData[Math.floor(this.bufferLength * 0.005)] + currentFrequencyData[Math.floor(this.bufferLength * 0.025)]) / 2 / 255;
+                const mids = (currentFrequencyData[Math.floor(this.bufferLength * 0.12)] + currentFrequencyData[Math.floor(this.bufferLength * 0.22)]) / 2 / 255;
+                const highs = (currentFrequencyData[Math.floor(this.bufferLength * 0.35)]+ currentFrequencyData[Math.floor(this.bufferLength * 0.50)]) / 2 / 255;
+
+                const effectiveRotationSpeed = this.config.rotationSpeedFactor / 0.0012;
+                this.particlesObject.rotation.x += this.baseRotationSpeed.x * effectiveRotationSpeed * deltaTime * (0.08 + averageVolume * 0.25);
+                this.particlesObject.rotation.y += this.baseRotationSpeed.y * effectiveRotationSpeed * deltaTime * (0.08 + averageVolume * 0.5);
+                this.particlesObject.rotation.z += this.baseRotationSpeed.z * effectiveRotationSpeed * deltaTime * (0.08 + averageVolume * 0.25);
+                const pulseCycle = now * 0.001 * (0.5 + this.config.pulseSpeedFactor * 50);
+                const easedVolume = (Math.sin(pulseCycle - Math.PI / 2) + 1) / 2 * averageVolume;
+                const targetExpansionFactor = 0.20 + easedVolume * this.config.pulseIntensity;
+                this.currentExpansionFactor = this.currentExpansionFactor === undefined ? 1 : this.currentExpansionFactor;
+                this.currentExpansionFactor = THREE.MathUtils.lerp(this.currentExpansionFactor, targetExpansionFactor, this.config.pulseSpeedFactor);
+                
+                const coreTargetColor = this.coreColorPalette[this.currentCoreColorIndex % this.coreColorPalette.length]; 
+                const heartLuminosity = Math.min(0.80, coreTargetColor.l * (0.3 + averageVolume * 0.7) + bass * this.config.coreBrightness);
+                this.nebulaHeart.material.color.setHSL(coreTargetColor.h, coreTargetColor.s * 0.75, heartLuminosity);
+                this.nebulaHeart.material.emissive.setHSL(coreTargetColor.h, coreTargetColor.s * 0.75, heartLuminosity * 0.4);
+                this.nebulaHeart.material.opacity = THREE.MathUtils.lerp(this.nebulaHeart.material.opacity, 0.02 + bass * 0.20 + averageVolume * 0.10, 0.035);
+                const heartScale = 0.6 + averageVolume * 1.0 + bass * 0.7;
+                this.nebulaHeart.scale.set(heartScale, heartScale, heartScale);
+
+                const colorChangeInterval = 11000 + Math.random()*2500;
+                if (now - this.lastColorChangeTime > colorChangeInterval) {
+                    this.targetBaseColorIndex = (this.currentBaseColorIndex + 1 + Math.floor(Math.random()*(this.baseColorPalette.length-1))) % this.baseColorPalette.length;
+                    if (this.targetBaseColorIndex === this.currentBaseColorIndex && this.baseColorPalette.length > 1) { this.targetBaseColorIndex = (this.targetBaseColorIndex + 1) % this.baseColorPalette.length;}
+                    this.colorTransitionProgress = 0; this.lastColorChangeTime = now;
+                }
+                if (this.colorTransitionProgress < 1) { this.colorTransitionProgress = Math.min(1, this.colorTransitionProgress + deltaTime * this.config.outerColorSpeed); } else { this.currentBaseColorIndex = this.targetBaseColorIndex; }
+                
+                const coreColorChangeInterval = 2500 + Math.random() * 800;
+                if (now - this.lastCoreColorChangeTime > coreColorChangeInterval) {
+                    this.targetCoreColorIndex = (this.currentCoreColorIndex + 1) % this.coreColorPalette.length;
+                    this.coreColorTransitionProgress = 0; this.lastCoreColorChangeTime = now;
+                }
+                 if (this.coreColorTransitionProgress < 1) { this.coreColorTransitionProgress = Math.min(1, this.coreColorTransitionProgress + deltaTime * this.config.coreColorSpeed); } else { this.currentCoreColorIndex = this.targetCoreColorIndex; }
+
+                if (this.isMajestic) { 
+                    const coronaColorChangeInterval = 7000 + Math.random() * 2000; 
+                    if (now - (this.lastCoronaColorChangeTime || 0) > coronaColorChangeInterval) {
+                        this.currentCoronaColorIndex = (this.currentCoronaColorIndex + 1) % MAJESTIC_CORONA_COLORS_HSL.length;
+                        this.lastCoronaColorChangeTime = now;
+                    }
+                }
+
+                const { positions, colors, alphas, sizes, velocities, lifetimes, initialDistances, isCoreParticle, isTracerParticle, isCoronaParticle } = this.particleAttributes;
+                for (let i = 0; i < this.particleCount; i++) {
+                    const i3 = i * 3; lifetimes[i] -= deltaTime;
+                    if (lifetimes[i] <= 0) { 
+                        let forceCoreOnRespawn = false; if (averageVolume > 0.05) { forceCoreOnRespawn = Math.random() < (averageVolume * 0.45); } 
+                        this._spawnParticle(i, forceCoreOnRespawn); continue; 
+                    }
+                    
+                    velocities[i3] = THREE.MathUtils.lerp(velocities[i3], (Math.random() - 0.5) * 0.006 * (1 + bass*2.5), 0.035);
+                    velocities[i3+1] = THREE.MathUtils.lerp(velocities[i3+1], (Math.random() - 0.5) * 0.006 * (1 + bass*2.5), 0.035);
+                    velocities[i3+2] = THREE.MathUtils.lerp(velocities[i3+2], (Math.random() - 0.5) * 0.006 * (1 + bass*2.5), 0.035);
+                    
+                    positions[i3] += velocities[i3] * deltaTime * (1 + averageVolume * 28); 
+                    positions[i3 + 1] += velocities[i3 + 1] * deltaTime * (1 + averageVolume * 28); 
+                    positions[i3 + 2] += velocities[i3 + 2] * deltaTime * (1 + averageVolume * 28);
+                    
+                     const currentDist = Math.sqrt(positions[i3]**2 + positions[i3+1]**2 + positions[i3+2]**2);
+                    let expansionLimitFactor = 1.0;
+                    if (this.isMajestic && isCoronaParticle && isCoronaParticle[i]) {
+                        expansionLimitFactor = 1.1; 
+                    } else if (isCoreParticle[i]) {
+                        expansionLimitFactor = 1.0;
+                    } else if (isTracerParticle[i]) {
+                        expansionLimitFactor = 0.95;
+                    } else { 
+                        expansionLimitFactor = 0.88;
+                    }
+
+                    if (currentDist > 0.01) { 
+                        const desiredDist = initialDistances[i] * this.currentExpansionFactor * expansionLimitFactor; 
+                        const scaleToApply = THREE.MathUtils.lerp(1, desiredDist / currentDist, 0.018); 
+                        positions[i3] *= scaleToApply; positions[i3+1] *= scaleToApply; positions[i3+2] *= scaleToApply;
+                    }
+                    
+                    let sourceColorHSL, targetColorHSL, transitionProg; 
+                    let currentParticleColor = new THREE.Color(colors[i3], colors[i3+1], colors[i3+2]); 
+                    let finalTargetColor = new THREE.Color();
+
+                    if (this.isMajestic && isCoronaParticle && isCoronaParticle[i]) {
+                        const coronaBaseColor = MAJESTIC_CORONA_COLORS_HSL[this.currentCoronaColorIndex % MAJESTIC_CORONA_COLORS_HSL.length];
+                        finalTargetColor.setHSL(
+                            coronaBaseColor.h,
+                            coronaBaseColor.s,
+                            coronaBaseColor.l * (0.7 + averageVolume * 0.5 + highs * 0.3) 
+                        );
+                    } else if(isTracerParticle[i]) { 
+                        const tracerBaseColor = this.baseColorPalette[this.currentBaseColorIndex % this.baseColorPalette.length];
+                        const tracerActualHSL = {h: (tracerBaseColor.h + 0.4 + i*0.0001) % 1, s:0.02 + Math.random()*0.05, l:0.80 + Math.random()*0.1}; 
+                        finalTargetColor.setHSL(tracerActualHSL.h, tracerActualHSL.s, tracerActualHSL.l);
+                    } else if(isCoreParticle[i]) {
+                        sourceColorHSL = this.coreColorPalette[this.currentCoreColorIndex % this.coreColorPalette.length]; 
+                        targetColorHSL = this.coreColorPalette[this.targetCoreColorIndex % this.coreColorPalette.length]; 
+                        transitionProg = this.coreColorTransitionProgress;
+                        const h = THREE.MathUtils.lerp(sourceColorHSL.h, targetColorHSL.h, transitionProg); 
+                        const s = THREE.MathUtils.lerp(sourceColorHSL.s, targetColorHSL.s, transitionProg);
+                        let l = THREE.MathUtils.lerp(sourceColorHSL.l, targetColorHSL.l, transitionProg); 
+                        l = Math.min(0.85 * this.config.coreBrightness, l + averageVolume * this.config.colorIntensityAudio + bass * (this.config.colorIntensityAudio * 0.8)); 
+                        finalTargetColor.setHSL(h,s,l);
+                    } else { 
+                        sourceColorHSL = this.baseColorPalette[this.currentBaseColorIndex % this.baseColorPalette.length]; 
+                        targetColorHSL = this.baseColorPalette[this.targetBaseColorIndex % this.baseColorPalette.length]; 
+                        transitionProg = this.colorTransitionProgress;
+                        const h = THREE.MathUtils.lerp(sourceColorHSL.h, targetColorHSL.h, transitionProg); 
+                        const s = THREE.MathUtils.lerp(sourceColorHSL.s, targetColorHSL.s, transitionProg);
+                        let l = THREE.MathUtils.lerp(sourceColorHSL.l, targetColorHSL.l, transitionProg); 
+                        l = Math.min(0.70, l + averageVolume * (this.config.colorIntensityAudio * 0.8) + mids * (this.config.colorIntensityAudio*0.5));
+                        
+                        const coreColorForInfluence = this.coreColorPalette[this.currentCoreColorIndex % this.coreColorPalette.length];
+                        const coreColorNow = new THREE.Color().setHSL(
+                            coreColorForInfluence.h, 
+                            coreColorForInfluence.s * 0.7, 
+                            Math.min(0.80 * this.config.coreBrightness, coreColorForInfluence.l + averageVolume * (this.config.colorIntensityAudio*0.4))
+                        );
+                        const coreInfluence = Math.max(0, 1 - (initialDistances[i] / (this.coreRadius * 4.5))) * (0.08 + bass * 0.18) ; 
+                        finalTargetColor.setHSL(h,s,l).lerp(coreColorNow, coreInfluence);
+                    }
+                    colors[i3] = THREE.MathUtils.lerp(currentParticleColor.r, finalTargetColor.r, 0.028); 
+                    colors[i3 + 1] = THREE.MathUtils.lerp(currentParticleColor.g, finalTargetColor.g, 0.028); 
+                    colors[i3 + 2] = THREE.MathUtils.lerp(currentParticleColor.b, finalTargetColor.b, 0.028);
+                    
+                    let targetSize;
+                    if (this.isMajestic && isCoronaParticle && isCoronaParticle[i]) {
+                        targetSize = (3.0 + averageVolume * 4.0 + highs * 3.0) * (0.5 + Math.random() * 0.5); 
+                        targetSize = Math.max(1.0, Math.min(targetSize, 15.0));
+                    } else {
+                        targetSize = (isTracerParticle[i] ? 4.0 : 2.2) + averageVolume * 6.5 + bass * 5.5 + highs * 4.0; 
+                        targetSize *= (0.25 + Math.random() * 0.45);
+                        let maxParticleSizeGeneral = isTracerParticle[i] ? 9.0 : 16.0; if (isCoreParticle[i]) { maxParticleSizeGeneral = 12.0; } 
+                        targetSize = Math.max(0.08, Math.min(targetSize, maxParticleSizeGeneral));
+                    }
+                    sizes[i] = THREE.MathUtils.lerp(sizes[i], targetSize, 0.018);
+                    
+                    const lifeRatio = Math.max(0, lifetimes[i] / ( (this.isMajestic && isCoronaParticle && isCoronaParticle[i]) ? (15 + Math.random() * 10) : (7 + Math.random() * 15) ) ); 
+                    let targetAlpha;
+                    if (this.isMajestic && isCoronaParticle && isCoronaParticle[i]) {
+                        targetAlpha = (0.35 + averageVolume * 0.5 + highs * 0.25) * Math.sin(lifeRatio * Math.PI * 0.8 + 0.1); 
+                    } else if (isCoreParticle[i]) { 
+                        targetAlpha = (0.4 + averageVolume * 0.6) * (0.65 + bass * 0.35); 
+                    } else if (isTracerParticle[i]) { 
+                        targetAlpha = Math.sin(lifeRatio * Math.PI) * (0.25 + highs * 0.7); 
+                    } else { 
+                        targetAlpha = (0.015 + averageVolume * 0.985) * Math.sin(lifeRatio * Math.PI); 
+                    }
+                    targetAlpha = Math.min(1.0, Math.max(0.0005, targetAlpha)); alphas[i] = THREE.MathUtils.lerp(alphas[i], targetAlpha, 0.028);
+                }
+                this.geometry.attributes.position.needsUpdate = true; this.geometry.attributes.color.needsUpdate = true;
+                this.geometry.attributes.size.needsUpdate = true; this.geometry.attributes.alpha.needsUpdate = true;
+            }
+
+            dispose() {
+                 if (this.particlesObject) {
+                    if (this.nebulaHeart) this.particlesObject.remove(this.nebulaHeart);
+                    this.scene.remove(this.particlesObject);
+                    if (this.points) {
+                        if (this.points.geometry) this.points.geometry.dispose();
+                        if (this.points.material) { 
+                           if (this.points.material.map) this.points.material.map.dispose();
+                           this.points.material.dispose();
+                        }
+                    }
+                    if (this.nebulaHeart) { 
+                        if (this.nebulaHeart.geometry) this.nebulaHeart.geometry.dispose();
+                        if (this.nebulaHeart.material) this.nebulaHeart.material.dispose();
+                    }
+                    this.particlesObject = null; this.points = null; this.nebulaHeart = null;
+                }
+            }
+        }
+
+        function init() {
+            mp3ControlsContainer = document.getElementById('mp3ControlsContainer');
+            loadingMessageElement = document.getElementById('loadingMessage');
+            coordsElement = document.getElementById('coordinates');
+            radioStatusElement = document.getElementById('radioStatus');
+            startRadioButton = document.getElementById('startRadio');
+            stopRadioButton = document.getElementById('stopRadio');
+            audioFileInput = document.getElementById('audioFile');
+            radioControlsPanel = document.getElementById('radioControlsPanel'); 
+            playlistSubPanel = document.getElementById('playlistSubPanel');
+            playlistHeader = document.getElementById('playlistHeader'); 
+            playlistTitle = document.getElementById('playlistTitle');
+            togglePlaylistButton = document.getElementById('togglePlaylistButton');
+            playlistContent = document.getElementById('playlistContent');
+            cornerRadioDisplay = document.getElementById('cornerRadioDisplay');
+            cornerRadioDisplayTaguaTagua = document.getElementById('cornerRadioDisplayTaguaTagua'); 
+            nebulaRadarElement = document.getElementById('nebulaRadar');
+            radarArrowElement = document.getElementById('radarArrow');
+            radarDotElement = document.getElementById('radarDot'); 
+            radarDotTaguaTaguaElement = document.getElementById('radarDotTaguaTagua'); 
+            toggleRadarButton = document.getElementById('toggleRadarButton');
+            audioSettingsPanelElement = document.getElementById('audioSettingsPanel');
+            toggleAudioSettingsButton = document.getElementById('toggleAudioSettings');
+            nebulaSettingsPanelElement = document.getElementById('nebulaSettingsPanel');
+            toggleNebulaSettingsButton = document.getElementById('toggleNebulaSettings');
+            startTaguaTaguaRadioButton = document.getElementById('startTaguaTaguaRadio'); 
+            stopTaguaTaguaRadioButton = document.getElementById('stopTaguaTaguaRadio');   
+            taguaTaguaRadioStatusElement = document.getElementById('taguaTaguaRadioStatus'); 
+            minimizedPanelToggleSphereElement = document.getElementById('minimizedPanelToggleSphere');
+
+
+            panelHeaderElement = document.getElementById('panelHeader'); 
+            toggleControlsPanelButtonElement = document.getElementById('toggleControlsPanelButton');
+            
+            touchControlsContainer = document.getElementById('touch-controls-container');
+            joystickContainer = document.getElementById('joystick-container');
+            joystickKnob = document.getElementById('joystick-knob');
+            buttonUpElement = document.getElementById('button-up');
+            buttonDownElement = document.getElementById('button-down');
+            buttonHyperspaceElement = document.getElementById('button-hyperspace');
+
+
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0x000001); scene.fog = new THREE.FogExp2(0x000001, 0.0025);
+            camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 7000);
+            camera.position.set(0, 20, 70);
+            audioListener = new THREE.AudioListener(); camera.add(audioListener); audioContext = audioListener.context;
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            document.body.appendChild(renderer.domElement);
+            
+            const avatarGeometry = new THREE.SphereGeometry(0.1); const avatarMaterial = new THREE.MeshBasicMaterial({ visible: false });
+            avatarObject = new THREE.Mesh(avatarGeometry, avatarMaterial); 
+
+            const ambientLight = new THREE.AmbientLight(0x303050); scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0x6070a0, 0.3); directionalLight.position.set(20, 25, 15); scene.add(directionalLight);
+            
+            const clickTargetGeometry = new THREE.SphereGeometry(30, 16, 16); 
+            const clickTargetMaterial = new THREE.MeshBasicMaterial({ visible: false, transparent: true, opacity: 0 });
+            nebulaClickTarget = new THREE.Mesh(clickTargetGeometry, clickTargetMaterial); scene.add(nebulaClickTarget);
+            
+            const clickTargetGeometryTaguaTagua = new THREE.SphereGeometry(30, 16, 16); 
+            const clickTargetMaterialTaguaTagua = new THREE.MeshBasicMaterial({ visible: false, transparent: true, opacity: 0 }); 
+            nebulaClickTargetTaguaTagua = new THREE.Mesh(clickTargetGeometryTaguaTagua, clickTargetMaterialTaguaTagua); scene.add(nebulaClickTargetTaguaTagua); 
+
+            createStarryBackground();
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', onKeyDown); document.addEventListener('keyup', onKeyUp);
+            
+            renderer.domElement.addEventListener('mousemove', onMouseMoveRaycastAndCamera); 
+            renderer.domElement.addEventListener('mousedown', onMouseDown); 
+            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            renderer.domElement.addEventListener('wheel', onMouseWheel); 
+
+            audioFileInput.addEventListener('change', handleAudioFile);
+            startRadioButton.addEventListener('click', startRadio); stopRadioButton.addEventListener('click', stopRadio);
+            toggleAudioSettingsButton.addEventListener('click', () => {
+                audioSettingsPanelElement.style.display = audioSettingsPanelElement.style.display === 'none' ? 'block' : 'none';
+                if (audioSettingsPanelElement.style.display === 'block') nebulaSettingsPanelElement.style.display = 'none';
+            });
+            toggleNebulaSettingsButton.addEventListener('click', () => {
+                nebulaSettingsPanelElement.style.display = nebulaSettingsPanelElement.style.display === 'none' ? 'block' : 'none';
+                 if (nebulaSettingsPanelElement.style.display === 'block') audioSettingsPanelElement.style.display = 'none';
+            });
+            
+            if (playlistHeader) playlistHeader.addEventListener('click', togglePlaylistSubPanelView); 
+            
+            // --- Panel Minimization/Restoration Logic ---
+            if (panelHeaderElement && radioControlsPanel && toggleControlsPanelButtonElement && minimizedPanelToggleSphereElement) {
+                
+                minimizedPanelToggleSphereElement.addEventListener('click', () => {
+                    radioControlsPanel.style.display = 'flex'; // Make it part of layout for transition
+                    requestAnimationFrame(() => { // Allow display change to apply before removing class
+                        radioControlsPanel.classList.remove('hidden-completely');
+                        minimizedPanelToggleSphereElement.classList.remove('visible');
+                         // Hide sphere after its own transition (if any) or immediately
+                         setTimeout(() => { 
+                            if (!minimizedPanelToggleSphereElement.classList.contains('visible')) { // Check again in case of rapid clicks
+                                minimizedPanelToggleSphereElement.style.display = 'none';
+                            }
+                        }, 300); // Match opacity transition duration of sphere
+                    });
+                    // Ensure content is expanded when shown this way
+                    radioControlsPanel.classList.remove('minimized-content');
+                    toggleControlsPanelButtonElement.textContent = '-'; 
+                });
+
+                toggleControlsPanelButtonElement.addEventListener('click', (event) => {
+                    event.stopPropagation(); // Prevent header click from triggering hide-completely
+                    radioControlsPanel.classList.toggle('minimized-content');
+                    toggleControlsPanelButtonElement.textContent = radioControlsPanel.classList.contains('minimized-content') ? '+' : '-';
+                });
+
+                panelHeaderElement.addEventListener('click', (event) => {
+                    // Only trigger if the click is on the header itself or its title, not on the +/- button
+                    if (event.target === toggleControlsPanelButtonElement) return;
+                    if (event.target === panelHeaderElement || event.target.id === 'panelTitle') {
+                         if (!radioControlsPanel.classList.contains('hidden-completely')) {
+                            radioControlsPanel.classList.add('hidden-completely');
+                            // Set display to none AFTER transition
+                            setTimeout(() => {
+                                if (radioControlsPanel.classList.contains('hidden-completely')) { // Check again in case of rapid clicks
+                                     radioControlsPanel.style.display = 'none';
+                                }
+                            }, 300); // Match transition duration of panel
+
+                            minimizedPanelToggleSphereElement.style.display = 'flex'; // Make sphere part of layout
+                            requestAnimationFrame(() => { // Allow display change before adding class for transition
+                                minimizedPanelToggleSphereElement.classList.add('visible');
+                            });
+                         }
+                    }
+                });
+            }
+
+
+            toggleRadarButton.addEventListener('click', toggleRadarView);
+            
+            setupAudioSettingsControls(); 
+            setupNebulaSettingsControls();
+            if (toggleNebulaSettingsButton) toggleNebulaSettingsButton.style.display = 'none'; 
+            if (nebulaSettingsPanelElement) nebulaSettingsPanelElement.style.display = 'none'; 
+
+            audioElementTaguaTagua = new Audio(); 
+            audioElementTaguaTagua.crossOrigin = "anonymous"; 
+            audioElementTaguaTagua.preload = "auto"; 
+            startTaguaTaguaRadioButton.addEventListener('click', startTaguaTaguaRadio); 
+            stopTaguaTaguaRadioButton.addEventListener('click', stopTaguaTaguaRadio);   
+            audioElementTaguaTagua.addEventListener('error', (e) => { 
+                console.error("Error loading Tagua Tagua Radio stream. Event details:", e);
+                let userMessage = "Error desconocido en Stream Tagua Tagua.";
+                if (audioElementTaguaTagua.error) {
+                    console.error("Tagua Tagua audioElement.error - Code:", audioElementTaguaTagua.error.code, "Message:", audioElementTaguaTagua.error.message);
+                    switch (audioElementTaguaTagua.error.code) {
+                        case 1: userMessage = "Carga de Stream Tagua Tagua abortada."; break;
+                        case 2: userMessage = "Error de red con Stream Tagua Tagua. Verifique conexión o URL."; break;
+                        case 3: userMessage = "Error de decodificación Stream Tagua Tagua. Stream corrupto o formato no soportado."; break;
+                        case 4: userMessage = "Formato de Stream Tagua Tagua no soportado o URL inválida."; break;
+                        default: userMessage = `Error Stream Tagua Tagua (Código: ${audioElementTaguaTagua.error.code})`;
+                    }
+                }
+                if (taguaTaguaRadioStatusElement) taguaTaguaRadioStatusElement.textContent = userMessage;
+                isTaguaTaguaRadioPlaying = false;
+                if(startTaguaTaguaRadioButton) startTaguaTaguaRadioButton.disabled = false;
+                if(stopTaguaTaguaRadioButton) stopTaguaTaguaRadioButton.disabled = true;
+                if (cornerRadioDisplayTaguaTagua) cornerRadioDisplayTaguaTagua.classList.remove('visible');
+            });
+            audioElementTaguaTagua.addEventListener('ended', () => { 
+                if (taguaTaguaRadioStatusElement) taguaTaguaRadioStatusElement.textContent = "Stream Tagua Tagua finalizado.";
+                isTaguaTaguaRadioPlaying = false;
+                if(startTaguaTaguaRadioButton) startTaguaTaguaRadioButton.disabled = false;
+                if(stopTaguaTaguaRadioButton) stopTaguaTaguaRadioButton.disabled = true;
+                if (cornerRadioDisplayTaguaTagua) cornerRadioDisplayTaguaTagua.classList.remove('visible');
+                if (!isRadioPlaying) {
+                    if (toggleNebulaSettingsButton) toggleNebulaSettingsButton.style.display = 'none';
+                    if (nebulaSettingsPanelElement) nebulaSettingsPanelElement.style.display = 'none';
+                }
+            });
+
+            isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            if (isTouchDevice) {
+                console.log("Touch device detected. Initializing touch controls.");
+                if (touchControlsContainer) touchControlsContainer.style.display = 'block';
+                document.body.classList.add('touch-active');
+                initTouchControls();
+            } else {
+                console.log("Non-touch device detected.");
+            }
+
+
+            if (loadingMessageElement) loadingMessageElement.style.display = 'none';
+            const infoElement = document.getElementById('info');
+            if (infoElement) { 
+                infoElement.style.opacity = '1';
+                infoElement.classList.remove('fade-out');
+                setTimeout(() => { 
+                    if (infoElement) infoElement.classList.add('fade-out'); 
+                }, 7000); 
+            } 
+            animate();
+        }
+
+        function initTouchControls() {
+            joystickKnob.addEventListener('touchstart', handleJoystickStart, { passive: false });
+            document.addEventListener('touchmove', handleJoystickMove, { passive: false });
+            document.addEventListener('touchend', handleJoystickEnd, { passive: false });
+            document.addEventListener('touchcancel', handleJoystickEnd, { passive: false });
+
+            buttonUpElement.addEventListener('touchstart', () => { moveUp = true; }, { passive: true });
+            buttonUpElement.addEventListener('touchend', () => { moveUp = false; }, { passive: true });
+            buttonDownElement.addEventListener('touchstart', () => { moveDown = true; }, { passive: true });
+            buttonDownElement.addEventListener('touchend', () => { moveDown = false; }, { passive: true });
+            
+            if (buttonHyperspaceElement) {
+                buttonHyperspaceElement.addEventListener('touchstart', () => { hyperspaceActive = true; }, { passive: true });
+                buttonHyperspaceElement.addEventListener('touchend', () => { hyperspaceActive = false; }, { passive: true });
+            }
+
+
+            renderer.domElement.addEventListener('touchstart', handleTouchCameraAndPinchStart, { passive: false });
+            renderer.domElement.addEventListener('touchmove', handleTouchCameraAndPinchMove, { passive: false });
+            renderer.domElement.addEventListener('touchend', handleTouchCameraAndPinchEnd, { passive: false });
+            renderer.domElement.addEventListener('touchcancel', handleTouchCameraAndPinchEnd, { passive: false });
+        }
+
+        function handleJoystickStart(event) {
+            event.preventDefault();
+            if (event.target === joystickKnob && touchIdentifierJoystick === null) {
+                joystickActive = true;
+                const touch = event.changedTouches[0];
+                touchIdentifierJoystick = touch.identifier;
+                joystickInitialFingerPos.x = touch.clientX;
+                joystickInitialFingerPos.y = touch.clientY;
+                joystickKnob.style.backgroundColor = 'rgba(120, 120, 180, 0.9)';
+            }
+        }
+
+        function handleJoystickMove(event) {
+            if (!joystickActive || touchIdentifierJoystick === null) return;
+            
+            let touch = null;
+            for (let i = 0; i < event.changedTouches.length; i++) {
+                if (event.changedTouches[i].identifier === touchIdentifierJoystick) {
+                    touch = event.changedTouches[i];
+                    break;
+                }
+            }
+            if (!touch) return;
+            event.preventDefault(); 
+
+            const deltaX = touch.clientX - joystickInitialFingerPos.x;
+            const deltaY = touch.clientY - joystickInitialFingerPos.y;
+            let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const angle = Math.atan2(deltaY, deltaX);
+
+            let knobX = deltaX;
+            let knobY = deltaY;
+
+            if (distance > joystickMaxDistance) {
+                knobX = Math.cos(angle) * joystickMaxDistance;
+                knobY = Math.sin(angle) * joystickMaxDistance;
+            }
+            
+            joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+
+            const threshold = joystickMaxDistance * 0.15; 
+            moveForward = knobY < -threshold;
+            moveBackward = knobY > threshold;
+            moveLeft = knobX < -threshold;     
+            moveRight = knobX > threshold;    
+        }
+
+        function handleJoystickEnd(event) {
+            if (touchIdentifierJoystick === null) return;
+
+            let touchEndedOnJoystick = false;
+            for (let i = 0; i < event.changedTouches.length; i++) {
+                if (event.changedTouches[i].identifier === touchIdentifierJoystick) {
+                    touchEndedOnJoystick = true;
+                    break;
+                }
+            }
+
+            if (touchEndedOnJoystick) {
+                joystickActive = false;
+                touchIdentifierJoystick = null; 
+                joystickKnob.style.transform = `translate(0px, 0px)`; 
+                joystickKnob.style.backgroundColor = 'rgba(100, 100, 150, 0.7)';
+                
+                moveForward = false; moveBackward = false;
+                moveLeft = false;    moveRight = false;
+            }
+        }
+
+        function handleTouchCameraAndPinchStart(event) {
+            if (event.target !== renderer.domElement) return;
+            
+            const currentTime = new Date().getTime();
+            const touch = event.touches[0]; 
+
+            if (event.touches.length === 1 && touchIdentifierCamera === null && 
+                (touchIdentifierJoystick === null || touch.identifier !== touchIdentifierJoystick) ) {
+                
+                const dx = touch.clientX - lastTapPosition.x;
+                const dy = touch.clientY - lastTapPosition.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (currentTime - lastTapTime < DOUBLE_TAP_TIME_THRESHOLD && distance < DOUBLE_TAP_POS_THRESHOLD) {
+                    event.preventDefault(); 
+                    handleDoubleTap(touch);
+                    lastTapTime = 0; 
+                    return; 
+                } else {
+                    event.preventDefault();
+                    touchCameraActive = true;
+                    touchIdentifierCamera = touch.identifier;
+                    touchCameraInitialFingerPos.x = touch.clientX;
+                    touchCameraInitialFingerPos.y = touch.clientY;
+                    initialPinchDistance = null; 
+                    touchIdentifierPinch1 = null;
+                    touchIdentifierPinch2 = null;
+                }
+                lastTapTime = currentTime;
+                lastTapPosition.x = touch.clientX;
+                lastTapPosition.y = touch.clientY;
+
+
+            } else if (event.touches.length >= 2) { 
+                event.preventDefault();
+                touchCameraActive = false; 
+                touchIdentifierCamera = null; 
+
+                let pinchTouches = [];
+                for (let i=0; i < event.touches.length; i++) {
+                    if (event.touches[i].identifier !== touchIdentifierJoystick) {
+                        pinchTouches.push(event.touches[i]);
+                    }
+                    if (pinchTouches.length === 2) break;
+                }
+
+                if (pinchTouches.length === 2) {
+                    touchIdentifierPinch1 = pinchTouches[0].identifier;
+                    touchIdentifierPinch2 = pinchTouches[1].identifier;
+                    initialPinchDistance = getPinchDistance(pinchTouches[0], pinchTouches[1]);
+                } else { 
+                    initialPinchDistance = null;
+                    touchIdentifierPinch1 = null;
+                    touchIdentifierPinch2 = null;
+                }
+            }
+        }
+        
+        function handleDoubleTap(touch) {
+            console.log("Double tap detected at", touch.clientX, touch.clientY);
+            mouseNDCRaycast.x = (touch.clientX / window.innerWidth) * 2 - 1;
+            mouseNDCRaycast.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouseNDCRaycast, camera);
+
+            let tappedNebula = null;
+            let tappedNebulaPosition = null; 
+            
+            if (radioNebulaInstance && nebulaClickTarget) {
+                const intersectsMp3 = raycaster.intersectObject(nebulaClickTarget, false);
+                if (intersectsMp3.length > 0) {
+                    tappedNebula = radioNebulaInstance;
+                    tappedNebulaPosition = radioNebulaInstance.currentDynamicPosition; 
+                }
+            }
+            if (!tappedNebula && radioNebulaInstanceTaguaTagua && nebulaClickTargetTaguaTagua) {
+                const intersectsTaguaTagua = raycaster.intersectObject(nebulaClickTargetTaguaTagua, false);
+                if (intersectsTaguaTagua.length > 0) {
+                    tappedNebula = radioNebulaInstanceTaguaTagua;
+                    tappedNebulaPosition = radioNebulaInstanceTaguaTagua.currentDynamicPosition; 
+                }
+            }
+
+            if (tappedNebula && tappedNebulaPosition) {
+                if (isOrbitingNebula && orbitingNebulaInstance === tappedNebula) {
+                    isOrbitingNebula = false;
+                    orbitingNebulaInstance = null;
+                    cameraTransitioning = false;
+                    const currentWorldQuaternion = new THREE.Quaternion();
+                    camera.getWorldQuaternion(currentWorldQuaternion);
+                    const euler = new THREE.Euler().setFromQuaternion(currentWorldQuaternion, 'YXZ');
+                    yawAngle = euler.y; 
+                    pitchAngle = euler.x; 
+                    orbitViewVelocityH = 0; orbitViewVelocityV = 0; // Reset momentum
+                    console.log("Double tap: Exited orbit from", tappedNebula.type);
+
+                } else if (!isOrbitingNebula && !cameraTransitioning) {
+                    isOrbitingNebula = true;
+                    orbitingNebulaInstance = tappedNebula;
+                    cameraTransitioning = true;
+                    orbitTransitionAlpha = 0;
+                    
+                    orbitViewVelocityH = 0; orbitViewVelocityV = 0; // Reset momentum
+
+                    preOrbitPosition.copy(camera.position);
+                    preOrbitQuaternion.copy(camera.quaternion);
+
+                    const currentDistance = camera.position.distanceTo(tappedNebulaPosition);
+                    orbitDistance = Math.max(MIN_ORBIT_DISTANCE, Math.min(MAX_ORBIT_DISTANCE, currentDistance * 0.8)); 
+                    
+                    const directionToNebula = new THREE.Vector3().subVectors(tappedNebulaPosition, camera.position);
+                    currentOrbitPositionAngleH = Math.atan2(directionToNebula.x, directionToNebula.z); 
+                    currentOrbitPositionAngleV = Math.asin(THREE.MathUtils.clamp(directionToNebula.y / (currentDistance + 0.001), -1, 1));
+                    
+                    targetOrbitPosition.set( 
+                        tappedNebulaPosition.x + orbitDistance * Math.cos(currentOrbitPositionAngleH) * Math.cos(currentOrbitPositionAngleV),
+                        tappedNebulaPosition.y + orbitDistance * Math.sin(currentOrbitPositionAngleV) * ORBIT_VERTICAL_AMPLITUDE_FACTOR,
+                        tappedNebulaPosition.z + orbitDistance * Math.sin(currentOrbitPositionAngleH) * Math.cos(currentOrbitPositionAngleV)
+                    );
+                    const tempMatrix = new THREE.Matrix4().lookAt(targetOrbitPosition, tappedNebulaPosition, currentCameraUp);
+                    targetOrbitQuaternion.setFromRotationMatrix(tempMatrix); 
+                    console.log("Double tap: Entered orbit to", tappedNebula.type);
+                }
+            } else if (isOrbitingNebula) { 
+                isOrbitingNebula = false;
+                orbitingNebulaInstance = null;
+                cameraTransitioning = false;
+                const currentWorldQuaternion = new THREE.Quaternion();
+                camera.getWorldQuaternion(currentWorldQuaternion);
+                const euler = new THREE.Euler().setFromQuaternion(currentWorldQuaternion, 'YXZ');
+                yawAngle = euler.y;
+                pitchAngle = euler.x;
+                orbitViewVelocityH = 0; orbitViewVelocityV = 0;
+                console.log("Double tap: Exited orbit (tapped empty space)");
+            }
+        }
+
+
+        function handleTouchCameraAndPinchMove(event) {
+            if (event.target !== renderer.domElement) return;
+            
+            if (touchCameraActive && touchIdentifierCamera !== null && event.touches.length === 1) {
+                event.preventDefault();
+                let touch = null;
+                for (let i = 0; i < event.changedTouches.length; i++) {
+                    if (event.changedTouches[i].identifier === touchIdentifierCamera) {
+                        touch = event.changedTouches[i];
+                        break;
+                    }
+                }
+                if (!touch) return;
+
+                const deltaX = touch.clientX - touchCameraInitialFingerPos.x;
+                const deltaY = touch.clientY - touchCameraInitialFingerPos.y;
+                
+                if (!isOrbitingNebula) { 
+                    yawAngle -= deltaX * mouseSensitivity * 1.8; 
+                    pitchAngle -= deltaY * mouseSensitivity * 1.8;
+                    pitchAngle = Math.max(-Math.PI / 1.95, Math.min(Math.PI / 1.95, pitchAngle)); 
+                } else { 
+                    // When orbiting, touch drag contributes to the orbit view velocity for momentum
+                    orbitViewVelocityH -= deltaX * orbitViewTouchSensitivity * 0.1; // Adjust multiplier for desired effect
+                    orbitViewVelocityV -= deltaY * orbitViewTouchSensitivity * 0.1;
+                }
+                touchCameraInitialFingerPos.x = touch.clientX;
+                touchCameraInitialFingerPos.y = touch.clientY;
+
+            } else if (initialPinchDistance !== null && event.touches.length >= 2) {
+                event.preventDefault();
+                let t1 = null, t2 = null;
+                for(let i=0; i < event.touches.length; i++) {
+                    if(event.touches[i].identifier === touchIdentifierPinch1) t1 = event.touches[i];
+                    if(event.touches[i].identifier === touchIdentifierPinch2) t2 = event.touches[i];
+                }
+
+                if (t1 && t2) {
+                    const currentPinchDistance = getPinchDistance(t1, t2);
+                    const deltaDistance = currentPinchDistance - initialPinchDistance;
+                    
+                    if (isOrbitingNebula) {
+                        orbitDistance -= deltaDistance * pinchZoomSensitivity * 2; 
+                        orbitDistance = Math.max(MIN_ORBIT_DISTANCE, Math.min(MAX_ORBIT_DISTANCE, orbitDistance));
+                    } else { 
+                        camera.fov -= deltaDistance * pinchZoomSensitivity * 0.1;
+                        camera.fov = Math.max(30, Math.min(100, camera.fov));
+                        camera.updateProjectionMatrix();
+                    }
+                    initialPinchDistance = currentPinchDistance; 
+                }
+            }
+        }
+
+        function handleTouchCameraAndPinchEnd(event) {
+             if (event.target !== renderer.domElement && !document.body.contains(event.target)) return; 
+
+            let cameraTouchFoundAndEnded = false;
+            if (touchIdentifierCamera !== null) {
+                for (let i = 0; i < event.changedTouches.length; i++) {
+                    if (event.changedTouches[i].identifier === touchIdentifierCamera) {
+                        cameraTouchFoundAndEnded = true;
+                        break;
+                    }
+                }
+            }
+            if (cameraTouchFoundAndEnded) {
+                touchCameraActive = false;
+                touchIdentifierCamera = null;
+                // Momentum for orbit view is handled by velocities, no need to reset target here if using velocity based momentum
+            }
+
+            let pinchTouch1FoundAndEnded = false;
+            let pinchTouch2FoundAndEnded = false;
+
+            if (touchIdentifierPinch1 !== null || touchIdentifierPinch2 !== null) {
+                for (let i = 0; i < event.changedTouches.length; i++) {
+                    if (event.changedTouches[i].identifier === touchIdentifierPinch1) {
+                        pinchTouch1FoundAndEnded = true;
+                    }
+                    if (event.changedTouches[i].identifier === touchIdentifierPinch2) {
+                        pinchTouch2FoundAndEnded = true;
+                    }
+                }
+            }
+            
+            if (pinchTouch1FoundAndEnded || pinchTouch2FoundAndEnded || (initialPinchDistance !== null && event.touches.length < 2) ) {
+                initialPinchDistance = null;
+                touchIdentifierPinch1 = null;
+                touchIdentifierPinch2 = null;
+            }
+            if (event.touches.length === 0) { 
+                touchCameraActive = false;
+                touchIdentifierCamera = null;
+                initialPinchDistance = null;
+                touchIdentifierPinch1 = null;
+                touchIdentifierPinch2 = null;
+            }
+        }
+
+        function getPinchDistance(touch1, touch2) { 
+            const dx = touch1.clientX - touch2.clientX;
+            const dy = touch1.clientY - touch2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+
+        function togglePlaylistSubPanelView() {
+            if (!playlistSubPanel || !togglePlaylistButton || !playlistTitle) return;
+            playlistSubPanel.classList.toggle('minimized');
+            const isNowMinimized = playlistSubPanel.classList.contains('minimized');
+            
+            if (isNowMinimized) {
+                playlistSubPanel.classList.remove('minimized-by-radio');
+            }
+
+            togglePlaylistButton.textContent = isNowMinimized ? '+' : '-';
+            let titleText = "Playlist (MP3 Local)";
+            if (isRadioPlaying) {
+                 titleText = `MP3: ${currentAudioFileName.substring(0,12)}...`;
+            }
+            playlistTitle.textContent = isNowMinimized ? `${titleText} (Cerrada)` : titleText;
+        }
+
+        function toggleRadarView(event) {
+            event.stopPropagation(); 
+            nebulaRadarElement.classList.toggle('minimized');
+            toggleRadarButton.textContent = nebulaRadarElement.classList.contains('minimized') ? '+' : '-';
+        }
+
+        function createStarryBackground() {
+            const starCount = 75000; const starGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(starCount * 3);
+            for (let i = 0; i < starCount; i++) {
+                const r = 1500 + Math.random() * 6000; const theta = Math.random() * Math.PI * 2;
+                const u = Math.random(); const v = Math.random(); const phi = Math.acos(2 * u - 1);
+                positions[i * 3] = r * Math.sin(phi) * Math.cos(theta); positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta); positions[i * 3 + 2] = r * Math.cos(phi);
+            }
+            starGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const starMaterial = new THREE.PointsMaterial({ size: 0.30, color: 0xddeeff, transparent: true, opacity: 0.35 + Math.random() * 0.20, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: false });
+            const stars = new THREE.Points(starGeometry, starMaterial); scene.add(stars);
+        }
+
+        function handleAudioFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                audioElement.src = URL.createObjectURL(file); audioElement.load(); currentAudioFileName = file.name;
+                radioStatusElement.textContent = `Listo: ${file.name.substring(0,25)}${file.name.length > 25 ? '...' : ''}`;
+                startRadioButton.disabled = false; stopRadioButton.disabled = true;
+                if (playlistSubPanel.classList.contains('minimized')) {
+                    playlistTitle.textContent = `Archivo: ${currentAudioFileName.substring(0,12)}... (Cerrada)`;
+                } else {
+                    playlistTitle.textContent = `Archivo: ${currentAudioFileName.substring(0,20)}...`;
+                }
+            }
+        }
+        
+        function startRadio() { 
+            if (!audioElement.src) { radioStatusElement.textContent = "Carga un archivo de audio."; return; }
+            if (audioContext.state === 'suspended') { audioContext.resume().then(() => proceedWithRadioStart()).catch(e => console.error("Error resuming AudioContext:", e));} 
+            else { proceedWithRadioStart(); }
+        }
+
+        function proceedWithRadioStart() { 
+            audioElement.loop = true; 
+            if (!analyserNode) {
+                analyserNode = audioContext.createAnalyser(); analyserNode.fftSize = 512; analyserNode.smoothingTimeConstant = 0.75;
+                bufferLength = analyserNode.frequencyBinCount; 
+                frequencyData = new Uint8Array(bufferLength); timeDomainData = new Uint8Array(analyserNode.fftSize);
+            }
+            if (!positionalAudio) { positionalAudio = new THREE.PositionalAudio(audioListener); }
+            
+            if (!mediaElementSource || mediaElementSource.mediaElement !== audioElement) {
+                if (mediaElementSource && mediaElementSource.disconnect) { try { mediaElementSource.disconnect(); } catch(e) {} }
+                try { mediaElementSource = audioContext.createMediaElementSource(audioElement); }
+                catch (e) { console.error("Error creating MediaElementSource MP3:", e); radioStatusElement.textContent = "Error fuente MP3."; return; }
+            }
+            try { mediaElementSource.disconnect(); } catch(e) {} 
+            mediaElementSource.connect(analyserNode); 
+            positionalAudio.setNodeSource(analyserNode); 
+
+            if (radioNebulaInstance) { radioNebulaInstance.dispose(); }
+            radioNebulaInstance = new RadioNebula(scene, NEBULA_MP3_INITIAL_POS, analyserNode, nebulaConfig, 'mp3', false);
+            radioNebulaInstance.particlesObject.add(positionalAudio); 
+            nebulaClickTarget.position.copy(radioNebulaInstance.currentDynamicPosition); 
+            nebulaClickTarget.geometry.dispose(); nebulaClickTarget.geometry = new THREE.SphereGeometry(radioNebulaInstance.maxExpansionRadius * 0.4, 16, 16);
+            applyCurrentAudioSettings(); 
+            audioElement.play().then(() => {
+                isRadioPlaying = true; 
+                startRadioButton.disabled = true; stopRadioButton.disabled = false;
+                
+                if (playlistSubPanel) { 
+                    playlistSubPanel.classList.add('minimized-by-radio'); 
+                    playlistSubPanel.classList.add('minimized'); 
+                    if (togglePlaylistButton) togglePlaylistButton.textContent = '+'; 
+                    if (playlistTitle) playlistTitle.textContent = `MP3: ${currentAudioFileName.substring(0,12)}... (Min)`;
+                }
+
+
+                cornerRadioDisplay.innerHTML = `MP3: <span>${currentAudioFileName.substring(0,20)}${currentAudioFileName.length > 20 ? '...' : ''}</span>`;
+                cornerRadioDisplay.classList.add('visible'); 
+                if (toggleNebulaSettingsButton) toggleNebulaSettingsButton.style.display = 'block';
+            }).catch(error => { console.error("Error al reproducir audio MP3:", error); radioStatusElement.textContent = "Error de reproducción MP3."; });
+        }
+
+        function stopRadio() { 
+            if (audioElement && isRadioPlaying) { audioElement.pause(); isRadioPlaying = false; }
+            if (orbitingNebulaInstance === radioNebulaInstance) { 
+                isOrbitingNebula = false; orbitingNebulaInstance = null; cameraTransitioning = false;
+            }
+            if (playlistSubPanel) { 
+                 playlistSubPanel.classList.remove('minimized-by-radio');
+                 playlistSubPanel.classList.remove('minimized'); 
+                 if (playlistTitle) playlistTitle.textContent = `Playlist (MP3 Local)`;
+                 if (togglePlaylistButton) togglePlaylistButton.textContent = '-';
+            }
+            startRadioButton.disabled = !audioElement.src; stopRadioButton.disabled = true;
+
+            cornerRadioDisplay.classList.remove('visible');
+            radioStatusElement.textContent = "Radio MP3 Pausada.";
+            if (!isTaguaTaguaRadioPlaying) { 
+                 if (toggleNebulaSettingsButton) toggleNebulaSettingsButton.style.display = 'none';
+                 if (nebulaSettingsPanelElement) nebulaSettingsPanelElement.style.display = 'none';
+            }
+        }
+
+        function startTaguaTaguaRadio() { 
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().then(() => proceedWithTaguaTaguaRadioStart()).catch(e => { 
+                    console.error("Error resuming AudioContext for Tagua Tagua Radio:", e);
+                    if (taguaTaguaRadioStatusElement) taguaTaguaRadioStatusElement.textContent = "Error AudioContext Tagua Tagua.";
+                });
+            } else { proceedWithTaguaTaguaRadioStart(); } 
+        }
+
+        function proceedWithTaguaTaguaRadioStart() { 
+            if (taguaTaguaRadioStatusElement) taguaTaguaRadioStatusElement.textContent = "Conectando a Stream Tagua Tagua...";
+            if (audioElementTaguaTagua.src !== TAGUA_TAGUA_STREAM_URL || audioElementTaguaTagua.error) {
+                audioElementTaguaTagua.src = TAGUA_TAGUA_STREAM_URL;
+            }
+            audioElementTaguaTagua.load(); 
+
+            if (!analyserNodeTaguaTagua) { 
+                analyserNodeTaguaTagua = audioContext.createAnalyser();
+                analyserNodeTaguaTagua.fftSize = 512; analyserNodeTaguaTagua.smoothingTimeConstant = 0.75;
+                bufferLengthTaguaTagua = analyserNodeTaguaTagua.frequencyBinCount; 
+                frequencyDataTaguaTagua = new Uint8Array(bufferLengthTaguaTagua); 
+                timeDomainDataTaguaTagua = new Uint8Array(analyserNodeTaguaTagua.fftSize); 
+            }
+            if (!positionalAudioTaguaTagua) { positionalAudioTaguaTagua = new THREE.PositionalAudio(audioListener); } 
+
+            if (!mediaElementSourceTaguaTagua || mediaElementSourceTaguaTagua.mediaElement !== audioElementTaguaTagua) { 
+                 if (mediaElementSourceTaguaTagua && mediaElementSourceTaguaTagua.disconnect) { try {mediaElementSourceTaguaTagua.disconnect();} catch(e){} } 
+                try { mediaElementSourceTaguaTagua = audioContext.createMediaElementSource(audioElementTaguaTagua); } 
+                catch (e) { 
+                    console.error("Error creating MediaElementSource for Tagua Tagua Radio:", e);
+                    if (taguaTaguaRadioStatusElement) taguaTaguaRadioStatusElement.textContent = "Error fuente Tagua Tagua.";
+                    if (e.name !== "InvalidStateError") { return; }
+                    console.warn("Tagua Tagua Radio MediaElementSource InvalidStateError, attempting to proceed.");
+                 }
+            }
+            
+            if (mediaElementSourceTaguaTagua) { 
+                try { mediaElementSourceTaguaTagua.disconnect(); } catch(e) { /* ignore */ } 
+                mediaElementSourceTaguaTagua.connect(analyserNodeTaguaTagua); 
+                positionalAudioTaguaTagua.setNodeSource(analyserNodeTaguaTagua); 
+            }
+
+            if (radioNebulaInstanceTaguaTagua) { radioNebulaInstanceTaguaTagua.dispose(); } 
+            radioNebulaInstanceTaguaTagua = new RadioNebula(scene, NEBULA_TAGUA_INITIAL_POS, analyserNodeTaguaTagua, nebulaConfig, 'tagua_tagua', true); 
+            radioNebulaInstanceTaguaTagua.particlesObject.add(positionalAudioTaguaTagua); 
+            
+            nebulaClickTargetTaguaTagua.position.copy(radioNebulaInstanceTaguaTagua.currentDynamicPosition); 
+            nebulaClickTargetTaguaTagua.geometry.dispose(); 
+            nebulaClickTargetTaguaTagua.geometry = new THREE.SphereGeometry(radioNebulaInstanceTaguaTagua.maxExpansionRadius * 0.5, 16, 16); 
+
+            applyCurrentAudioSettings(); 
+
+            audioElementTaguaTagua.play().then(() => { 
+                isTaguaTaguaRadioPlaying = true; 
+                startTaguaTaguaRadioButton.disabled = true; stopTaguaTaguaRadioButton.disabled = false; 
+                if (taguaTaguaRadioStatusElement) taguaTaguaRadioStatusElement.textContent = "Stream Tagua Tagua Reproduciendo"; 
+                if (toggleNebulaSettingsButton) toggleNebulaSettingsButton.style.display = 'block'; 
+                if (cornerRadioDisplayTaguaTagua) { 
+                    cornerRadioDisplayTaguaTagua.innerHTML = `RADIO TAGUA TAGUA: <span>Stream Activo</span>`; 
+                    cornerRadioDisplayTaguaTagua.classList.add('visible');
+                }
+            }).catch(error => {
+                console.error("Error al reproducir Stream Tagua Tagua (play() promise rejected):", error);
+                if (taguaTaguaRadioStatusElement) taguaTaguaRadioStatusElement.textContent = "Error reproducción Tagua Tagua.";
+                isTaguaTaguaRadioPlaying = false; 
+                if(startTaguaTaguaRadioButton) startTaguaTaguaRadioButton.disabled = false; 
+                if(stopTaguaTaguaRadioButton) stopTaguaTaguaRadioButton.disabled = true;
+                if (cornerRadioDisplayTaguaTagua) cornerRadioDisplayTaguaTagua.classList.remove('visible'); 
+            });
+        }
+        function stopTaguaTaguaRadio() { 
+            if (audioElementTaguaTagua) { audioElementTaguaTagua.pause(); audioElementTaguaTagua.src = ''; audioElementTaguaTagua.load(); } 
+            isTaguaTaguaRadioPlaying = false;  
+            if (orbitingNebulaInstance === radioNebulaInstanceTaguaTagua) {  
+                isOrbitingNebula = false; orbitingNebulaInstance = null; cameraTransitioning = false;
+            }
+             startTaguaTaguaRadioButton.disabled = false; stopTaguaTaguaRadioButton.disabled = true; 
+            if (taguaTaguaRadioStatusElement) taguaTaguaRadioStatusElement.textContent = "Stream Tagua Tagua Detenido."; 
+            if (radioNebulaInstanceTaguaTagua) { radioNebulaInstanceTaguaTagua.dispose(); radioNebulaInstanceTaguaTagua = null; } 
+            if (cornerRadioDisplayTaguaTagua) cornerRadioDisplayTaguaTagua.classList.remove('visible'); 
+            if (!isRadioPlaying) { 
+                 if (toggleNebulaSettingsButton) toggleNebulaSettingsButton.style.display = 'none';
+                 if (nebulaSettingsPanelElement) nebulaSettingsPanelElement.style.display = 'none';
+            }
+        }
+
+        function setupAudioSettingsControls() {
+            const settings = [
+                { id: 'distanceModel', prop: 'distanceModel', type: 'select', valueId: null },
+                { id: 'rolloffFactor', prop: 'rolloffFactor', type: 'range', valueId: 'rolloffFactorValue' },
+                { id: 'refDistance', prop: 'refDistance', type: 'range', valueId: 'refDistanceValue' },
+                { id: 'maxDistance', prop: 'maxDistance', type: 'range', valueId: 'maxDistanceValue' }
+            ];
+            settings.forEach(setting => {
+                const el = document.getElementById(setting.id);
+                const valueEl = setting.valueId ? document.getElementById(setting.valueId) : null;
+                if (!el) { console.warn(`Elemento de UI no encontrado: ${setting.id}`); return; }
+                el.addEventListener('input', (e) => {
+                    const value = setting.type === 'select' ? e.target.value : parseFloat(e.target.value);
+                    if (valueEl) valueEl.textContent = value;
+                    if (positionalAudio && positionalAudio.panner) { positionalAudio.panner[setting.prop] = value; }
+                    if (positionalAudioTaguaTagua && positionalAudioTaguaTagua.panner) { positionalAudioTaguaTagua.panner[setting.prop] = value; } 
+                });
+                 if (valueEl && el) valueEl.textContent = el.value; 
+            });
+        }
+        function applyCurrentAudioSettings() {
+            const distanceModelEl = document.getElementById('distanceModel');
+            const rolloffFactorEl = document.getElementById('rolloffFactor');
+            const refDistanceEl = document.getElementById('refDistance');
+            const maxDistanceEl = document.getElementById('maxDistance');
+
+            if(!distanceModelEl || !rolloffFactorEl || !refDistanceEl || !maxDistanceEl) {
+                console.warn("Algunos elementos de configuración de audio no se encontraron. No se aplicarán los ajustes.");
+                return;
+            }
+
+            const settingsToApply = {
+                distanceModel: distanceModelEl.value,
+                rolloffFactor: parseFloat(rolloffFactorEl.value),
+                refDistance: parseFloat(refDistanceEl.value),
+                maxDistance: parseFloat(maxDistanceEl.value)
+            };
+
+            if (positionalAudio && positionalAudio.panner) {
+                Object.assign(positionalAudio.panner, settingsToApply);
+            }
+            if (positionalAudioTaguaTagua && positionalAudioTaguaTagua.panner) { 
+                Object.assign(positionalAudioTaguaTagua.panner, settingsToApply); 
+            }
+        }
+
+        function setupNebulaSettingsControls() {
+             const settings = [
+                { id: 'nebulaBaseSize', prop: 'baseSize', valueId: 'nebulaBaseSizeValue', factor: 1, decimals: 0 },
+                { id: 'nebulaPulseIntensity', prop: 'pulseIntensity', valueId: 'nebulaPulseIntensityValue', factor: 1, decimals: 1 },
+                { id: 'nebulaPulseSpeedFactor', prop: 'pulseSpeedFactor', valueId: 'nebulaPulseSpeedFactorValue', factor: 1, decimals: 3 },
+                { id: 'nebulaRotationSpeedFactor', prop: 'rotationSpeedFactor', valueId: 'nebulaRotationSpeedFactorValue', factor: 1, decimals: 4 },
+                { id: 'nebulaCoreBrightness', prop: 'coreBrightness', valueId: 'nebulaCoreBrightnessValue', factor: 1, decimals: 2 },
+                { id: 'nebulaGeneralOpacity', prop: 'generalOpacity', valueId: 'nebulaGeneralOpacityValue', factor: 1, decimals: 2 },
+                { id: 'nebulaColorIntensity', prop: 'colorIntensityAudio', valueId: 'nebulaColorIntensityValue', factor: 1, decimals: 2 },
+                { id: 'nebulaCoreColorSpeed', prop: 'coreColorSpeed', valueId: 'nebulaCoreColorSpeedValue', factor: 1, decimals: 2 },
+                { id: 'nebulaOuterColorSpeed', prop: 'outerColorSpeed', valueId: 'nebulaOuterColorSpeedValue', factor: 1, decimals: 2 }
+            ];
+            settings.forEach(setting => {
+                const el = document.getElementById(setting.id);
+                const valueEl = document.getElementById(setting.valueId);
+                if (el && valueEl) { 
+                    el.addEventListener('input', (e) => {
+                        const value = parseFloat(e.target.value);
+                        valueEl.textContent = value.toFixed(setting.decimals);
+                        nebulaConfig[setting.prop] = value * setting.factor;
+                        if (radioNebulaInstance) { 
+                            radioNebulaInstance.config[setting.prop] = value * setting.factor;
+                            radioNebulaInstance.applyConfigChange();
+                        }
+                        if (radioNebulaInstanceTaguaTagua) {  
+                            radioNebulaInstanceTaguaTagua.config[setting.prop] = value * setting.factor; 
+                            radioNebulaInstanceTaguaTagua.applyConfigChange(); 
+                        }
+                    });
+                    const initialValue = parseFloat(el.value);
+                    valueEl.textContent = initialValue.toFixed(setting.decimals);
+                    nebulaConfig[setting.prop] = initialValue * setting.factor;
+                }
+            });
+        }
+
+        function onWindowResize() { 
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        function onKeyDown(event) {
+            if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT')) {
+                return;
+            }
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break; case 'KeyS': moveBackward = true; break;
+                case 'KeyA': moveLeft = true; break; case 'KeyD': moveRight = true; break;
+                case 'KeyZ': moveUp = true; break; case 'KeyX': moveDown = true; break;
+                case 'KeyQ': rotateViewLeft = true; break; case 'KeyE': rotateViewRight = true; break;
+                case 'Space': if (!hyperspaceActive) { hyperspaceActive = true; } break;
+                case 'KeyC':
+                    if (event.shiftKey) { 
+                        if (isOrbitingNebula) {
+                            isOrbitingNebula = false; orbitingNebulaInstance = null; cameraTransitioning = false;
+                            const currentWorldQuaternion = new THREE.Quaternion();
+                            camera.getWorldQuaternion(currentWorldQuaternion);
+                            const euler = new THREE.Euler().setFromQuaternion(currentWorldQuaternion, 'YXZ');
+                            yawAngle = euler.y; pitchAngle = euler.x;
+                            orbitViewVelocityH = 0; orbitViewVelocityV = 0;
+                        }
+                    } else { 
+                        let targetNebulaToOrbit = null;
+                        let targetNebulaPositionToOrbit = null;
+
+                        if (isMouseOverNebulaTarget && radioNebulaInstance) {
+                            targetNebulaToOrbit = radioNebulaInstance;
+                            targetNebulaPositionToOrbit = radioNebulaInstance.currentDynamicPosition;
+                        } else if (isMouseOverNebulaTargetTaguaTagua && radioNebulaInstanceTaguaTagua) { 
+                            targetNebulaToOrbit = radioNebulaInstanceTaguaTagua; 
+                            targetNebulaPositionToOrbit = radioNebulaInstanceTaguaTagua.currentDynamicPosition; 
+                        }
+
+                        if (targetNebulaToOrbit && !isOrbitingNebula && !cameraTransitioning) {
+                            isOrbitingNebula = true;
+                            orbitingNebulaInstance = targetNebulaToOrbit; 
+                            cameraTransitioning = true;
+                            orbitTransitionAlpha = 0;
+                            
+                            orbitViewVelocityH = 0; orbitViewVelocityV = 0;
+
+                            preOrbitPosition.copy(camera.position);
+                            preOrbitQuaternion.copy(camera.quaternion);
+
+                            const currentDistance = camera.position.distanceTo(targetNebulaPositionToOrbit);
+                            orbitDistance = Math.max(MIN_ORBIT_DISTANCE, Math.min(MAX_ORBIT_DISTANCE, currentDistance * 0.8));
+
+                            const directionToNebula = new THREE.Vector3().subVectors(targetNebulaPositionToOrbit, camera.position);
+                            currentOrbitPositionAngleH = Math.atan2(directionToNebula.x, directionToNebula.z);
+                            currentOrbitPositionAngleV = Math.asin(THREE.MathUtils.clamp(directionToNebula.y / (currentDistance + 0.001), -1, 1));
+
+                            targetOrbitPosition.set(
+                                targetNebulaPositionToOrbit.x + orbitDistance * Math.cos(currentOrbitPositionAngleH) * Math.cos(currentOrbitPositionAngleV),
+                                targetNebulaPositionToOrbit.y + orbitDistance * Math.sin(currentOrbitPositionAngleV) * ORBIT_VERTICAL_AMPLITUDE_FACTOR,
+                                targetNebulaPositionToOrbit.z + orbitDistance * Math.sin(currentOrbitPositionAngleH) * Math.cos(currentOrbitPositionAngleV)
+                            );
+
+                            const tempMatrix = new THREE.Matrix4().lookAt(targetOrbitPosition, targetNebulaPositionToOrbit, currentCameraUp);
+                            targetOrbitQuaternion.setFromRotationMatrix(tempMatrix);
+                        }
+                    }
+                    break;
+            }
+        }
+        function onKeyUp(event) { 
+            if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT')) {
+                return;
+            }
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break; case 'KeyS': moveBackward = false; break;
+                case 'KeyA': moveLeft = false; break; case 'KeyD': moveRight = false; break;
+                case 'KeyZ': moveUp = false; break; case 'KeyX': moveDown = false; break;
+                case 'KeyQ': rotateViewLeft = false; break; case 'KeyE': rotateViewRight = false; break;
+                case 'Space': if (hyperspaceActive) { hyperspaceActive = false; } break;
+            }
+        }
+        
+        const raycaster = new THREE.Raycaster();
+        const mouseNDCRaycast = new THREE.Vector2();
+
+        function onMouseMoveRaycastAndCamera(event) { 
+            mouseNDCRaycast.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouseNDCRaycast.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouseNDCRaycast, camera);
+
+            if (nebulaClickTarget && radioNebulaInstance) {
+                const intersectsMp3 = raycaster.intersectObject(nebulaClickTarget, false);
+                isMouseOverNebulaTarget = intersectsMp3.length > 0;
+            } else { isMouseOverNebulaTarget = false; }
+
+            if (nebulaClickTargetTaguaTagua && radioNebulaInstanceTaguaTagua) { 
+                const intersectsTaguaTagua = raycaster.intersectObject(nebulaClickTargetTaguaTagua, false); 
+                isMouseOverNebulaTargetTaguaTagua = intersectsTaguaTagua.length > 0; 
+            } else { isMouseOverNebulaTargetTaguaTagua = false; } 
+
+            if (isDragging && !touchCameraActive && !cameraTransitioning) {
+                 if (!isOrbitingNebula) { 
+                    const deltaX = event.clientX - previousMousePosition.x;
+                    const deltaY = event.clientY - previousMousePosition.y;
+                    yawAngle -= deltaX * mouseSensitivity;
+                    pitchAngle -= deltaY * mouseSensitivity;
+                    pitchAngle = Math.max(-Math.PI / 1.95, Math.min(Math.PI / 1.95, pitchAngle));
+                } else { 
+                    const deltaX = event.clientX - previousMousePosition.x;
+                    const deltaY = event.clientY - previousMousePosition.y;
+                    // When dragging during orbit, directly update the orbit position angles
+                    // And also set the velocity for momentum on release
+                    currentOrbitPositionAngleH -= deltaX * orbitViewMouseSensitivity;
+                    currentOrbitPositionAngleV -= deltaY * orbitViewMouseSensitivity;
+                    currentOrbitPositionAngleV = Math.max(-Math.PI / 2 * 0.98, Math.min(Math.PI / 2 * 0.98, currentOrbitPositionAngleV));
+                    
+                    orbitViewVelocityH = -deltaX * orbitViewMouseSensitivity * 0.5; // Adjust factor for desired momentum
+                    orbitViewVelocityV = -deltaY * orbitViewMouseSensitivity * 0.5;
+                }
+            }
+            previousMousePosition.x = event.clientX; previousMousePosition.y = event.clientY;
+        }
+
+        function onMouseDown(event) { 
+            const clickedOnUIPanel = event.target.closest('.ui-panel, .settings-panel-toggle, #minimizedPanelToggleSphere');
+            const isCanvasClick = event.target === renderer.domElement;
+
+            if (!isCanvasClick && clickedOnUIPanel) {
+                if (event.target.tagName === 'BUTTON' || event.target.tagName === 'INPUT' || event.target.tagName === 'SELECT' || 
+                    event.target.id === 'panelHeader' || (panelHeaderElement && panelHeaderElement.contains(event.target)) || 
+                    event.target.id === 'playlistHeader' || (playlistHeader && playlistHeader.contains(event.target)) || 
+                    event.target.id === 'toggleRadarButton' || event.target.id === 'minimizedPanelToggleSphere') {
+                    // Allow these events
+                } else {
+                    isDragging = false; 
+                    return;
+                }
+            }
+            
+            if (event.button === 0 && !touchCameraActive) { 
+                isDragging = true;
+                previousMousePosition.x = event.clientX;
+                previousMousePosition.y = event.clientY;
+                if (isOrbitingNebula) { // Reset momentum when starting a new drag
+                    orbitViewVelocityH = 0;
+                    orbitViewVelocityV = 0;
+                }
+            }
+        }
+        function onMouseUp(event) { 
+            if (event.button === 0) { 
+                isDragging = false;
+                // Momentum is now driven by orbitViewVelocityH/V which was set during drag
+            } 
+        }
+        function onMouseWheel(event) {
+            if (isOrbitingNebula) {
+                orbitDistance += event.deltaY * 0.1;
+                orbitDistance = Math.max(MIN_ORBIT_DISTANCE, Math.min(MAX_ORBIT_DISTANCE, orbitDistance));
+            } else {
+                camera.fov += event.deltaY * 0.05;
+                camera.fov = Math.max(30, Math.min(100, camera.fov));
+                camera.updateProjectionMatrix();
+            }
+        }
+        
+        function updatePlayerAndCamera(deltaTime) { 
+            currentMovementSpeed = baseMovementSpeed * (hyperspaceActive ? HYPERSPACE_FACTOR : 1);
+            const actualSpeed = currentMovementSpeed * Math.min(1.0, deltaTime * 60.0); 
+            currentCameraUp.set(0,1,0); 
+
+            if (cameraTransitioning && orbitingNebulaInstance) { 
+                orbitTransitionAlpha = Math.min(1, orbitTransitionAlpha + deltaTime * 0.35); 
+                camera.position.lerp(targetOrbitPosition, orbitTransitionAlpha);
+                camera.quaternion.slerp(targetOrbitQuaternion, orbitTransitionAlpha);
+                if (orbitTransitionAlpha >= 1) {
+                    cameraTransitioning = false; orbitTransitionAlpha = 0;
+                    if (isOrbitingNebula) { 
+                        camera.lookAt(orbitingNebulaInstance.currentDynamicPosition);
+                    }
+                }
+            } else if (isOrbitingNebula && orbitingNebulaInstance) { 
+                // Apply momentum if not actively dragging
+                if (!isDragging && !touchCameraActive) {
+                    currentOrbitPositionAngleH += orbitViewVelocityH;
+                    currentOrbitPositionAngleV += orbitViewVelocityV;
+                    orbitViewVelocityH *= orbitViewDamping;
+                    orbitViewVelocityV *= orbitViewDamping;
+
+                    // Stop momentum if velocity is too small
+                    if (Math.abs(orbitViewVelocityH) < 0.00001) orbitViewVelocityH = 0;
+                    if (Math.abs(orbitViewVelocityV) < 0.00001) orbitViewVelocityV = 0;
+                }
+                currentOrbitPositionAngleV = Math.max(-Math.PI / 2 * 0.98, Math.min(Math.PI / 2 * 0.98, currentOrbitPositionAngleV)); // Clamp vertical orbit
+
+                // Keyboard orbit rotation and zoom
+                if (rotateViewLeft) currentOrbitPositionAngleH += ROTATION_SPEED * deltaTime * 1.5;
+                if (rotateViewRight) currentOrbitPositionAngleH -= ROTATION_SPEED * deltaTime * 1.5;
+                
+                let distanceChangeIntent = 0;
+                if (moveForward) distanceChangeIntent = -actualSpeed * 0.9;
+                if (moveBackward) distanceChangeIntent = actualSpeed * 0.9;
+                orbitDistance += distanceChangeIntent;
+                orbitDistance = Math.max(MIN_ORBIT_DISTANCE, Math.min(MAX_ORBIT_DISTANCE, orbitDistance));
+
+                const orbitPos = new THREE.Vector3(
+                    orbitDistance * Math.cos(currentOrbitPositionAngleH) * Math.cos(currentOrbitPositionAngleV),
+                    orbitDistance * Math.sin(currentOrbitPositionAngleV) * ORBIT_VERTICAL_AMPLITUDE_FACTOR,
+                    orbitDistance * Math.sin(currentOrbitPositionAngleH) * Math.cos(currentOrbitPositionAngleV)
+                );
+                camera.position.copy(orbitingNebulaInstance.currentDynamicPosition).add(orbitPos); 
+                camera.lookAt(orbitingNebulaInstance.currentDynamicPosition); 
+
+            } else { // Free movement
+                const cameraDirection = new THREE.Vector3();
+                camera.getWorldDirection(cameraDirection); 
+                const right = new THREE.Vector3().crossVectors(currentCameraUp, cameraDirection).normalize();
+
+                if (moveForward) camera.position.addScaledVector(cameraDirection, actualSpeed);
+                if (moveBackward) camera.position.addScaledVector(cameraDirection, -actualSpeed);
+                if (moveLeft) camera.position.addScaledVector(right, -actualSpeed);
+                if (moveRight) camera.position.addScaledVector(right, actualSpeed);
+                
+                const worldUpVector = new THREE.Vector3(0,1,0); 
+                if (moveUp) camera.position.addScaledVector(worldUpVector, actualSpeed * 0.8);
+                if (moveDown) camera.position.addScaledVector(worldUpVector, -actualSpeed * 0.8);
+                
+                if (rotateViewLeft) yawAngle += ROTATION_SPEED * deltaTime;
+                if (rotateViewRight) yawAngle -= ROTATION_SPEED * deltaTime;
+                
+                camera.rotation.set(0, 0, 0, 'YXZ'); 
+                camera.rotateY(yawAngle);
+                camera.rotateX(pitchAngle);
+            }
+            if(coordsElement) coordsElement.textContent = `X: ${camera.position.x.toFixed(1)}, Y: ${camera.position.y.toFixed(1)}, Z: ${camera.position.z.toFixed(1)}`;
+        }
+
+
+        function updateNebulaRadar() {
+            if (!nebulaRadarElement || !radarArrowElement || !radarDotElement || !radarDotTaguaTaguaElement) return;
+            const radarRadius = nebulaRadarElement.offsetWidth / 2;
+            const dotRadiusOutput = radarDotElement.offsetWidth / 2; 
+
+            let primaryTargetPos = null; let primaryDotEl = null; let primaryArrowColor = '#FFD700';
+            const distToMp3 = radioNebulaInstance ? camera.position.distanceTo(radioNebulaInstance.currentDynamicPosition) : Infinity;
+            const distToTaguaTagua = radioNebulaInstanceTaguaTagua ? camera.position.distanceTo(radioNebulaInstanceTaguaTagua.currentDynamicPosition) : Infinity; 
+
+            if (isRadioPlaying && (!isTaguaTaguaRadioPlaying || distToMp3 <= distToTaguaTagua)) { 
+                primaryTargetPos = radioNebulaInstance.currentDynamicPosition; 
+                primaryDotEl = radarDotElement; 
+                primaryArrowColor = '#FFD700';
+            } else if (isTaguaTaguaRadioPlaying) { 
+                primaryTargetPos = radioNebulaInstanceTaguaTagua.currentDynamicPosition; 
+                primaryDotEl = radarDotTaguaTaguaElement; 
+                primaryArrowColor = '#ff88aa'; 
+            }
+
+            if (primaryTargetPos) {
+                radarArrowElement.style.opacity = '1';
+                radarArrowElement.style.borderBottomColor = primaryArrowColor;
+                updateRadarElement(primaryTargetPos, primaryDotEl, radarRadius, dotRadiusOutput, true, radarArrowElement);
+            } else {
+                radarArrowElement.style.opacity = '0';
+            }
+
+            if (isRadioPlaying && radioNebulaInstance && primaryTargetPos !== radioNebulaInstance.currentDynamicPosition) {
+                updateRadarElement(radioNebulaInstance.currentDynamicPosition, radarDotElement, radarRadius, dotRadiusOutput, false, null);
+            } else if (!isRadioPlaying && radarDotElement) { radarDotElement.style.opacity = '0'; }
+
+            if (isTaguaTaguaRadioPlaying && radioNebulaInstanceTaguaTagua && primaryTargetPos !== radioNebulaInstanceTaguaTagua.currentDynamicPosition) { 
+                updateRadarElement(radioNebulaInstanceTaguaTagua.currentDynamicPosition, radarDotTaguaTaguaElement, radarRadius, dotRadiusOutput, false, null); 
+            } else if (!isTaguaTaguaRadioPlaying && radarDotTaguaTaguaElement) { radarDotTaguaTaguaElement.style.opacity = '0'; } 
+            
+            const showRadar = isRadioPlaying || isTaguaTaguaRadioPlaying; 
+            nebulaRadarElement.style.opacity = showRadar ? '1' : '0.3';
+            if (primaryTargetPos && camera.position.distanceTo(primaryTargetPos) < MIN_ORBIT_DISTANCE * 0.7 && !nebulaRadarElement.classList.contains('minimized')) {
+                nebulaRadarElement.style.opacity = showRadar ? '0.15' : '0.3';
+            }
+        }
+
+        function updateRadarElement(nebulaPos, dotEl, radarRadius, dotRadiusOutput, isPrimaryTarget, arrowEl) {
+            if (!dotEl) return; 
+            const nebulaDirWorld = new THREE.Vector3().subVectors(nebulaPos, camera.position);
+            const cameraInverseMatrix = new THREE.Matrix4().copy(camera.matrixWorldInverse);
+            const nebulaDirCameraSpace = nebulaDirWorld.clone().applyMatrix4(cameraInverseMatrix);
+            const angleToTarget = Math.atan2(nebulaDirCameraSpace.x, -nebulaDirCameraSpace.z);
+
+            if (isPrimaryTarget && arrowEl) {
+                arrowEl.style.transform = `rotate(${angleToTarget}rad)`;
+            }
+
+            const maxDistForDotInside = radarRadius - dotRadiusOutput - 2; 
+            const distOnRadarPlane = Math.sqrt(nebulaDirCameraSpace.x * nebulaDirCameraSpace.x + nebulaDirCameraSpace.z * nebulaDirCameraSpace.z);
+
+            let dotX, dotY;
+            if (nebulaDirCameraSpace.z > 0 || distOnRadarPlane > maxDistForDotInside * 1.5) { 
+                dotX = Math.sin(angleToTarget) * maxDistForDotInside;
+                dotY = -Math.cos(angleToTarget) * maxDistForDotInside; 
+                dotEl.style.opacity = isPrimaryTarget ? '1' : '0.7'; 
+            } else { 
+                const screenX = (nebulaDirCameraSpace.x / -nebulaDirCameraSpace.z) * radarRadius * 1.2; 
+                const screenY = (nebulaDirCameraSpace.y / -nebulaDirCameraSpace.z) * radarRadius * 1.2; 
+                
+                const distFromCenter = Math.sqrt(screenX*screenX + screenY*screenY);
+                if (distFromCenter > maxDistForDotInside) {
+                    const scale = maxDistForDotInside / distFromCenter;
+                    dotX = screenX * scale;
+                    dotY = screenY * scale; 
+                } else {
+                    dotX = screenX;
+                    dotY = screenY;
+                }
+                dotEl.style.opacity = '1';
+                if (isPrimaryTarget && arrowEl) arrowEl.style.opacity = '0.3'; 
+            }
+            dotEl.style.transform = `translate(${dotX}px, ${dotY}px)`;
+        }
+
+
+        let clock = new THREE.Clock(); 
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const deltaTime = clock.getDelta(); 
+
+            const timeForOrbit = clock.elapsedTime; 
+            if (radioNebulaInstance) {
+                radioNebulaInstance.updateOrbitalPosition(timeForOrbit);
+                if (nebulaClickTarget) nebulaClickTarget.position.copy(radioNebulaInstance.currentDynamicPosition);
+            }
+            if (radioNebulaInstanceTaguaTagua) {
+                radioNebulaInstanceTaguaTagua.updateOrbitalPosition(timeForOrbit);
+                 if (nebulaClickTargetTaguaTagua) nebulaClickTargetTaguaTagua.position.copy(radioNebulaInstanceTaguaTagua.currentDynamicPosition);
+            }
+
+
+            updatePlayerAndCamera(deltaTime);
+            updateNebulaRadar(); 
+
+            if (radioNebulaInstance && analyserNode) { 
+                if (isRadioPlaying) {
+                     radioNebulaInstance.update(frequencyData, timeDomainData, deltaTime);
+                } else if (radioNebulaInstance.points) { 
+                    const effectiveRotationSpeed = radioNebulaInstance.config.rotationSpeedFactor / 0.0012;
+                    radioNebulaInstance.particlesObject.rotation.y += radioNebulaInstance.baseRotationSpeed.y * effectiveRotationSpeed * deltaTime * 0.05;
+                    radioNebulaInstance.particlesObject.rotation.x += radioNebulaInstance.baseRotationSpeed.x * effectiveRotationSpeed * deltaTime * 0.05;
+                }
+            }
+            if (radioNebulaInstanceTaguaTagua && analyserNodeTaguaTagua) {  
+                if (isTaguaTaguaRadioPlaying) { 
+                     radioNebulaInstanceTaguaTagua.update(frequencyDataTaguaTagua, timeDomainDataTaguaTagua, deltaTime); 
+                } else if (radioNebulaInstanceTaguaTagua.points) {  
+                    const effectiveRotationSpeed = radioNebulaInstanceTaguaTagua.config.rotationSpeedFactor / 0.0012; 
+                    radioNebulaInstanceTaguaTagua.particlesObject.rotation.y += radioNebulaInstanceTaguaTagua.baseRotationSpeed.y * effectiveRotationSpeed * deltaTime * 0.03;  
+                    radioNebulaInstanceTaguaTagua.particlesObject.rotation.x += radioNebulaInstanceTaguaTagua.baseRotationSpeed.x * effectiveRotationSpeed * deltaTime * 0.03; 
+                }
+            }
+            renderer.render(scene, camera);
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
