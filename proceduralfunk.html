@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Núcleo Funk - Mastered Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #030100; font-family: 'Courier New', Courier, monospace; color: white; }
+        #start-screen {
+            position: absolute; inset: 0; display: flex; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.9); z-index: 100; cursor: pointer; transition: opacity 1s;
+        }
+        h1 { font-weight: bold; letter-spacing: 2px; color: #ff4400; text-transform: uppercase; text-shadow: 0 0 30px #ff4400; }
+        
+        /* BARRA MAESTRA MINIMALISTA */
+        #master-bar {
+            position: absolute; top: 15px; left: 15px; right: 15px; 
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(10, 5, 0, 0.6); padding: 10px 20px; border-radius: 8px; 
+            border: 1px solid rgba(255, 68, 0, 0.4); backdrop-filter: blur(5px); z-index: 20;
+        }
+        
+        .master-controls { display: flex; align-items: center; gap: 15px; width: 50%; }
+        .master-controls label { font-size: 12px; color: #ffaa00; font-weight: bold; letter-spacing: 1px; white-space: nowrap; }
+        .master-controls input[type=range] { width: 100%; max-width: 200px; accent-color: #ffaa00; }
+
+        .btn-toggle-ui {
+            background: transparent; color: #ff4400; border: 1px solid #ff4400; padding: 5px 15px;
+            font-family: inherit; font-size: 11px; font-weight: bold; cursor: pointer; letter-spacing: 1px; border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        .btn-toggle-ui:hover { background: #ff4400; color: #000; }
+
+        /* PANEL DE CONFIGURACIÓN OCULTABLE */
+        #ui-panel {
+            position: absolute; top: 70px; left: 15px; background: rgba(10, 5, 0, 0.85);
+            padding: 20px; border-radius: 8px; border: 1px solid #ff4400; 
+            box-shadow: 0 0 20px rgba(255, 68, 0, 0.3); width: 340px; z-index: 10;
+            display: none; /* Inicia oculto */
+        }
+        
+        h2 { margin-top:0; font-size: 14px; color:#ff4400; letter-spacing: 2px; border-bottom: 1px solid #ff4400; padding-bottom: 10px; }
+        
+        .control-group { margin-bottom: 15px; }
+        .control-group label { display: block; font-size: 11px; color: #ddd; margin-bottom: 5px; letter-spacing: 1px; }
+        input[type=range] { width: 100%; accent-color: #ff4400; }
+        
+        .mixer-row { 
+            display: flex; align-items: center; justify-content: space-between; 
+            font-size: 12px; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 4px;
+        }
+        .mixer-info { display: flex; align-items: center; width: 45%; }
+        .mixer-row input[type=range] { width: 40%; }
+        .mixer-row input[type=checkbox] { accent-color: #ff4400; width: 16px; height: 16px; pointer-events: none; opacity: 0.5; }
+        .color-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+        
+        .toggle-director {
+            background: #ff4400; color: white; border: none; padding: 10px; width: 100%;
+            font-family: inherit; font-weight: bold; cursor: pointer; letter-spacing: 1px; margin-bottom: 15px; border-radius: 4px;
+        }
+
+        #phase-display {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            font-size: 18px; letter-spacing: 6px; color: #ffaa00; font-weight: bold; text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(255, 170, 0, 0.8); text-align: center; pointer-events: none;
+        }
+        #phase-desc { font-size: 11px; color: #fff; letter-spacing: 2px; margin-top: 5px; opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h1>[ INICIAR PLANETA FUNK ]</h1>
+    </div>
+
+    <div id="master-bar" style="display: none;">
+        <div class="master-controls">
+            <label>VOLUMEN MAESTRO</label>
+            <input type="range" id="vol-master" min="0" max="1" step="0.05" value="0.75">
+        </div>
+        <button id="btn-toggle-ui" class="btn-toggle-ui">[+] ABRIR CONSOLA</button>
+    </div>
+
+    <div id="ui-panel">
+        <button id="btn-director" class="toggle-director">DIRECTOR IA: ON</button>
+        
+        <div class="control-group">
+            <label>Tempo Global: <span id="bpm-val">90</span> BPM</label>
+            <input type="range" id="tempo-slider" min="70" max="110" value="90">
+        </div>
+
+        <div class="mixer-section">
+            <h2>NIVELES INTERNOS</h2>
+            <div class="mixer-row"><div class="mixer-info"><span class="color-dot" style="background:#ff4400;"></span>Bajo Magma</div><input type="range" id="vol-bass" min="0" max="1" step="0.05" value="1.0"><input type="checkbox" id="mut-bass" checked></div>
+            <div class="mixer-row"><div class="mixer-info"><span class="color-dot" style="background:#cc00ff;"></span>Bombo</div><input type="range" id="vol-kick" min="0" max="1" step="0.05" value="0.85"><input type="checkbox" id="mut-kick" checked></div>
+            <div class="mixer-row"><div class="mixer-info"><span class="color-dot" style="background:#00ffff;"></span>Caja</div><input type="range" id="vol-snare" min="0" max="1" step="0.05" value="0.7"><input type="checkbox" id="mut-snare" checked></div>
+            <div class="mixer-row"><div class="mixer-info"><span class="color-dot" style="background:#ffcc00;"></span>Scratch</div><input type="range" id="vol-scratch" min="0" max="1" step="0.05" value="0.4"><input type="checkbox" id="mut-scratch" checked></div>
+            <div class="mixer-row"><div class="mixer-info"><span class="color-dot" style="background:#00ff66;"></span>Teclas</div><input type="range" id="vol-keys" min="0" max="1" step="0.05" value="0.5"><input type="checkbox" id="mut-keys" checked></div>
+            <div class="mixer-row"><div class="mixer-info"><span class="color-dot" style="background:#ffffff;"></span>Bronces</div><input type="range" id="vol-horns" min="0" max="1" step="0.05" value="0.4"><input type="checkbox" id="mut-horns" checked></div>
+        </div>
+    </div>
+
+    <div id="phase-display" style="display: none;">
+        <div id="phase-title">FASE 1: CONTACTO</div>
+        <div id="phase-desc">Estableciendo el latido...</div>
+    </div>
+
+    <script>
+        // ======================================================================
+        // 1. VISUALES ORGÁNICAS
+        // ======================================================================
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030100, 0.02);
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        camera.position.set(0, 0, 16);
+
+        const colorMagmaBase = new THREE.Color(0xff4400); 
+        let currentMagmaColor = colorMagmaBase.clone();
+
+        const geoMagma = new THREE.IcosahedronGeometry(6, 4);
+        const matMagma = new THREE.MeshStandardMaterial({ 
+            color: colorMagmaBase, emissive: 0xcc2200, emissiveIntensity: 0.8,
+            wireframe: true, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending 
+        });
+        const meshMagma = new THREE.Mesh(geoMagma, matMagma);
+        scene.add(meshMagma);
+
+        const geoInner = new THREE.IcosahedronGeometry(1, 3);
+        const visualCores = {
+            bass:    { isOuter: true, mesh: meshMagma, currentScale: 1, baseScale: 1, relaxSpeed: 0.03 },
+            kick:    { color: new THREE.Color(0xcc00ff), mesh: null, currentScale: 1.5, baseScale: 1.5, pos: [0, -1, 0], relaxSpeed: 0.05 },
+            snare:   { color: new THREE.Color(0x00ffff), mesh: null, currentScale: 1.0, baseScale: 1.0, pos: [2, 1, 1], relaxSpeed: 0.08 },
+            scratch: { color: new THREE.Color(0xffcc00), mesh: null, currentScale: 0.8, baseScale: 0.8, pos: [-2, 2, -1], relaxSpeed: 0.1 },
+            keys:    { color: new THREE.Color(0x00ff66), mesh: null, currentScale: 1.2, baseScale: 1.2, pos: [1, -2, -2], relaxSpeed: 0.04 },
+            horns:   { color: new THREE.Color(0xffffff), mesh: null, currentScale: 0.1, baseScale: 0.1, pos: [0, 3, 0], relaxSpeed: 0.02 }
+        };
+
+        Object.keys(visualCores).forEach(key => {
+            const core = visualCores[key];
+            if (core.isOuter) return; 
+            const mat = new THREE.MeshStandardMaterial({ color: core.color, emissive: core.color, emissiveIntensity: 1, wireframe: true });
+            const mesh = new THREE.Mesh(geoInner, mat);
+            mesh.position.set(...core.pos);
+            scene.add(mesh);
+            core.mesh = mesh;
+            const light = new THREE.PointLight(core.color, 0, 15);
+            light.position.copy(mesh.position);
+            scene.add(light);
+            core.light = light;
+        });
+
+        scene.add(new THREE.AmbientLight(0xff4400, 0.2));
+
+        function animateVisuals() {
+            requestAnimationFrame(animateVisuals);
+            const time = Date.now() * 0.001;
+            camera.position.x = Math.sin(time * 0.1) * 16;
+            camera.position.z = Math.cos(time * 0.1) * 16;
+            camera.position.y = Math.sin(time * 0.05) * 4;
+            camera.lookAt(0, 0, 0);
+
+            currentMagmaColor.lerp(colorMagmaBase, 0.02);
+            matMagma.color.copy(currentMagmaColor);
+            matMagma.emissive.copy(currentMagmaColor).multiplyScalar(0.8);
+
+            Object.values(visualCores).forEach(core => {
+                core.mesh.rotation.x += (core.isOuter ? 0.002 : 0.01);
+                core.mesh.rotation.y += (core.isOuter ? 0.003 : 0.02);
+                core.currentScale = THREE.MathUtils.lerp(core.currentScale, core.baseScale, core.relaxSpeed);
+                core.mesh.scale.set(core.currentScale, core.currentScale, core.currentScale);
+                if (core.light) core.light.intensity = (core.currentScale - core.baseScale) * 3;
+            });
+            renderer.render(scene, camera);
+        }
+
+        // ======================================================================
+        // 2. MOTOR DE AUDIO Y MASTERING (ANTI-SATURACIÓN)
+        // ======================================================================
+        let audioCtx, masterGain, compressor, noiseBuffer;
+        let isPlaying = false;
+
+        const params = { tempo: 90, swing: 0.6, filterMod: 0.3 };
+        let autoDirector = true;
+        
+        const mixer = {
+            bass: { mute: false, vol: 1.0 }, kick: { mute: false, vol: 0.85 }, snare: { mute: false, vol: 0.7 },
+            scratch: { mute: false, vol: 0.4 }, keys: { mute: false, vol: 0.5 }, horns: { mute: false, vol: 0.4 }
+        };
+
+        const scaleBase = [41.20, 48.99, 55.00, 61.74, 73.42, 82.41, 97.99]; 
+        const chords = [ [164.81, 196.00, 246.94], [146.83, 174.61, 220.00], [174.61, 220.00, 261.63] ];
+
+        let activePatterns = {
+            kick:    [1.0, 0.0, 0.0, 0.2, 0.0, 0.0, 0.8, 0.0, 1.0, 0.0, 0.0, 0.4, 0.0, 0.8, 0.0, 0.0],
+            snare:   [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.4, 0.0],
+            scratch: [0.0, 0.6, 0.0, 0.8, 0.0, 0.0, 0.0, 0.6, 0.0, 0.8, 0.0, 0.0, 0.5, 0.0, 0.7, 0.0],
+            bass:    [1.0, 0.0, 0.4, 0.8, 0.0, 1.0, 0.3, 0.0, 0.9, 0.0, 0.8, 0.3, 0.0, 0.7, 0.4, 0.0] 
+        };
+        let bassMelody = [0, 0, 1, 0, 0, 2, 0, 0, 3, 0, 1, 0, 0, 4, 2, 0];
+
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // --- CADENA DE MASTERING ---
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = document.getElementById('vol-master').value;
+
+            // Compresor/Limiter: Evita que el bombo y el bajo revienten los parlantes pequeños
+            compressor = audioCtx.createDynamicsCompressor();
+            compressor.threshold.setValueAtTime(-12, audioCtx.currentTime); // Atrapa picos agresivos
+            compressor.knee.setValueAtTime(10, audioCtx.currentTime);
+            compressor.ratio.setValueAtTime(6, audioCtx.currentTime); // Compresión fuerte
+            compressor.attack.setValueAtTime(0.003, audioCtx.currentTime); // Rápido
+            compressor.release.setValueAtTime(0.2, audioCtx.currentTime);
+
+            masterGain.connect(compressor);
+            compressor.connect(audioCtx.destination);
+
+            const bufferSize = audioCtx.sampleRate * 2; 
+            noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+        }
+
+        function pulseVisual(inst, force) {
+            const core = visualCores[inst];
+            core.currentScale = core.baseScale + (force * core.baseScale * (inst === 'bass' ? 0.3 : 0.8)); 
+            if (!core.isOuter) currentMagmaColor.lerp(core.color, force * 0.3); 
+        }
+
+        // --- SÍNTESIS OPTIMIZADA PARA PC/MÓVIL ---
+        function playKick(time, vel) {
+            pulseVisual('kick', vel);
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            // CORTAMOS el decay extremo del kick para no saturar parlantes de laptop
+            osc.frequency.setValueAtTime(120 * vel, time); 
+            osc.frequency.exponentialRampToValueAtTime(45, time + 0.08); 
+            
+            gain.gain.setValueAtTime(0, time); 
+            gain.gain.linearRampToValueAtTime(1.0 * vel * mixer.kick.vol, time + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3); // Decay más corto y limpio
+            
+            osc.connect(gain); gain.connect(masterGain);
+            osc.start(time); osc.stop(time + 0.4);
+        }
+
+        function playSnare(time, vel) {
+            pulseVisual('snare', vel);
+            const osc = audioCtx.createOscillator(), oscGain = audioCtx.createGain();
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(220, time);
+            oscGain.gain.setValueAtTime(0, time); oscGain.gain.linearRampToValueAtTime(0.5 * vel * mixer.snare.vol, time + 0.01);
+            oscGain.gain.exponentialRampToValueAtTime(0.01, time + 0.15); 
+            osc.connect(oscGain); oscGain.connect(masterGain); osc.start(time); osc.stop(time + 0.2);
+
+            const noise = audioCtx.createBufferSource(), noiseFilter = audioCtx.createBiquadFilter(), noiseGain = audioCtx.createGain();
+            noise.buffer = noiseBuffer; noiseFilter.type = 'highpass'; noiseFilter.frequency.value = 2500;
+            noiseGain.gain.setValueAtTime(0, time); noiseGain.gain.linearRampToValueAtTime(0.6 * vel * mixer.snare.vol, time + 0.01);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, time + 0.25); 
+            noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(masterGain); noise.start(time); noise.stop(time + 0.3);
+        }
+
+        function playDJScratch(time, vel) {
+            pulseVisual('scratch', vel);
+            const osc = audioCtx.createOscillator(), filter = audioCtx.createBiquadFilter(), gain = audioCtx.createGain();
+            osc.type = 'sawtooth'; const baseF = Math.random() > 0.5 ? 800 : 400; 
+            osc.frequency.setValueAtTime(baseF, time); osc.frequency.exponentialRampToValueAtTime(baseF * 2, time + 0.03); 
+            osc.frequency.exponentialRampToValueAtTime(baseF * 0.5, time + 0.08); 
+            filter.type = 'bandpass'; filter.Q.value = 5; filter.frequency.setValueAtTime(2000, time); filter.frequency.linearRampToValueAtTime(500, time + 0.08);
+            gain.gain.setValueAtTime(0, time); gain.gain.linearRampToValueAtTime(1.0 * vel * mixer.scratch.vol, time + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1); 
+            osc.connect(filter); filter.connect(gain); gain.connect(masterGain); osc.start(time); osc.stop(time + 0.12);
+        }
+
+        function playBass(time, freq, vel) {
+            pulseVisual('bass', vel);
+            const sub = audioCtx.createOscillator(), mid = audioCtx.createOscillator(), filter = audioCtx.createBiquadFilter(), gain = audioCtx.createGain();
+            
+            // TRUCO PARA MÓVILES: El 'sub' se mantiene para audífonos, pero el 'mid' es más fuerte para celulares
+            sub.type = 'sine'; sub.frequency.value = freq; 
+            mid.type = 'triangle'; mid.frequency.value = freq * 1.002; 
+            
+            filter.type = 'lowpass'; filter.Q.value = 1.0; 
+            const baseFreq = 60 + (params.filterMod * 150); const peakFreq = baseFreq + (vel * params.filterMod * 800); 
+            filter.frequency.setValueAtTime(baseFreq, time); filter.frequency.exponentialRampToValueAtTime(peakFreq, time + 0.04); 
+            filter.frequency.exponentialRampToValueAtTime(baseFreq, time + 0.3);
+            
+            gain.gain.setValueAtTime(0, time); 
+            gain.gain.linearRampToValueAtTime(0.8 * vel * mixer.bass.vol, time + 0.02); 
+            gain.gain.exponentialRampToValueAtTime(0.4 * vel * mixer.bass.vol, time + 0.2); 
+            gain.gain.linearRampToValueAtTime(0.001, time + 0.4); 
+            
+            // Balance interno: más fuerza al medio armónico
+            const subGain = audioCtx.createGain(); subGain.gain.value = 0.8;
+            const midGain = audioCtx.createGain(); midGain.gain.value = 1.2;
+
+            sub.connect(subGain); mid.connect(midGain);
+            subGain.connect(filter); midGain.connect(filter);
+            filter.connect(gain); gain.connect(masterGain);
+            
+            sub.start(time); mid.start(time); sub.stop(time + 0.5); mid.stop(time + 0.5);
+        }
+
+        function playKeys(time, vel) {
+            pulseVisual('keys', vel);
+            const chord = chords[Math.floor(Math.random() * chords.length)];
+            chord.forEach(freq => {
+                const osc = audioCtx.createOscillator(), filter = audioCtx.createBiquadFilter(), gain = audioCtx.createGain();
+                osc.type = 'triangle'; osc.frequency.value = freq;
+                filter.type = 'lowpass'; filter.frequency.setValueAtTime(1200, time); filter.frequency.exponentialRampToValueAtTime(200, time + 0.4);
+                gain.gain.setValueAtTime(0, time); gain.gain.linearRampToValueAtTime(0.15 * vel * mixer.keys.vol, time + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.6);
+                osc.connect(filter); filter.connect(gain); gain.connect(masterGain);
+                osc.start(time); osc.stop(time + 0.7);
+            });
+        }
+
+        function playSoftHorns(time, vel) {
+            pulseVisual('horns', vel);
+            const root = scaleBase[0] * 2; const frequencies = [root, root * 1.5, root * 2]; 
+            frequencies.forEach(freq => {
+                const osc = audioCtx.createOscillator(), filter = audioCtx.createBiquadFilter(), gain = audioCtx.createGain();
+                osc.type = 'sawtooth'; osc.frequency.value = freq * (1 + (Math.random() * 0.006 - 0.003)); 
+                filter.type = 'lowpass'; filter.Q.value = 1; filter.frequency.setValueAtTime(300, time);
+                filter.frequency.linearRampToValueAtTime(1500, time + 0.8); filter.frequency.exponentialRampToValueAtTime(200, time + 2.0);
+                gain.gain.setValueAtTime(0, time); gain.gain.linearRampToValueAtTime(0.2 * vel * mixer.horns.vol, time + 0.5); 
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 2.5); 
+                osc.connect(filter); filter.connect(gain); gain.connect(masterGain);
+                osc.start(time); osc.stop(time + 2.6);
+            });
+        }
+
+        // ======================================================================
+        // 3. DIRECTOR Y SCHEDULER (Máquina de Estados)
+        // ======================================================================
+        const FASES = [
+            { id: 'INTRO', name: 'FASE 1: CONTACTO', desc: 'Estableciendo el latido base...', length: 4 },
+            { id: 'VERSE', name: 'FASE 2: EL ROCE (VERSO)', desc: 'Tensión, silencios y juego previo', length: 8 },
+            { id: 'RISE',  name: 'FASE 3: ACUMULACIÓN', desc: 'Acelerando el pulso. Preparando la caída...', length: 4 },
+            { id: 'CHORUS',name: 'FASE 4: PENETRACIÓN (ESTRIBILLO)', desc: 'Liberación total. El Groove manda.', length: 8 },
+            { id: 'BREAK', name: 'FASE 5: INTIMIDAD (BREAKDOWN)', desc: 'Todo cae. Solo instinto básico.', length: 4 },
+            { id: 'VAMP',  name: 'FASE 6: ÉXTASIS INFINITO', desc: 'Clímax puro y bucle final', length: 8 }
+        ];
+
+        let currentPhaseIndex = 0; let barsInPhase = 0; let step = 0;
+
+        function updateUIPhase() {
+            document.getElementById('phase-title').innerText = FASES[currentPhaseIndex].name;
+            document.getElementById('phase-desc').innerText = FASES[currentPhaseIndex].desc;
+            const colors = ['#ff8800', '#ffcc00', '#ff5500', '#ffffff', '#aa00ff', '#ff0055'];
+            document.getElementById('phase-title').style.color = colors[currentPhaseIndex];
+        }
+
+        function runDirectorLogic() {
+            if (!autoDirector) return;
+            const phase = FASES[currentPhaseIndex].id;
+            Object.keys(mixer).forEach(k => mixer[k].mute = true);
+
+            switch(phase) {
+                case 'INTRO': mixer.kick.mute = false; mixer.bass.mute = false; params.filterMod = 0.2; break;
+                case 'VERSE':
+                    mixer.kick.mute = false; mixer.bass.mute = false; mixer.snare.mute = false;
+                    mixer.scratch.mute = Math.random() > 0.4; mixer.keys.mute = Math.random() > 0.7; 
+                    params.filterMod = 0.4; break;
+                case 'RISE':
+                    mixer.kick.mute = false; mixer.bass.mute = false; mixer.snare.mute = false; mixer.scratch.mute = false; mixer.keys.mute = false;
+                    params.filterMod = 0.6; break;
+                case 'CHORUS':
+                    mixer.kick.mute = false; mixer.bass.mute = false; mixer.snare.mute = false; mixer.keys.mute = false; mixer.horns.mute = false; 
+                    mixer.scratch.mute = Math.random() > 0.8; params.filterMod = 0.9; break;
+                case 'BREAK':
+                    mixer.kick.mute = false; mixer.bass.mute = Math.random() > 0.5; mixer.snare.mute = Math.random() > 0.2; 
+                    params.filterMod = 0.1; break;
+                case 'VAMP':
+                    Object.keys(mixer).forEach(k => mixer[k].mute = false); params.filterMod = 1.0; break;
+            }
+
+            Object.keys(mixer).forEach(k => document.getElementById(`mut-${k}`).checked = !mixer[k].mute);
+        }
+
+        function mutateSequence() {
+            for(let i = 0; i < 16; i++) {
+                if (i !== 0 && Math.random() < 0.2) { 
+                    activePatterns.bass[i] = activePatterns.bass[i] > 0 ? 0 : (Math.random() * 0.5 + 0.4);
+                    bassMelody[i] = Math.floor(Math.random() * scaleBase.length);
+                }
+            }
+        }
+
+        function scheduler() {
+            if (step > 0 && step % 16 === 0) {
+                barsInPhase++; mutateSequence();
+                if (barsInPhase >= FASES[currentPhaseIndex].length) {
+                    barsInPhase = 0; currentPhaseIndex = (currentPhaseIndex + 1) % FASES.length; updateUIPhase();
+                }
+                runDirectorLogic(); 
+            }
+
+            const stepTime = (60 / params.tempo) / 4; 
+            const swingAmount = (step % 2 !== 0) ? stepTime * (params.swing * 0.5) : 0;
+            const playTime = audioCtx.currentTime + 0.05 + swingAmount;
+            const currentStep = step % 16;
+
+            let currentKickVel = activePatterns.kick[currentStep];
+            if ((FASES[currentPhaseIndex].id === 'CHORUS' || FASES[currentPhaseIndex].id === 'VAMP') && currentStep % 4 === 0) currentKickVel = 1.0; 
+
+            if (!mixer.kick.mute && currentKickVel > 0) playKick(playTime, currentKickVel);
+            if (!mixer.snare.mute && activePatterns.snare[currentStep] > 0) playSnare(playTime, activePatterns.snare[currentStep]);
+            if (!mixer.scratch.mute && activePatterns.scratch[currentStep] > 0) playDJScratch(playTime, activePatterns.scratch[currentStep]);
+            
+            if (!mixer.bass.mute && activePatterns.bass[currentStep] > 0) {
+                const noteIndex = currentStep === 0 ? 0 : bassMelody[currentStep];
+                playBass(playTime, scaleBase[noteIndex], activePatterns.bass[currentStep]);
+            }
+
+            if (!mixer.keys.mute && (currentStep === 2 || currentStep === 10) && Math.random() > 0.3) playKeys(playTime, 0.7);
+            if (!mixer.horns.mute && currentStep === 0 && barsInPhase % 2 === 0 && Math.random() > 0.2) playSoftHorns(playTime, 1.0);
+
+            step++; setTimeout(scheduler, stepTime * 1000); 
+        }
+
+        // ======================================================================
+        // 4. EVENTOS Y UI
+        // ======================================================================
+        document.getElementById('start-screen').addEventListener('click', function() {
+            if (!isPlaying) {
+                initAudio(); updateUIPhase(); runDirectorLogic(); scheduler(); animateVisuals();
+                this.style.opacity = 0; setTimeout(() => this.style.display = 'none', 1000); 
+                document.getElementById('master-bar').style.display = 'flex';
+                document.getElementById('phase-display').style.display = 'block';
+                isPlaying = true;
+            }
+        });
+
+        // Toggle Consola
+        const uiPanel = document.getElementById('ui-panel');
+        const btnToggleUI = document.getElementById('btn-toggle-ui');
+        btnToggleUI.addEventListener('click', () => {
+            if (uiPanel.style.display === 'none' || uiPanel.style.display === '') {
+                uiPanel.style.display = 'block'; btnToggleUI.innerText = '[-] CERRAR CONSOLA';
+            } else {
+                uiPanel.style.display = 'none'; btnToggleUI.innerText = '[+] ABRIR CONSOLA';
+            }
+        });
+
+        // Controles de Master
+        document.getElementById('vol-master').addEventListener('input', e => {
+            if(masterGain) masterGain.gain.setValueAtTime(parseFloat(e.target.value), audioCtx.currentTime);
+        });
+
+        document.getElementById('tempo-slider').addEventListener('input', e => { params.tempo = parseFloat(e.target.value); document.getElementById('bpm-val').innerText = e.target.value; });
+
+        // Botón del Director
+        const btnDirector = document.getElementById('btn-director');
+        btnDirector.addEventListener('click', () => {
+            autoDirector = !autoDirector;
+            btnDirector.innerText = `DIRECTOR IA: ${autoDirector ? 'ON' : 'OFF'}`;
+            btnDirector.style.background = autoDirector ? '#ff4400' : '#444';
+            document.querySelectorAll('.mixer-row input[type=checkbox]').forEach(cb => {
+                cb.style.pointerEvents = autoDirector ? 'none' : 'auto'; cb.style.opacity = autoDirector ? '0.5' : '1';
+            });
+        });
+
+        // Controles de Mixer
+        const instruments = ['bass', 'kick', 'snare', 'scratch', 'keys', 'horns'];
+        instruments.forEach(inst => {
+            document.getElementById(`vol-${inst}`).addEventListener('input', e => mixer[inst].vol = parseFloat(e.target.value));
+            document.getElementById(`mut-${inst}`).addEventListener('change', e => { if(!autoDirector) mixer[inst].mute = !e.target.checked; });
+        });
+
+    </script>
+</body>
+</html>
