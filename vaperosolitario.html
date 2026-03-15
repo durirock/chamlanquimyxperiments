@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Cegg Lab">
+    <meta name="theme-color" content="#0d0f12">
+    <link rel="manifest" href="data:application/manifest+json,{&quot;name&quot;:&quot;Chamalnquimyst Cegg&quot;,&quot;short_name&quot;:&quot;Cegg&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;#0d0f12&quot;,&quot;theme_color&quot;:&quot;#0d0f12&quot;}">
+    
+    <title>Cegg Botánico | Chamalnquimyst Labs</title>
+    
+    <style>
+        :root {
+            --bg-color: #0d0f12;
+            --panel-bg: #1a1d24;
+            --accent-gold: #d4af37;
+            --accent-green: #2ecc71;
+            --danger: #e74c3c;
+            --text-main: #e0e0e0;
+            --text-muted: #888;
+        }
+        * { 
+            box-sizing: border-box; 
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        input, textarea, select {
+            -webkit-user-select: auto;
+            -ms-user-select: auto;
+            user-select: auto;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overscroll-behavior-y: contain; 
+        }
+
+        /* --- LOGO BRILLANTE ANIMADO --- */
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            padding-bottom: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+        .glow-logo {
+            font-size: 1.6rem;
+            font-weight: bold;
+            margin: 0;
+            letter-spacing: 2px;
+            color: #fff;
+            animation: misticGlow 4s infinite alternate;
+        }
+        @keyframes misticGlow {
+            0% { text-shadow: 0 0 5px #d4af37, 0 0 10px #d4af37, 0 0 20px #d4af37; }
+            33% { text-shadow: 0 0 5px #2ecc71, 0 0 15px #2ecc71, 0 0 25px #2ecc71; }
+            66% { text-shadow: 0 0 5px #9b59b6, 0 0 15px #9b59b6, 0 0 25px #9b59b6; }
+            100% { text-shadow: 0 0 5px #d4af37, 0 0 10px #d4af37, 0 0 20px #d4af37; }
+        }
+        .header p { color: var(--text-muted); font-size: 0.9rem; margin-top: 10px; letter-spacing: 1px;}
+        
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.9);
+            margin-bottom: 20px;
+        }
+        .screen.active { display: block; animation: fadeIn 0.4s ease-in-out; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 { color: var(--accent-gold); font-size: 1.3rem; margin-top: 0; border-left: 4px solid var(--accent-gold); padding-left: 10px;}
+        
+        .form-group { margin-bottom: 20px; display: flex; flex-direction: column; }
+        label { font-size: 0.95rem; margin-bottom: 8px; color: var(--text-main); font-weight: bold;}
+        select, input, textarea {
+            background-color: rgba(0,0,0,0.5);
+            color: var(--accent-gold);
+            border: 1px solid #444;
+            padding: 15px;
+            font-family: inherit;
+            font-size: 1rem;
+            border-radius: 8px;
+            outline: none;
+        }
+        input:focus, textarea:focus { border-color: var(--accent-gold); }
+        textarea { resize: vertical; min-height: 120px; }
+        
+        button {
+            background-color: var(--accent-gold);
+            color: #000;
+            border: none;
+            padding: 18px;
+            font-weight: bold;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            width: 100%;
+            transition: 0.2s;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        button:active { transform: scale(0.96); }
+        button.secondary { background-color: #2c3e50; color: var(--text-main); }
+        button.danger { background-color: var(--danger); color: white; }
+        button.success { background-color: var(--accent-green); color: #000; }
+
+        /* Estilos de Pruebas de Lucidez */
+        .test-area { text-align: center; padding: 20px 0; }
+        .big-circle-btn {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            transition: background-color 0.3s;
+        }
+        .pulse { animation: pulseAnim 2s infinite; background-color: var(--danger); }
+        @keyframes pulseAnim {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 25px rgba(231, 76, 60, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
+
+        #pvt-target {
+            width: 100%;
+            height: 300px;
+            background-color: #000;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            display: none;
+            border: 2px solid #333;
+        }
+        .pvt-dot {
+            width: 70px;
+            height: 70px;
+            background-color: var(--danger);
+            border-radius: 50%;
+            position: absolute;
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--danger);
+        }
+        .log-entry {
+            background-color: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-left: 4px solid var(--accent-green);
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            border-radius: 4px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1 class="glow-logo">CHAMALNQUIMYST LABS</h1>
+        <p>Motor de Farmacovigilancia y Evolución (Cegg)</p>
+    </div>
+
+    <div id="screen-setup" class="screen">
+        <h2>1. Calibración Base (Set & Setting)</h2>
+        <div class="form-group">
+            <label>Sustancia Activa (Motor)</label>
+            <input type="text" id="sustancia" value="Rosin Puro">
+        </div>
+        <div class="form-group">
+            <label>Matriz Acompañante (Vehículo)</label>
+            <input type="text" id="matriz" value="Romero (2) + Vira Vira (1)">
+        </div>
+        <div class="form-group">
+            <label>Temperatura de Extracción (°C)</label>
+            <input type="number" id="temp" value="165" inputmode="numeric">
+        </div>
+        <div class="form-group">
+            <label>Estado de Ánimo Basal (1-10)</label>
+            <input type="number" id="mood" min="1" max="10" placeholder="Ej: 7" inputmode="numeric">
+        </div>
+        <button onclick="initiateFlight()">INICIAR PROTOCOLO</button>
+    </div>
+
+    <div id="screen-flight" class="screen">
+        <h2>2. Panel de Navegación Activa</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center;">Inicio: <span id="start-time-display">--:--</span></p>
+        
+        <button class="secondary" onclick="toggleSection('time-test')">Test: Percepción del Tiempo</button>
+        <button class="secondary" onclick="toggleSection('pvt-test')">Test: Reacción Motora (PVT)</button>
+        <button class="secondary" onclick="toggleSection('log-area')">Bitácora de Epifanías</button>
+        
+        <div id="time-test" class="test-area" style="display:none;">
+            <h3 style="color: var(--text-main);">Estima 60 Segundos</h3>
+            <button id="btn-time" class="big-circle-btn" onclick="handleTimeTest()">INICIAR</button>
+            <p id="time-result" style="color: var(--accent-gold); font-weight: bold; font-size: 1.2rem;"></p>
+        </div>
+
+        <div id="pvt-test" class="test-area" style="display:none;">
+            <h3 style="color: var(--text-main);">Vigilancia Psicomotora</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">Toca el círculo rojo lo más rápido posible. (3 intentos)</p>
+            <button id="btn-start-pvt" onclick="startPVT()" style="margin-bottom: 15px; width: 80%;">Iniciar PVT</button>
+            <div id="pvt-target"></div>
+            <p id="pvt-result" style="color: var(--accent-gold); font-weight: bold; margin-top: 15px;"></p>
+        </div>
+
+        <div id="log-area" class="test-area" style="display:none;">
+            <h3 style="color: var(--text-main);">Registro Anecdótico</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Usa el dictado por voz de tu teclado.</p>
+            <textarea id="log-input" placeholder="Dicta tus ideas aquí..."></textarea>
+            <button onclick="saveLog()" style="padding: 15px; margin-bottom: 20px;">Guardar Nota</button>
+            <div id="log-list"></div>
+        </div>
+
+        <button class="danger" style="margin-top: 40px;" onclick="endFlight()">Aterrizar y Cerrar Sesión</button>
+    </div>
+
+    <div id="screen-integration" class="screen">
+        <h2>3. Integración (El Cegg)</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Evalúa el impacto residual para alimentar el algoritmo.</p>
+        
+        <div class="form-group">
+            <label>Nivel de "Agote" o Resaca física (0-10)</label>
+            <input type="number" id="agote" min="0" max="10" value="0" inputmode="numeric">
+        </div>
+        <div class="form-group">
+            <label>Nivel de Amnesia de la sesión (0-10)</label>
+            <input type="number" id="amnesia" min="0" max="10" value="0" inputmode="numeric">
+        </div>
+        
+        <div id="cegg-feedback" style="background: rgba(212, 175, 55, 0.1); padding: 20px; border-left: 4px solid var(--accent-gold); margin-bottom: 25px; border-radius: 8px; line-height: 1.5;">
+            </div>
+
+        <button class="success" onclick="exportJSON()">DESCARGAR DATASET (JSON)</button>
+        <button class="secondary" onclick="resetProtocol()" style="margin-top: 20px;">Nuevo Protocolo (Borrar Caché)</button>
+    </div>
+
+    <script>
+        // --- ESTRUCTURA DE DATOS MAESTRA ---
+        let sessionData = {
+            metadata: { laboratorio: "Chamalnquimyst Labs", fecha: "", duracion_minutos: 0 },
+            pre_vuelo: {},
+            pruebas_lucidez: { estimacion_tiempo: [], pvt_latencia_ms: [] },
+            bitacora: [],
+            integracion: {}
+        };
+
+        let flightStartTime = 0;
+        let currentScreenId = 'screen-setup';
+
+        // --- SISTEMA DE PERSISTENCIA (LOCALSTORAGE) ---
+        function saveState() {
+            localStorage.setItem('cegg_session', JSON.stringify(sessionData));
+            localStorage.setItem('cegg_startTime', flightStartTime);
+            localStorage.setItem('cegg_screen', currentScreenId);
+        }
+
+        function loadState() {
+            const savedSession = localStorage.getItem('cegg_session');
+            const savedTime = localStorage.getItem('cegg_startTime');
+            const savedScreen = localStorage.getItem('cegg_screen');
+
+            if (savedSession && savedScreen) {
+                sessionData = JSON.parse(savedSession);
+                flightStartTime = parseInt(savedTime) || 0;
+                
+                // Restaurar UI según la pantalla guardada
+                if (savedScreen === 'screen-flight' && flightStartTime > 0) {
+                    const timeString = new Date(flightStartTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    document.getElementById('start-time-display').innerText = timeString;
+                    renderLogs(); // Reconstruir el historial de bitácora
+                } else if (savedScreen === 'screen-integration') {
+                    generateCeggFeedback();
+                }
+                showScreen(savedScreen, false);
+            } else {
+                showScreen('screen-setup', false);
+            }
+        }
+
+        function resetProtocol() {
+            if(confirm("¿Estás seguro? Esto borrará la sesión actual si no has descargado el JSON.")) {
+                localStorage.removeItem('cegg_session');
+                localStorage.removeItem('cegg_startTime');
+                localStorage.removeItem('cegg_screen');
+                location.reload();
+            }
+        }
+
+        // --- INICIALIZACIÓN ---
+        window.onload = loadState;
+
+        // --- NAVEGACIÓN ---
+        function showScreen(screenId, doSave = true) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            window.scrollTo(0, 0);
+            currentScreenId = screenId;
+            if (doSave) saveState();
+        }
+
+        function toggleSection(sectionId) {
+            const el = document.getElementById(sectionId);
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // --- FASE 1: INICIO ---
+        function initiateFlight() {
+            flightStartTime = Date.now();
+            sessionData.metadata.fecha = new Date().toISOString();
+            
+            sessionData.pre_vuelo = {
+                sustancia: document.getElementById('sustancia').value,
+                matriz: document.getElementById('matriz').value,
+                temperatura: parseInt(document.getElementById('temp').value),
+                animo_basal: parseInt(document.getElementById('mood').value)
+            };
+
+            const timeString = new Date(flightStartTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('start-time-display').innerText = timeString;
+            showScreen('screen-flight');
+        }
+
+        // --- FASE 2: TEST DE TIEMPO ---
+        let timeTestStart = 0;
+        let isTiming = false;
+
+        function handleTimeTest() {
+            const btn = document.getElementById('btn-time');
+            const resultDiv = document.getElementById('time-result');
+
+            if (navigator.vibrate) navigator.vibrate(30);
+
+            if (!isTiming) {
+                timeTestStart = Date.now();
+                isTiming = true;
+                btn.innerText = "DETENER";
+                btn.classList.add('pulse');
+                resultDiv.innerText = "";
+            } else {
+                const elapsedMs = Date.now() - timeTestStart;
+                const elapsedSecs = (elapsedMs / 1000).toFixed(2);
+                const errorSecs = Math.abs(60 - elapsedSecs).toFixed(2);
+                
+                isTiming = false;
+                btn.innerText = "REINICIAR";
+                btn.classList.remove('pulse');
+                
+                resultDiv.innerHTML = `Percibiste 60s en: <br><span style="color:white; font-size:2.5rem;">${elapsedSecs}s</span><br>Desfase: <span style="color:var(--danger)">${errorSecs}s</span>`;
+                
+                sessionData.pruebas_lucidez.estimacion_tiempo.push({
+                    timestamp_relativo_min: Math.floor((Date.now() - flightStartTime) / 60000),
+                    segundos_reales: parseFloat(elapsedSecs),
+                    error_absoluto: parseFloat(errorSecs)
+                });
+                saveState(); // Guardar avance
+            }
+        }
+
+        // --- FASE 2: TEST PVT ---
+        let pvtTrials = 0;
+        let pvtResults = [];
+        let pvtTimer;
+        let pvtShowTime = 0;
+
+        function startPVT() {
+            pvtTrials = 0;
+            pvtResults = [];
+            document.getElementById('btn-start-pvt').style.display = 'none';
+            document.getElementById('pvt-target').style.display = 'block';
+            document.getElementById('pvt-result').innerText = "Mantén la mirada en el cuadro negro...";
+            nextPVTTrial();
+        }
+
+        function nextPVTTrial() {
+            if (pvtTrials >= 3) {
+                document.getElementById('pvt-target').style.display = 'none';
+                document.getElementById('btn-start-pvt').style.display = 'inline-block';
+                document.getElementById('btn-start-pvt').innerText = "Repetir PVT";
+                
+                const avg = (pvtResults.reduce((a, b) => a + b, 0) / pvtResults.length).toFixed(0);
+                document.getElementById('pvt-result').innerText = `Latencia Promedio: ${avg} ms`;
+                
+                sessionData.pruebas_lucidez.pvt_latencia_ms.push({
+                    timestamp_relativo_min: Math.floor((Date.now() - flightStartTime) / 60000),
+                    promedio_ms: parseInt(avg),
+                    intentos: [...pvtResults]
+                });
+                saveState(); // Guardar avance
+                return;
+            }
+
+            document.getElementById('pvt-target').innerHTML = ''; 
+            const delay = Math.random() * 2500 + 1000; 
+            
+            pvtTimer = setTimeout(() => {
+                const dot = document.createElement('div');
+                dot.className = 'pvt-dot';
+                
+                const maxX = document.getElementById('pvt-target').clientWidth - 70;
+                const maxY = document.getElementById('pvt-target').clientHeight - 70;
+                dot.style.left = Math.floor(Math.random() * maxX) + 'px';
+                dot.style.top = Math.floor(Math.random() * maxY) + 'px';
+                
+                dot.onmousedown = dot.ontouchstart = (e) => {
+                    e.preventDefault(); 
+                    const reactionTime = Date.now() - pvtShowTime;
+                    
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    
+                    pvtResults.push(reactionTime);
+                    pvtTrials++;
+                    nextPVTTrial();
+                };
+
+                document.getElementById('pvt-target').appendChild(dot);
+                pvtShowTime = Date.now();
+            }, delay);
+        }
+
+        // --- FASE 2: BITÁCORA ---
+        function saveLog() {
+            const input = document.getElementById('log-input');
+            const text = input.value.trim();
+            if(!text) return;
+
+            const timeRel = Math.floor((Date.now() - flightStartTime) / 60000);
+            
+            sessionData.bitacora.push({ minuto: timeRel, nota: text });
+            
+            input.value = '';
+            renderLogs();
+            saveState(); // Guardar avance
+        }
+
+        function renderLogs() {
+            const logList = document.getElementById('log-list');
+            logList.innerHTML = ''; // Limpiar
+            // Mostrar los más recientes arriba
+            const reversedLogs = [...sessionData.bitacora].reverse();
+            reversedLogs.forEach(log => {
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                entry.innerHTML = `<strong style="color:var(--accent-gold)">[T+${log.minuto}m]</strong><br>${log.nota}`;
+                logList.appendChild(entry);
+            });
+        }
+
+        // --- FASE 3: ATERRIZAJE E INTEGRACIÓN ---
+        function endFlight() {
+            sessionData.metadata.duracion_minutos = Math.floor((Date.now() - flightStartTime) / 60000);
+            showScreen('screen-integration');
+            generateCeggFeedback();
+        }
+
+        function generateCeggFeedback() {
+            const temp = sessionData.pre_vuelo.temperatura || 165;
+            const matriz = (sessionData.pre_vuelo.matriz || "").toLowerCase();
+            let feedback = "<strong style='font-size:1.1rem;'>Análisis Cegg (Farmacovigilancia):</strong><br><br>";
+
+            if (temp >= 180) {
+                feedback += "🔴 <strong>Alerta Térmica:</strong> Temperatura alta detectada. Es altamente probable que experimentes sedación mediada por CBN.<br><br>";
+            } else {
+                feedback += "🟢 <strong>Destilación Limpia:</strong> THC puro extraído. El riesgo de agote físico residual es mínimo.<br><br>";
+            }
+
+            if (matriz.includes('romero')) {
+                feedback += "🟢 <strong>Neuroprotección:</strong> Fusión alfa-pineno activa. Tu memoria a corto plazo fue protegida bloqueando la acetilcolinesterasa.<br>";
+            } else {
+                feedback += "🟡 <strong>Ventana Abierta:</strong> Ausencia de neuroprotectores colinérgicos. Se sugiere añadir Romero en la próxima sesión.<br>";
+            }
+            
+            document.getElementById('cegg-feedback').innerHTML = feedback;
+        }
+
+        // --- EXPORTACIÓN JSON ---
+        function exportJSON() {
+            sessionData.integracion = {
+                nivel_agote: parseInt(document.getElementById('agote').value) || 0,
+                nivel_amnesia: parseInt(document.getElementById('amnesia').value) || 0
+            };
+
+            const dataStr = JSON.stringify(sessionData, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            const safeDate = new Date().toISOString().split('T')[0];
+            a.download = `Chamalnquimyst_Protocol_${safeDate}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Opcional: Borrar la caché al descargar con éxito
+            // localStorage.clear();
+        }
+    </script>
+</body>
+</html>
