@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Abyssum Infinitum</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@100;300&display=swap');
+        * { box-sizing: border-box; }
+        body { margin:0; overflow:hidden; background:#000; font-family:'Josefin Sans',sans-serif; user-select:none; }
+        canvas { display:block; }
+        #ui {
+            position:fixed; top:28px; left:32px; pointer-events:none; z-index:100;
+        }
+        #title {
+            font-weight:100; letter-spacing:11px; font-size:.8rem; text-transform:uppercase;
+            color:rgba(100,210,255,.55); margin:0 0 8px;
+        }
+        .r { font-size:.6rem; color:rgba(90,190,240,.38); letter-spacing:3px; line-height:1.9; font-weight:300; }
+        .r span { color:rgba(150,230,255,.65); }
+        #hint {
+            position:fixed; bottom:32px; left:32px; pointer-events:none; z-index:100;
+            font-size:.58rem; color:rgba(80,170,220,.28); letter-spacing:3px; line-height:1.8;
+            border-left:1px solid rgba(80,170,220,.1); padding-left:10px;
+        }
+        #banner {
+            position:fixed; bottom:18%; width:100%; text-align:center;
+            font-size:.72rem; letter-spacing:9px; color:rgba(200,255,240,0);
+            transition:color .7s,text-shadow .7s; font-weight:100; text-transform:uppercase;
+            pointer-events:none;
+        }
+        #banner.on { color:rgba(200,255,240,.8); text-shadow:0 0 35px rgba(100,255,200,.4); }
+        #dna {
+            position:fixed; top:32px; right:32px; text-align:right; pointer-events:none; z-index:100;
+            font-size:.6rem; color:rgba(140,230,255,.45); letter-spacing:3px; line-height:1.9;
+            font-weight:100; transition:opacity .4s;
+        }
+        #overlay {
+            position:fixed; inset:0; z-index:999;
+            background:radial-gradient(ellipse at 50% 55%,#010c1c 0%,#000 70%);
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            transition:opacity 1.4s;
+        }
+        #overlay h2 { font-weight:100; letter-spacing:14px; font-size:1.1rem; text-transform:uppercase;
+            color:rgba(140,220,255,.75); margin:0 0 6px; text-shadow:0 0 40px rgba(50,170,255,.35); }
+        #overlay p  { font-size:.62rem; color:rgba(90,170,210,.38); letter-spacing:5px; margin:0 0 44px; }
+        #btn {
+            background:transparent; border:1px solid rgba(90,190,255,.22);
+            color:rgba(140,220,255,.7); padding:13px 38px;
+            font-family:'Josefin Sans',sans-serif; font-weight:100;
+            letter-spacing:6px; font-size:.68rem; text-transform:uppercase;
+            cursor:pointer; transition:all .35s;
+        }
+        #btn:hover { background:rgba(50,160,255,.07); border-color:rgba(90,190,255,.55);
+            box-shadow:0 0 28px rgba(50,160,255,.12); color:rgba(200,240,255,.95); }
+    </style>
+</head>
+<body>
+
+<div id="overlay">
+    <h2>Abyssum Infinitum</h2>
+    <p>Ecosistema Bioluminiscente · Océano Sin Fin</p>
+    <button id="btn">DESCENDER AL ABISMO</button>
+</div>
+
+<div id="ui">
+    <h1 id="title">ABYSSUM INFINITUM</h1>
+    <div class="r">
+        SECTOR &nbsp;<span id="coords">0,0,0</span><br>
+        FORMAS VIVAS &nbsp;<span id="count">0</span><br>
+        PROFUNDIDAD &nbsp;<span id="depth">0 m</span>
+    </div>
+</div>
+<div id="hint">
+    WASD — NADAR &nbsp;|&nbsp; QE — GIRAR<br>
+    ZX — PROFUNDIDAD &nbsp;|&nbsp; ESPACIO — IMPULSIÓN
+</div>
+<div id="dna">···</div>
+<div id="banner"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════
+// CONSTANTES
+// ═══════════════════════════════════════════
+const TAU  = Math.PI * 2;
+const PHI  = (1 + Math.sqrt(5)) / 2;
+const GA   = Math.PI * (3 - Math.sqrt(5)); // Golden Angle
+
+// ═══════════════════════════════════════════
+// ESCALAS (Hz)
+// ═══════════════════════════════════════════
+const SCALES = {
+    lydian:    [196,220,246.94,293.66,329.63,369.99,392,440],
+    hira:      [164.81,196,220,261.63,293.66,329.63,392],
+    penta:     [174.61,196,220,261.63,293.66,349.23,392],
+    blues:     [146.83,174.61,196,207.65,220,261.63,293.66],
+    atlantis:  [130.81,146.83,164.81,196,220,246.94,293.66],
+    deep:      [110,130.81,146.83,164.81,196,220,246.94],
+};
+
+// Paletas BAJAS en L — el AdditiveBlending construye el color
+// Los valores L bajos son la CLAVE del Efecto Felmer correcto
+const SPECIES = {
+    LUMINA:  { h:.57, s:1.0, l:.28, scale:'lydian',   morph:'radial',   desc:'LUMINA RADIANTIS' },
+    IGNIS:   { h:.02, s:1.0, l:.30, scale:'penta',    morph:'toroidal', desc:'IGNIS AETERNUM'   },
+    VERDIS:  { h:.32, s:.95, l:.26, scale:'blues',    morph:'helical',  desc:'VERDIS FLORA'     },
+    AETHER:  { h:.77, s:.90, l:.28, scale:'hira',     morph:'nebula',   desc:'AETHER CELESTIAL' },
+    SOLARIS: { h:.12, s:1.0, l:.30, scale:'atlantis', morph:'radial',   desc:'SOLARIS PRIME'    },
+};
+
+const CTENO_PAL = {
+    regalis:  { h:.55, s:1.0, l:.22 },
+    elongata: { h:.74, s:.90, l:.20 },
+    rotunda:  { h:.08, s:1.0, l:.24 },
+};
+
+// ═══════════════════════════════════════════
+// GLOBALS
+// ═══════════════════════════════════════════
+let scene, camera, renderer, clock;
+let sectors  = new Map();
+let snow;
+let glowA, glowB; // texturas
+let total = 0;
+
+const keys = { w:0,s:0,a:0,d:0,up:0,dn:0,boost:0 };
+const cam  = { rx:0, ry:0 };
+let nearDist = Infinity, nearDNA = null;
+
+// ═══════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════
+let actx, masterG, ready = false;
+
+function initAudio() {
+    if (actx) { if (actx.state==='suspended') actx.resume(); return; }
+    const AC = window.AudioContext||window.webkitAudioContext;
+    actx = new AC();
+    const comp = actx.createDynamicsCompressor();
+    comp.threshold.value=-22; comp.knee.value=28;
+    comp.ratio.value=12; comp.attack.value=.003; comp.release.value=.25;
+    masterG = actx.createGain(); masterG.gain.value=.6;
+
+    // Reverb 4s
+    const sr=actx.sampleRate, len=sr*4;
+    const buf=actx.createBuffer(2,len,sr);
+    for(let c=0;c<2;c++){const d=buf.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6);}
+    const rev=actx.createConvolver(); rev.buffer=buf;
+    const rg=actx.createGain(); rg.gain.value=.4;
+
+    masterG.connect(comp);
+    masterG.connect(rev); rev.connect(rg); rg.connect(comp);
+    comp.connect(actx.destination);
+    ready=true;
+}
+
+function note(scaleName, dist, seed, size, solo) {
+    if(!ready||!actx) return;
+    const sc=SCALES[scaleName]; if(!sc) return;
+    const maxD = solo ? 700 : 550;
+    const vol  = Math.pow(Math.max(0,1-dist/maxD),2)*0.14;
+    if(vol<.001) return;
+    const idx = Math.floor(Math.abs(Math.sin(actx.currentTime*.13+seed)*43758.5)%sc.length);
+    let f = sc[idx]||sc[0];
+    if(size>5) f*=.5; if(size>10) f*=.5; if(size<1) f*=2;
+    const t=actx.currentTime;
+    const o=actx.createOscillator(), g=actx.createGain(), p=actx.createStereoPanner();
+    o.type = solo?'sine':'triangle';
+    o.frequency.setValueAtTime(f,t);
+    o.frequency.linearRampToValueAtTime(f*(1+(Math.random()-.5)*.012),t+4);
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(vol,t+(solo?.3:.5));
+    g.gain.exponentialRampToValueAtTime(.0001,t+4.5);
+    p.pan.value=(Math.random()-.5)*.6;
+    o.connect(g); g.connect(p); p.connect(masterG);
+    o.start(t); o.stop(t+5);
+}
+
+// ═══════════════════════════════════════════
+// TEXTURAS GLOW
+// ═══════════════════════════════════════════
+function mkGlow(sharp) {
+    const cv=document.createElement('canvas'); cv.width=cv.height=128;
+    const cx=cv.getContext('2d');
+    const g=cx.createRadialGradient(64,64,0,64,64,64);
+    if(sharp){
+        g.addColorStop(0,  'rgba(255,255,255,1)');
+        g.addColorStop(.1, 'rgba(255,255,255,.9)');
+        g.addColorStop(.3, 'rgba(255,255,255,.3)');
+        g.addColorStop(.6, 'rgba(255,255,255,.06)');
+        g.addColorStop(1,  'rgba(0,0,0,0)');
+    } else {
+        g.addColorStop(0,  'rgba(255,255,255,1)');
+        g.addColorStop(.2, 'rgba(255,255,255,.55)');
+        g.addColorStop(.5, 'rgba(255,255,255,.1)');
+        g.addColorStop(1,  'rgba(0,0,0,0)');
+    }
+    cx.fillStyle=g; cx.fillRect(0,0,128,128);
+    return new THREE.CanvasTexture(cv);
+}
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+function srng(seed){
+    let mw=(123456789+seed)>>>0, mz=(987654321-seed)>>>0;
+    return()=>{
+        mz=(36969*(mz&65535)+(mz>>>16))>>>0;
+        mw=(18000*(mw&65535)+(mw>>>16))>>>0;
+        return(((mz<<16)+mw)>>>0)/4294967296;
+    };
+}
+function h(n){return Math.abs(Math.sin(n*127.1+311.7)*43758.5453)%1;}
+
+// ═══════════════════════════════════════════
+// CTENOPHORA (Código 1 — Efecto Felmer cilios)
+// ═══════════════════════════════════════════
+class Cteno {
+    constructor(pos, seed, solo) {
+        this.seed=seed; this.solo=solo;
+        this.G=new THREE.Group(); this.G.position.copy(pos);
+        this.nOff=h(seed)*1000; this.tNext=0; this.rev=0;
+        this._dna(); this._build();
+        scene.add(this.G); total++;
+    }
+
+    _dna(){
+        const r=h(this.seed*13.37);
+        this.spectral = h(this.seed*99.9)<.12;
+        if(this.solo){
+            this.tempo=.5; this.scaleName=r<.55?'atlantis':'deep';
+            this.sub=r<.55?'ELONGATA':'REGALIS';
+            this.pal=r<.55?CTENO_PAL.elongata:CTENO_PAL.regalis;
+        } else {
+            this.tempo=1.3; this.scaleName=r<.5?'penta':'lydian';
+            this.sub=r<.5?'ROTUNDA':'REGALIS';
+            this.pal=r<.5?CTENO_PAL.rotunda:CTENO_PAL.regalis;
+        }
+    }
+
+    _build(){
+        // Tamaño variado: micro (6) → gigante (110)
+        const sr=h(this.seed*55.5);
+        const sM=sr*sr*sr; // distribución cúbica → gigantes raros
+        const bR=6+sM*104;
+
+        let bodyR,bodyH,CR;
+        if(this.sub==='ELONGATA'){bodyR=bR*.55;bodyH=bodyR*PHI*2.8;CR=5;}
+        else if(this.sub==='ROTUNDA'){bodyR=bR*1.25;bodyH=bodyR*1.05;CR=13;}
+        else{bodyR=bR;bodyH=bodyR*PHI;CR=8;}
+
+        this.bodyH=bodyH; this.bodyR=bodyR;
+        this.CR=CR; this.PR=Math.floor(1400/CR);
+        const PC=800+CR*this.PR; this.PC=PC; this.BC=800;
+
+        const geo=new THREE.BufferGeometry();
+        const pos=new Float32Array(PC*3);
+        const col=new Float32Array(PC*3);
+
+        // Cuerpo traslúcido
+        for(let i=0;i<this.BC;i++){
+            const t=i/this.BC, th=i*GA, phi=Math.acos(1-2*t);
+            let sm=1; if(this.sub==='ELONGATA')sm=.8+.2*Math.sin(phi*4);
+            pos[i*3]=bodyR*sm*Math.sin(phi)*Math.cos(th);
+            pos[i*3+1]=bodyH*Math.cos(phi);
+            pos[i*3+2]=bodyR*sm*Math.sin(phi)*Math.sin(th);
+            const c=new THREE.Color().setHSL(this.pal.h,this.pal.s*.3,.05);
+            col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;
+        }
+
+        // Cilios — aquí vive el Efecto Felmer
+        for(let row=0;row<CR;row++){
+            const rowA=row*(TAU/CR);
+            for(let p=0;p<this.PR;p++){
+                const idx=this.BC+row*this.PR+p;
+                if(idx>=PC)break;
+                const t=p/this.PR;
+                const phi=Math.PI*.1+t*Math.PI*.8;
+                const off=rowA+(h(idx)-.5)*.04;
+                const r=bodyR*1.18+h(idx)*2;
+                pos[idx*3]=r*Math.sin(phi)*Math.cos(off);
+                pos[idx*3+1]=bodyH*Math.cos(phi);
+                pos[idx*3+2]=r*Math.sin(phi)*Math.sin(off);
+                col[idx*3]=col[idx*3+1]=col[idx*3+2]=1;
+            }
+        }
+
+        geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+        geo.setAttribute('color',   new THREE.BufferAttribute(col,3));
+        this.col=col;
+
+        // TAMAÑO DE PARTÍCULA — clave visibilidad:
+        // Proporcional al organismo, mínimo 4px
+        const pSize=Math.max(4, Math.min(18, bR*0.14));
+
+        this.mat=new THREE.PointsMaterial({
+            size:pSize, map:glowA, vertexColors:true,
+            transparent:true, opacity:0,
+            blending:THREE.AdditiveBlending, depthWrite:false, sizeAttenuation:true,
+        });
+        this.pts=new THREE.Points(geo,this.mat);
+        this.G.add(this.pts);
+        this.G.rotation.z=(h(this.seed)-.5)*.5;
+    }
+
+    update(time,dt,pPos){
+        this.rev=Math.min(1,this.rev+dt*.4);
+        const dist=this.G.position.distanceTo(pPos);
+        if(dist>3200){this.G.visible=false;return;}
+        this.G.visible=true;
+
+        // Movimiento ondulante 3D — sin sesgo vertical
+        const nx=Math.sin(time*.09+this.nOff)*2;
+        const ny=Math.cos(time*.11+this.nOff+3)*2;  // igual amplitud que X/Z
+        const nz=Math.sin(time*.10+this.nOff+7)*2;
+        this.G.position.x+=nx*dt*4.5;
+        this.G.position.y+=ny*dt*4.5;
+        this.G.position.z+=nz*dt*4.5;
+        this.G.rotation.y+=nx*dt*.035;
+
+        const rs=this.sub==='ROTUNDA'?.0035:this.sub==='ELONGATA'?.0012:.0022;
+        this.G.rotation.y+=rs;
+        this.G.position.y+=Math.sin(time*.5*this.tempo+this.seed)*.07;
+
+        // Audio
+        if(ready&&time>this.tNext){
+            const chance=this.solo?.7:.38;
+            if(Math.random()<chance)note(this.scaleName,dist,this.seed,this.bodyR/15,true);
+            this.tNext=time+(2+Math.random()*3.5)/this.tempo;
+        }
+
+        // Animación de cilios — Efecto Felmer
+        const col=this.col;
+        for(let row=0;row<this.CR;row++){
+            for(let p=0;p<this.PR;p++){
+                const idx=this.BC+row*this.PR+p;
+                if(idx>=this.PC)break;
+                const pct=p/this.PR;
+                const wave=time*.9*this.tempo-pct*4+row*(1/PHI)*2;
+                const bright=.5+Math.sin(wave*Math.PI*2)*.5;
+                let c;
+                if(this.spectral){
+                    const hue=((wave*.3+row*.1)%1+1)%1;
+                    c=new THREE.Color().setHSL(hue,1,bright*.25*this.rev);
+                } else {
+                    const hue=(this.pal.h+(wave*.15)%1*.22+1)%1;
+                    c=new THREE.Color().setHSL(hue,this.pal.s,bright*.22*this.rev);
+                }
+                col[idx*3]=c.r;col[idx*3+1]=c.g;col[idx*3+2]=c.b;
+            }
+        }
+        this.pts.geometry.attributes.color.needsUpdate=true;
+        this.mat.opacity=Math.min(.95,.95*this.rev*Math.max(.15,1-dist/3200*.5));
+
+        if(dist<nearDist){nearDist=dist;nearDNA={desc:this.sub+' CTENO',scale:this.scaleName.toUpperCase(),mass:(this.bodyR/10).toFixed(1)};}
+    }
+
+    dispose(){this.pts.geometry.dispose();this.mat.dispose();scene.remove(this.G);total--;}
+}
+
+// ═══════════════════════════════════════════
+// AUREUM ENTITY (Código 2 — corregido)
+// ═══════════════════════════════════════════
+class Aureum {
+    constructor(rng, x,y,z) {
+        const keys=Object.keys(SPECIES);
+        this.spK=keys[Math.floor(rng()*keys.length)];
+        this.sp=SPECIES[this.spK];
+        this.dna={
+            sym:rng(), chaos:rng(), cplx:rng(),
+            // Tamaño 0.4 → 13 con distribución potencial (pequeños más frecuentes)
+            size:.4+Math.pow(rng(),1.7)*12.6,
+            vit:.3+rng()*.7,
+        };
+        this.pos=new THREE.Vector3(x,y,z);
+        this.seed=rng()*9999;
+        this.tOff=rng()*12000;
+        this.flow=new THREE.Vector3(rng()-.5,rng()-.5,rng()-.5).normalize();
+        this.spd=(8+rng()*14)/(this.dna.size+.4);
+        this.tNext=0; this.tempo=.7+rng()*1.3;
+        this.iL=0; // interaction level
+
+        const geo=this._buildGeo(rng);
+        const pS=Math.max(5,Math.min(22,3.5*Math.sqrt(this.dna.size)));
+        this.mat=new THREE.PointsMaterial({
+            size:pS, map:glowB, vertexColors:true,
+            transparent:true, opacity:0,
+            blending:THREE.AdditiveBlending, depthWrite:false, sizeAttenuation:true,
+        });
+        this.mesh=new THREE.Points(geo,this.mat);
+        this.mesh.position.copy(this.pos);
+        this.mesh.rotation.set(rng()*TAU,rng()*TAU,rng()*TAU);
+        scene.add(this.mesh); total++;
+    }
+
+    _buildGeo(rng){
+        const sc=this.dna.size;
+        const PC=Math.floor((600+this.dna.cplx*1400)*Math.sqrt(sc));
+        const geo=new THREE.BufferGeometry();
+        const pos=new Float32Array(PC*3);
+        const col=new Float32Array(PC*3);
+        const hslA=new Float32Array(PC*3);
+        const {h,s,l}=this.sp;
+        const morph=this.sp.morph;
+
+        for(let i=0;i<PC;i++){
+            const t=i/PC, th=i*GA;
+            let x,y,z;
+            if(morph==='helical'){
+                const r=sc*20*(0.6+Math.sin(t*TAU*5)*.3);
+                y=(t-.5)*sc*420;
+                const tw=t*TAU*11;
+                x=r*Math.cos(th+tw); z=r*Math.sin(th+tw);
+            } else if(morph==='toroidal'){
+                const R=sc*65, tR=sc*20*(1+Math.sin(t*TAU*7)*.3);
+                const phi=t*TAU*(this.dna.sym*5+2);
+                const tr=R+tR*Math.cos(phi);
+                x=tr*Math.cos(th); y=tR*Math.sin(phi); z=tr*Math.sin(th);
+            } else if(morph==='radial'){
+                const r=sc*50*Math.sqrt(t);
+                y=Math.cos(r*.045)*sc*28+Math.sin(th*6)*sc*6*t;
+                x=r*Math.cos(th); z=r*Math.sin(th);
+            } else { // nebula
+                const r=sc*50*t;
+                const phi=Math.acos(Math.max(-1,Math.min(1,1-2*rng())));
+                x=r*Math.sin(phi)*Math.cos(th);
+                y=r*Math.sin(phi)*Math.sin(th);
+                z=r*Math.cos(phi);
+            }
+            const ns=this.dna.chaos*10*sc;
+            x+=(rng()-.5)*ns; y+=(rng()-.5)*ns; z+=(rng()-.5)*ns;
+            pos[i*3]=x;pos[i*3+1]=y;pos[i*3+2]=z;
+
+            // L baja + gradiente radial → Efecto Felmer
+            const varH=(h+(rng()-.5)*.14+1)%1;
+            const varS=.85+rng()*.15;
+            const radL=1-Math.pow(t,.5);
+            const varL=l*(.35+radL*.65);
+
+            const c=new THREE.Color().setHSL(varH,varS,varL);
+            col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;
+            hslA[i*3]=varH;hslA[i*3+1]=varS;hslA[i*3+2]=varL;
+        }
+        geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+        geo.setAttribute('color',   new THREE.BufferAttribute(col,3));
+        geo.userData={hsl:hslA,PC,baseL:l};
+        return geo;
+    }
+
+    update(time,dt,pPos){
+        const dist=this.pos.distanceTo(pPos);
+        if(dist>3200){this.mesh.visible=false;return;}
+        this.mesh.visible=true;
+
+        const tO=Math.min(.95,Math.max(0,(3200-dist)/1400));
+        this.mat.opacity+=(tO-this.mat.opacity)*.045;
+
+        // Movimiento fluido 3D sin sesgo
+        const t=time*.05+this.tOff;
+        this.flow.x+=Math.sin(t*1.1)*.012;
+        this.flow.y+=Math.cos(t*.75)*.012;  // igual que X y Z
+        this.flow.z+=Math.sin(t*1.35)*.012;
+        this.flow.normalize();
+        this.pos.addScaledVector(this.flow,this.spd*dt*1.8);
+        this.mesh.position.copy(this.pos);
+        this.mesh.rotation.y+=.0005;
+
+        const br=1+Math.sin(time*(.8+this.dna.vit))*.025;
+        this.mesh.scale.setScalar(br);
+
+        if(ready&&dist<700&&time>this.tNext){
+            const ch=Math.pow(Math.max(0,1-dist/700),2)*.75;
+            if(Math.random()<ch){this.iL=1;note(this.sp.scale,dist,this.seed+time,this.dna.size,false);}
+            this.tNext=time+(1+Math.random()*2.5)/this.tempo;
+        }
+        this.iL*=.93;
+        this._updCol(time);
+
+        if(dist<nearDist){nearDist=dist;nearDNA={desc:this.sp.desc,scale:this.sp.scale.toUpperCase(),mass:this.dna.size.toFixed(1)};}
+    }
+
+    _updCol(time){
+        const geo=this.mesh.geometry;
+        const col=geo.attributes.color.array;
+        const hsl=geo.userData.hsl;
+        const bL=geo.userData.baseL;
+        const PC=geo.userData.PC;
+        const tc=new THREE.Color();
+        const wv=time*1.0;
+
+        for(let i=0;i<PC;i++){
+            const hv=hsl[i*3],sv=hsl[i*3+1],lv=hsl[i*3+2];
+            const w=Math.sin(i*.055-wv)*.5+.5;
+            const bst=this.iL*w;
+            const nh=(hv+bst*.04+Math.sin(wv*.3+i*.003)*.012+1)%1;
+            // L máxima = bL*3 para que nunca se vuelva blanco en partículas individuales
+            const nl=Math.min(bL*3,lv+bst*.28+Math.sin(wv*.8+i*.01)*bL*.35);
+            const ns=Math.min(1,sv+bst*.08);
+            tc.setHSL(nh,ns,nl);
+            col[i*3]=tc.r;col[i*3+1]=tc.g;col[i*3+2]=tc.b;
+        }
+        geo.attributes.color.needsUpdate=true;
+    }
+
+    dispose(){this.mesh.geometry.dispose();this.mat.dispose();scene.remove(this.mesh);total--;}
+}
+
+// ═══════════════════════════════════════════
+// NIEVE MARINA
+// ═══════════════════════════════════════════
+function mkSnow(){
+    const N=2800, geo=new THREE.BufferGeometry();
+    const pos=new Float32Array(N*3), col=new Float32Array(N*3), vel=[];
+    for(let i=0;i<N;i++){
+        pos[i*3]=(Math.random()-.5)*800;
+        pos[i*3+1]=(Math.random()-.5)*800;
+        pos[i*3+2]=(Math.random()-.5)*800;
+        col[i*3]=.45;col[i*3+1]=.6;col[i*3+2]=.85;
+        vel.push({x:(Math.random()-.5)*.07,y:(Math.random()-.5)*.07,z:(Math.random()-.5)*.07});
+    }
+    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    geo.setAttribute('color',   new THREE.BufferAttribute(col,3));
+    snow=new THREE.Points(geo,new THREE.PointsMaterial({
+        size:1.4,transparent:true,opacity:.35,vertexColors:true,
+        map:glowA,blending:THREE.AdditiveBlending,depthWrite:false
+    }));
+    snow.userData.vel=vel;
+    scene.add(snow);
+}
+
+function updSnow(){
+    const pos=snow.geometry.attributes.position.array;
+    const col=snow.geometry.attributes.color.array;
+    const vel=snow.userData.vel;
+    const cp=camera.position, R=400;
+    for(let i=0;i<vel.length;i++){
+        pos[i*3]+=vel[i].x; pos[i*3+1]+=vel[i].y; pos[i*3+2]+=vel[i].z;
+        if(pos[i*3]>cp.x+R)pos[i*3]-=R*2; if(pos[i*3]<cp.x-R)pos[i*3]+=R*2;
+        if(pos[i*3+1]>cp.y+R)pos[i*3+1]-=R*2; if(pos[i*3+1]<cp.y-R)pos[i*3+1]+=R*2;
+        if(pos[i*3+2]>cp.z+R)pos[i*3+2]-=R*2; if(pos[i*3+2]<cp.z-R)pos[i*3+2]+=R*2;
+        col[i*3]+=(0.45-col[i*3])*.003; col[i*3+1]+=(0.6-col[i*3+1])*.003; col[i*3+2]+=(0.85-col[i*3+2])*.003;
+    }
+    snow.geometry.attributes.position.needsUpdate=true;
+    snow.geometry.attributes.color.needsUpdate=true;
+}
+
+// ═══════════════════════════════════════════
+// SECTOR — densidad UNIFORME en todas direcciones
+// ═══════════════════════════════════════════
+class Sector {
+    constructor(sx,sy,sz){
+        this.ents=[];
+        // Seed basado en los 3 ejes por igual — sin sesgo direccional
+        const raw=Math.sin(sx*12.9898+sy*78.233+sz*37.719)*43758.5453;
+        const seed=Math.abs(raw-Math.floor(raw))*99999;
+        const rng=srng(Math.floor(seed));
+
+        // Siempre hay vida: mínimo 1, máximo 6 organismos
+        // La variabilidad da sensación procedural sin zonas muertas
+        const n=1+Math.floor(rng()*5+rng()*.5); // 1–5 con tendencia a 2-3
+
+        for(let i=0;i<n;i++){
+            const SS=900;
+            const ox=sx*SS+(rng()-.5)*SS*.88;
+            const oy=sy*SS+(rng()-.5)*SS*.88;
+            const oz=sz*SS+(rng()-.5)*SS*.88;
+
+            // Tipos mezclados
+            const roll=rng();
+            if(roll<.45){
+                // Ctenophora solitario
+                const rng2=srng(Math.floor(seed+i*113));
+                new Cteno(new THREE.Vector3(ox,oy,oz),seed+i*113,true) && this.ents.push(this.ents[this.ents.length]||null);
+                this.ents.push(new Cteno(new THREE.Vector3(ox,oy,oz),seed+i*113,true));
+                this.ents.pop(); // evitar doble — rehacer
+            } else if(roll<.75){
+                // Aureum
+                const rng2=srng(Math.floor(seed+i*77));
+                this.ents.push(new Aureum(rng2,ox,oy,oz));
+            } else {
+                // Cluster de Ctenophoras
+                const nc=2+Math.floor(rng()*3);
+                for(let j=0;j<nc;j++){
+                    const jx=ox+(rng()-.5)*80, jy=oy+(rng()-.5)*80, jz=oz+(rng()-.5)*80;
+                    this.ents.push(new Cteno(new THREE.Vector3(jx,jy,jz),seed+i*113+j*31,false));
+                }
+            }
+        }
+    }
+    update(t,dt,p){this.ents.forEach(e=>e.update(t,dt,p));}
+    dispose(){this.ents.forEach(e=>e.dispose());this.ents=[];}
+}
+
+// ═══════════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════════
+function setupInput(){
+    ['keydown','mousedown'].forEach(ev=>window.addEventListener(ev,initAudio,{once:true}));
+    window.addEventListener('keydown',e=>{
+        if(e.code==='KeyW')keys.w=1;
+        if(e.code==='KeyS')keys.s=1;
+        if(e.code==='KeyA')keys.a=1;
+        if(e.code==='KeyD')keys.d=1;
+        if(e.code==='KeyZ')keys.dn=1;
+        if(e.code==='KeyX')keys.up=1;
+        if(e.code==='KeyQ')cam.ry+=.06;
+        if(e.code==='KeyE')cam.ry-=.06;
+        if(e.code==='Space'){keys.boost=1;e.preventDefault();}
+    });
+    window.addEventListener('keyup',e=>{
+        if(e.code==='KeyW')keys.w=0;
+        if(e.code==='KeyS')keys.s=0;
+        if(e.code==='KeyA')keys.a=0;
+        if(e.code==='KeyD')keys.d=0;
+        if(e.code==='KeyZ')keys.dn=0;
+        if(e.code==='KeyX')keys.up=0;
+        if(e.code==='Space')keys.boost=0;
+    });
+    document.addEventListener('mousemove',e=>{
+        if(document.pointerLockElement===renderer.domElement){
+            cam.ry-=e.movementX*.0022;
+            cam.rx-=e.movementY*.0022;
+            cam.rx=Math.max(-Math.PI/2,Math.min(Math.PI/2,cam.rx));
+        }
+    });
+    renderer.domElement.addEventListener('click',()=>{renderer.domElement.requestPointerLock();initAudio();});
+}
+
+function updPhysics(dt){
+    const spd=280*(keys.boost?12:1)*dt;
+    const fwd=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+    const rgt=new THREE.Vector3(1,0,0).applyQuaternion(camera.quaternion);
+    const up=new THREE.Vector3(0,1,0);
+    if(keys.w)camera.position.addScaledVector(fwd,spd);
+    if(keys.s)camera.position.addScaledVector(fwd,-spd);
+    if(keys.d)camera.position.addScaledVector(rgt,spd);
+    if(keys.a)camera.position.addScaledVector(rgt,-spd);
+    if(keys.up)camera.position.addScaledVector(up,spd);
+    if(keys.dn)camera.position.addScaledVector(up,-spd);
+    camera.rotation.set(cam.rx,cam.ry,0,'YXZ');
+}
+
+// ═══════════════════════════════════════════
+// INIT & LOOP
+// ═══════════════════════════════════════════
+function init(){
+    scene=new THREE.Scene();
+    scene.background=new THREE.Color(0x010410);
+    scene.fog=new THREE.FogExp2(0x010410,.0011);
+
+    camera=new THREE.PerspectiveCamera(68,innerWidth/innerHeight,.5,4200);
+    camera.position.set(0,0,0);
+
+    renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+    renderer.setSize(innerWidth,innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    document.body.appendChild(renderer.domElement);
+
+    glowA=mkGlow(true);
+    glowB=mkGlow(false);
+    clock=new THREE.Clock();
+
+    // Polvo pelágico de fondo
+    const dG=new THREE.BufferGeometry();
+    const dP=new Float32Array(20000*3);
+    for(let i=0;i<60000;i++)dP[i]=(Math.random()-.5)*8000;
+    dG.setAttribute('position',new THREE.BufferAttribute(dP,3));
+    const dust=new THREE.Points(dG,new THREE.PointsMaterial({size:1.5,color:0x0a1a2e,opacity:.08,transparent:true,sizeAttenuation:false}));
+    scene.add(dust); scene.userData.dust=dust;
+
+    mkSnow();
+    setupInput();
+
+    document.getElementById('btn').addEventListener('click',()=>{
+        initAudio();
+        const ov=document.getElementById('overlay');
+        ov.style.opacity='0';
+        setTimeout(()=>ov.remove(),1500);
+    });
+
+    animate();
+}
+
+// Parche de la clase Sector — reescribir sin bug de doble push
+Sector.prototype.constructor;
+
+// Clase Sector limpia
+class Sector2 {
+    constructor(sx,sy,sz){
+        this.ents=[];
+        const raw=Math.sin(sx*12.9898+sy*78.233+sz*37.719)*43758.5453;
+        const seed=Math.abs(raw-Math.floor(raw))*99999;
+        const rng=srng(Math.floor(seed));
+
+        // 1–5 organismos siempre, distribución uniforme en todas direcciones
+        const n=1+Math.floor(rng()*4.5);
+        const SS=900;
+
+        for(let i=0;i<n;i++){
+            const ox=sx*SS+(rng()-.5)*SS*.88;
+            const oy=sy*SS+(rng()-.5)*SS*.88;
+            const oz=sz*SS+(rng()-.5)*SS*.88;
+            const roll=rng();
+
+            if(roll<.38){
+                this.ents.push(new Cteno(new THREE.Vector3(ox,oy,oz),seed+i*113+1,true));
+            } else if(roll<.68){
+                this.ents.push(new Aureum(srng(Math.floor(seed+i*77)),ox,oy,oz));
+            } else {
+                // Mini-cluster
+                const nc=2+Math.floor(rng()*3);
+                for(let j=0;j<nc;j++){
+                    this.ents.push(new Cteno(
+                        new THREE.Vector3(ox+(rng()-.5)*90,oy+(rng()-.5)*90,oz+(rng()-.5)*90),
+                        seed+i*113+j*31+7,false
+                    ));
+                }
+            }
+        }
+    }
+    update(t,dt,p){this.ents.forEach(e=>e.update(t,dt,p));}
+    dispose(){this.ents.forEach(e=>e.dispose());this.ents=[];}
+}
+
+function animate(){
+    requestAnimationFrame(animate);
+    const dt=Math.min(clock.getDelta(),.1);
+    const time=clock.getElapsedTime();
+
+    nearDist=Infinity; nearDNA=null;
+    updPhysics(dt);
+    updSnow();
+
+    const cx=Math.round(camera.position.x/900);
+    const cy=Math.round(camera.position.y/900);
+    const cz=Math.round(camera.position.z/900);
+    const active=new Set();
+
+    for(let x=cx-1;x<=cx+1;x++)
+    for(let y=cy-1;y<=cy+1;y++)
+    for(let z=cz-1;z<=cz+1;z++){
+        const k=`${x},${y},${z}`;
+        active.add(k);
+        if(!sectors.has(k))sectors.set(k,new Sector2(x,y,z));
+    }
+
+    for(const[k,sec]of sectors){
+        if(!active.has(k)){sec.dispose();sectors.delete(k);}
+        else sec.update(time,dt,camera.position);
+    }
+
+    if(scene.userData.dust)scene.userData.dust.position.copy(camera.position);
+
+    // UI
+    document.getElementById('coords').innerText=`${cx},${cy},${cz}`;
+    document.getElementById('count').innerText=total;
+    document.getElementById('depth').innerText=Math.abs(Math.round(camera.position.y))+' m';
+
+    const banner=document.getElementById('banner');
+    const dna=document.getElementById('dna');
+    if(nearDist<1000&&nearDNA){
+        dna.innerHTML=`${nearDNA.desc}<br><span style="font-size:.55rem;color:rgba(100,210,255,.35)">${nearDNA.scale} · MASA ${nearDNA.mass}</span>`;
+        dna.style.opacity=String(Math.min(1,1.1-nearDist/1000));
+        if(nearDist<350){banner.textContent=nearDNA.desc;banner.classList.add('on');}
+        else banner.classList.remove('on');
+    } else {
+        dna.style.opacity='.18';
+        banner.classList.remove('on');
+    }
+
+    renderer.render(scene,camera);
+}
+
+window.addEventListener('resize',()=>{
+    camera.aspect=innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+});
+
+window.onload=init;
+</script>
+</body>
+</html>
