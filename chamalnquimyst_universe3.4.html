@@ -1,0 +1,2627 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chamalnquimyst Universe</title>
+<link href="https://fonts.googleapis.com/css2?family=Italiana&family=Cormorant+Garamond:ital,wght@0,300;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   CHAMALNQUIMYST UNIVERSE — Hoja de estilos completa
+   Filosofía: paz contemplativa, colores vivos pero calmados
+   Cámara fija. El cosmos gira solo.
+============================================================ */
+:root {
+  --void:      #030108;
+  --glass:     rgba(4, 2, 16, 0.78);
+  --border:    rgba(255, 255, 255, 0.06);
+  --cyan:      #00f0ff;
+  --purple:    #cc44ff;
+  --fuchsia:   #ff2d95;
+  --gold:      #ffd700;
+  --teal:      #00e5cc;
+  --green:     #00ff88;
+  --amber:     #ffaa33;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--void);
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+  cursor: crosshair;
+  user-select: none;
+}
+
+canvas#c {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+/* ── TOP BAR ── */
+#top-bar {
+  position: fixed; top: 0; left: 0; right: 0;
+  padding: 14px 22px; z-index: 80;
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(180deg, rgba(3,1,8,.55) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+#logo {
+  font-family: 'Italiana', serif;
+  font-size: 1.1rem;
+  letter-spacing: .38em;
+  pointer-events: all;
+  /* Líquido eléctrico calipso-atlante que fluye */
+  background: linear-gradient(
+    90deg,
+    #00f0ff, #00d4ff, #cc44ff, #ff2d95, #ff6644, #ffcc00,
+    #00e5cc, #00f0ff, #cc44ff, #ff2d95, #00f0ff
+  );
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: liquidFlow 6s linear infinite;
+}
+
+@keyframes liquidFlow {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 400% 0%; }
+}
+
+#hud-stats {
+  display: flex; gap: 20px; pointer-events: none;
+}
+.hst { text-align: center; }
+.hst-v {
+  display: block;
+  font-size: .78rem; font-weight: 700;
+  color: var(--cyan);
+  font-family: 'Space Mono', monospace;
+}
+.hst-l {
+  font-size: .44rem; letter-spacing: .14em;
+  color: rgba(255,255,255,.25); text-transform: uppercase;
+}
+
+#btn-cfg {
+  pointer-events: all; cursor: pointer;
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.13);
+  background: rgba(0,0,0,.4);
+  color: rgba(255,255,255,.42);
+  font-size: .8rem;
+  transition: all .25s;
+  backdrop-filter: blur(6px);
+}
+#btn-cfg:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 12px rgba(0,240,255,.22);
+}
+
+/* ── PANEL CONFIGURACIÓN ── */
+#panel-cfg {
+  position: fixed; top: 52px; right: 14px;
+  width: 265px; z-index: 200;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(22px);
+  transform: translateY(-6px) scale(.96);
+  opacity: 0; pointer-events: none;
+  transition: all .3s cubic-bezier(.23,1,.32,1);
+}
+#panel-cfg.open {
+  transform: translateY(0) scale(1);
+  opacity: 1; pointer-events: all;
+}
+
+.cfg-hdr {
+  padding: 10px 13px;
+  border-bottom: 1px solid var(--border);
+  font-size: .58rem; letter-spacing: .14em;
+  color: var(--cyan); text-transform: uppercase;
+}
+.cfg-s {
+  padding: 9px 13px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.cfg-lbl {
+  font-size: .46rem; letter-spacing: .12em;
+  color: rgba(255,255,255,.26);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.cfg-btn {
+  display: block; width: 100%;
+  padding: 6px 9px; margin-bottom: 5px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  color: rgba(255,255,255,.62);
+  font-family: 'Space Mono', monospace;
+  font-size: .53rem; letter-spacing: .07em;
+  cursor: pointer; text-align: left;
+  transition: all .18s;
+}
+.cfg-btn:hover {
+  background: rgba(0,240,255,.07);
+  border-color: rgba(0,240,255,.22);
+  color: var(--cyan);
+}
+
+.cfg-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: .56rem; color: rgba(255,255,255,.42);
+  padding: 3px 0;
+}
+.cfg-val {
+  font-size: .5rem; color: var(--cyan);
+  min-width: 30px; text-align: right;
+}
+
+.cfg-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  background: rgba(255,255,255,.1);
+  height: 3px; border-radius: 2px;
+  outline: none; margin-top: 5px;
+}
+.cfg-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: var(--cyan); cursor: pointer;
+}
+
+.tog {
+  width: 28px; height: 15px; border-radius: 8px;
+  background: rgba(255,255,255,.1);
+  position: relative; cursor: pointer;
+  transition: background .18s; flex-shrink: 0;
+}
+.tog.on { background: rgba(0,240,255,.35); }
+.tog::after {
+  content: '';
+  position: absolute; top: 2px; left: 2px;
+  width: 11px; height: 11px;
+  border-radius: 50%; background: #fff;
+  transition: transform .18s;
+}
+.tog.on::after { transform: translateX(13px); }
+
+/* ── PANEL ¿QUÉ ES .CEGG? ── */
+#panel-cegg-info {
+  position: fixed; inset: 0; z-index: 300;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(3,1,8,.88); backdrop-filter: blur(8px);
+}
+#panel-cegg-info.open { display: flex; }
+
+#cegg-info-card {
+  width: min(520px, 92vw);
+  max-height: 76vh;
+  overflow-y: auto;
+  background: linear-gradient(145deg, rgba(26,10,46,.88), rgba(3,1,8,.95));
+  border: 1px solid rgba(204,68,255,.2);
+  padding: 26px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(204,68,255,.15) transparent;
+}
+.ci-title {
+  font-family: 'Italiana', serif;
+  font-size: 1.25rem; letter-spacing: .18em;
+  color: var(--purple); margin-bottom: 4px;
+}
+.ci-sub {
+  font-size: .56rem; color: rgba(255,255,255,.26);
+  letter-spacing: .1em; margin-bottom: 16px;
+  text-transform: uppercase;
+}
+.ci-body {
+  font-size: .78rem; color: rgba(255,255,255,.6);
+  line-height: 1.85;
+  font-family: 'Cormorant Garamond', serif;
+  margin-bottom: 14px;
+}
+.ci-link {
+  display: inline-block;
+  padding: 7px 13px;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: 'Space Mono', monospace;
+  font-size: .56rem; letter-spacing: .09em;
+  text-decoration: none;
+  margin-right: 6px; margin-bottom: 6px;
+  transition: all .18s;
+}
+.ci-link:hover {
+  background: rgba(255,215,0,.07);
+  box-shadow: 0 0 11px rgba(255,215,0,.2);
+}
+#ci-close {
+  float: right;
+  background: none;
+  border: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.36);
+  padding: 3px 8px; cursor: pointer;
+  font-size: .58rem; transition: all .18s;
+}
+#ci-close:hover { border-color: var(--fuchsia); color: var(--fuchsia); }
+
+/* ── TAG NOMBRE PLANETA ── */
+#planet-name-tag {
+  position: fixed;
+  z-index: 130;
+  pointer-events: none;
+  font-family: 'Italiana', serif;
+  font-size: .95rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0);
+  text-shadow: 0 0 18px currentColor;
+  transform: translate(-50%, 0);
+  transition: color .4s ease, opacity .4s ease;
+  white-space: nowrap;
+}
+#planet-name-tag.vis { color: rgba(255,255,255,.72); }
+#planet-name-tag.hide { color: rgba(255,255,255,0); }
+
+/* ── PANEL PLANETA — flotante 3D-like, transparente neuroestético ── */
+#planet-panel {
+  position: fixed;
+  /* Empieza invisible en el centro */
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%) scale(0.04) translateZ(0);
+  opacity: 0;
+  pointer-events: none;
+  width: min(900px, 92vw);
+  height: min(680px, 86vh);
+  z-index: 120;
+  /* Vidrio transparente con gradiente sutil */
+  background: linear-gradient(
+    135deg,
+    rgba(10, 4, 30, 0.72) 0%,
+    rgba(4, 2, 16, 0.65) 100%
+  );
+  border: 1px solid rgba(255,255,255,.09);
+  backdrop-filter: blur(18px);
+  transition:
+    transform .6s cubic-bezier(.23,1,.32,1),
+    opacity   .5s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#planet-panel.open {
+  transform: translate(-50%, -50%) scale(1) translateZ(0);
+  opacity: 1;
+  pointer-events: all;
+}
+/* Modo libre (drag) — pierde centrado CSS, posición absoluta */
+#planet-panel.free {
+  transform: none;
+  transition: opacity .3s;
+}
+
+#pp-hdr {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 10px 13px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  flex-shrink: 0;
+  background: rgba(0,0,0,.15);
+  cursor: move;
+}
+#pp-name {
+  font-family: 'Italiana', serif;
+  font-size: .92rem; letter-spacing: .2em;
+}
+#pp-tabs { display: flex; gap: 2px; }
+.pp-tab {
+  padding: 3px 9px;
+  font-size: .5rem; letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,.07);
+  background: transparent;
+  color: rgba(255,255,255,.36);
+  transition: all .16s;
+}
+.pp-tab.act {
+  color: var(--cyan);
+  border-color: rgba(0,240,255,.32);
+  background: rgba(0,240,255,.05);
+}
+#pp-close {
+  background: none;
+  border: 1px solid rgba(255,255,255,.07);
+  color: rgba(255,255,255,.3);
+  width: 22px; height: 22px;
+  cursor: pointer; font-size: .55rem;
+  transition: all .14s;
+}
+#pp-close:hover { border-color: var(--fuchsia); color: var(--fuchsia); }
+
+#pp-body {
+  position: relative;
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(204,68,255,.12) transparent;
+  padding: 0;
+}
+/* Secciones dentro del panel unificado */
+.pp-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.pp-section-title {
+  font-size: .46rem; letter-spacing: .13em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.pp-desc {
+  font-size: .78rem; color: rgba(255,255,255,.55);
+  line-height: 1.8;
+  font-family: 'Cormorant Garamond', serif;
+}
+.pp-enter-btn {
+  display: block; width: 100%;
+  padding: 11px 14px; margin: 10px 0 4px;
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.03);
+  color: rgba(255,255,255,.7);
+  font-family: 'Italiana', serif;
+  font-size: .72rem; letter-spacing: .12em;
+  cursor: pointer; text-align: center;
+  transition: all .22s; text-decoration: none;
+}
+.pp-enter-btn:hover {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.3);
+  color: #fff;
+  box-shadow: 0 0 18px rgba(255,255,255,.08);
+}
+.pp-universe-frame {
+  width: 100%; height: min(380px, 48vh);
+  border: none; display: block;
+  border-radius: 0;
+}
+.pp-update-item {
+  padding: 4px 0;
+  font-size: .6rem; color: rgba(255,255,255,.45);
+  border-bottom: 1px solid rgba(255,255,255,.03);
+}
+.pp-update-item::before { content: '✦ '; opacity: .4; }
+.pp-upcoming-item {
+  padding: 4px 0;
+  font-size: .6rem; color: rgba(255,200,80,.4);
+  border-bottom: 1px solid rgba(255,255,255,.03);
+}
+.pp-upcoming-item::before { content: '◇ '; opacity: .5; }
+.pp-version-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  font-size: .44rem; letter-spacing: .08em;
+  border: 1px solid rgba(255,255,255,.12);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.pp-status {
+  display: inline-block;
+  padding: 2px 7px;
+  font-size: .42rem; letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.pp-status.activo { border: 1px solid rgba(0,255,136,.25); color: rgba(0,255,136,.6); }
+.pp-status.desarrollo { border: 1px solid rgba(255,200,80,.25); color: rgba(255,200,80,.6); }
+.pp-status.concepto { border: 1px solid rgba(204,68,255,.25); color: rgba(204,68,255,.6); }
+#pp-iframe, #pp-blog {
+  width: 100%; height: 100%;
+  border: none; display: block;
+}
+#pp-blog { display: none; }
+
+/* ── PANEL NEXUS — click en el sol ── */
+#panel-nexus {
+  position: fixed;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%) scale(0.04);
+  opacity: 0; pointer-events: none;
+  width: min(720px, 92vw);
+  max-height: 80vh;
+  z-index: 160;
+  background: linear-gradient(
+    145deg,
+    rgba(18, 6, 38, 0.88) 0%,
+    rgba(3, 1, 8, 0.94) 100%
+  );
+  border: 1px solid rgba(204,68,255,.18);
+  backdrop-filter: blur(22px);
+  transition:
+    transform .55s cubic-bezier(.23,1,.32,1),
+    opacity   .45s ease;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+#panel-nexus.open {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1; pointer-events: all;
+}
+
+#nx-hdr {
+  padding: 13px 15px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  display: flex; align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+#nx-title {
+  font-family: 'Italiana', serif;
+  font-size: 1.05rem; letter-spacing: .18em;
+  color: var(--purple);
+}
+#nx-close {
+  background: none;
+  border: 1px solid rgba(255,255,255,.09);
+  color: rgba(255,255,255,.32);
+  width: 24px; height: 24px;
+  cursor: pointer; font-size: .58rem;
+  transition: all .15s;
+}
+#nx-close:hover { border-color: var(--fuchsia); color: var(--fuchsia); }
+
+#nx-body {
+  flex: 1; overflow-y: auto;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(204,68,255,.12) transparent;
+}
+@media (max-width: 560px) { #nx-body { grid-template-columns: 1fr; } }
+
+.nx-summary {
+  grid-column: 1 / -1;
+  background: rgba(0,240,255,.03);
+  border: 1px solid rgba(0,240,255,.09);
+  padding: 11px;
+}
+.nx-sum-row {
+  display: flex; justify-content: space-between;
+  font-size: .58rem; color: rgba(255,255,255,.38);
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.nx-sum-row b {
+  color: rgba(255,255,255,.7);
+  font-family: 'Space Mono', monospace;
+}
+
+.nx-card {
+  background: rgba(255,255,255,.025);
+  border: 1px solid rgba(255,255,255,.06);
+  border-left: 2px solid transparent;
+  padding: 10px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.nx-card:hover {
+  background: rgba(204,68,255,.05);
+  border-color: rgba(204,68,255,.2);
+}
+.nx-card-name {
+  font-size: .72rem; font-weight: 700; margin-bottom: 2px;
+}
+.nx-card-xp {
+  font-size: .58rem; color: var(--cyan);
+  font-family: 'Space Mono', monospace;
+}
+.nx-bar {
+  height: 2px; background: rgba(255,255,255,.05);
+  border-radius: 1px; margin-top: 5px; overflow: hidden;
+}
+.nx-fill {
+  height: 100%; border-radius: 1px;
+  transition: width 1.4s cubic-bezier(.23,1,.32,1);
+}
+.nx-pend {
+  font-size: .52rem; color: rgba(255,200,80,.6);
+  margin-top: 4px; line-height: 1.4;
+}
+.nx-distr {
+  font-size: .52rem; color: rgba(255,100,80,.5);
+  margin-top: 2px;
+}
+
+/* ── HOVER INFO ── */
+#hover-info {
+  position: fixed;
+  padding: 8px 12px;
+  background: rgba(3,1,8,.86);
+  border: 1px solid rgba(204,68,255,.25);
+  backdrop-filter: blur(10px);
+  pointer-events: none; z-index: 200;
+  opacity: 0; transform: translateY(5px);
+  transition: all .1s;
+  min-width: 130px;
+}
+#hover-info.vis { opacity: 1; transform: translateY(0); }
+.hi-name { font-size: .8rem; font-weight: 700; margin-bottom: 2px; }
+.hi-sub  { font-size: .56rem; color: rgba(255,255,255,.36); }
+
+/* ── CTRL HINT ── */
+#ctrl-hint {
+  position: fixed; bottom: 15px;
+  left: 50%; transform: translateX(-50%);
+  display: flex; gap: 9px; z-index: 50;
+  pointer-events: none;
+  opacity: 0; transition: opacity 1.2s;
+  flex-wrap: wrap; justify-content: center;
+}
+#ctrl-hint.vis  { opacity: 1; }
+#ctrl-hint.fade { opacity: 0; }
+
+.key-h {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .5rem; color: rgba(255,255,255,.24);
+}
+.key-b {
+  padding: 1px 5px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.09);
+  font-size: .5rem; color: rgba(255,255,255,.36);
+}
+
+/* ── CEGG MICRO ── */
+#cegg-micro {
+  position: fixed; bottom: 15px; right: 15px;
+  z-index: 60;
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 1px solid rgba(0,240,255,.18);
+  background: rgba(0,0,0,.52);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .6rem; color: rgba(0,240,255,.42);
+  transition: all .22s;
+  backdrop-filter: blur(7px);
+}
+#cegg-micro:hover {
+  border-color: var(--cyan); color: var(--cyan);
+  box-shadow: 0 0 12px rgba(0,240,255,.25);
+}
+#cegg-file { display: none; }
+
+#cegg-dot {
+  position: fixed; bottom: 22px; right: 64px;
+  z-index: 61;
+  font-size: .44rem; letter-spacing: .07em;
+  color: rgba(0,240,255,.25);
+  pointer-events: none; white-space: nowrap;
+}
+
+/* ── FLASH ── */
+#flash {
+  position: fixed; inset: 0;
+  z-index: 500; pointer-events: none; opacity: 0;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(0,255,136,.08), transparent 60%
+  );
+  transition: opacity .07s;
+}
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div id="flash"></div>
+
+<!-- ═══════════ TOP BAR ═══════════ -->
+<div id="top-bar">
+  <div id="logo">Chamalnquimyst Universe</div>
+  <div id="hud-stats">
+    <div class="hst"><span class="hst-v" id="s-xp">—</span><span class="hst-l">PV</span></div>
+    <div class="hst"><span class="hst-v" id="s-arq">—</span><span class="hst-l">Arq.</span></div>
+    <div class="hst"><span class="hst-v" id="s-mu">—</span><span class="hst-l">Mu</span></div>
+  </div>
+  <button id="btn-cfg" onclick="toggleCfg()" title="Configuración">⚙</button>
+</div>
+
+<!-- ═══════════ PANEL CONFIGURACIÓN ═══════════ -->
+<div id="panel-cfg">
+  <div class="cfg-hdr">⚙ Configuración</div>
+
+  <div class="cfg-s">
+    <div class="cfg-lbl">Autenticación</div>
+    <button class="cfg-btn" onclick="loginGoogle()">▶ Entrar con Google</button>
+    <button class="cfg-btn" onclick="closeCfg(); document.getElementById('cegg-file').click()">⬆ Cargar .cegg</button>
+  </div>
+
+  <div class="cfg-s">
+    <div class="cfg-lbl">Sol de Voluntad</div>
+    <div class="cfg-row">
+      <span>Brillo base</span>
+      <span class="cfg-val" id="v-bright">0.18</span>
+    </div>
+    <input type="range" class="cfg-slider"
+      id="sl-bright" min="2" max="80" value="18"
+      oninput="setSolBright(this.value)">
+
+    <div class="cfg-row" style="margin-top:8px">
+      <span>Brillo corona</span>
+      <span class="cfg-val" id="v-corona">0.55</span>
+    </div>
+    <input type="range" class="cfg-slider"
+      id="sl-corona" min="5" max="95" value="55"
+      oninput="setCoronaBright(this.value)">
+
+    <div class="cfg-row" style="margin-top:8px">
+      <span>Velocidad pulso</span>
+      <span class="cfg-val" id="v-pulse">lento</span>
+    </div>
+    <input type="range" class="cfg-slider"
+      id="sl-pulse" min="1" max="10" value="3"
+      oninput="setPulseSpeed(this.value)">
+  </div>
+
+  <div class="cfg-s">
+    <div class="cfg-lbl">Universo</div>
+    <div class="cfg-row">
+      <span>Órbita auto</span>
+      <div class="tog on" id="tog-orbit"
+        onclick="this.classList.toggle('on'); window._orbitAuto = this.classList.contains('on')">
+      </div>
+    </div>
+    <div class="cfg-row" style="margin-top:8px">
+      <span>Velocidad órbita</span>
+      <span class="cfg-val" id="v-orb">0.4×</span>
+    </div>
+    <input type="range" class="cfg-slider"
+      id="sl-orb" min="1" max="30" value="4"
+      oninput="setOrbSpeed(this.value)">
+
+    <div class="cfg-row" style="margin-top:8px">
+      <span>Transparencia dimensiones</span>
+      <span class="cfg-val" id="v-disc">18%</span>
+    </div>
+    <input type="range" class="cfg-slider"
+      id="sl-disc" min="0" max="100" value="18"
+      oninput="setDiscTransparency(this.value)">
+
+  </div>
+
+  <div class="cfg-s">
+    <div class="cfg-lbl">Ayuda</div>
+    <button class="cfg-btn" onclick="closeCfg(); openCeggInfo()">📄 ¿Qué es un .cegg?</button>
+    <button class="cfg-btn" onclick="window.open('https://durirock.github.io/blog','_blank')">📖 Blog Chamalnquimyst</button>
+  </div>
+</div>
+
+<!-- ═══════════ PANEL ¿QUÉ ES .CEGG? ═══════════ -->
+<div id="panel-cegg-info">
+  <div id="cegg-info-card">
+    <button id="ci-close" onclick="closeCeggInfo()">✕ cerrar</button>
+    <div class="ci-title">¿Qué es un .cegg?</div>
+    <div class="ci-sub">Huevo Cósmico · Protocolo de Voluntad v1.2</div>
+    <div class="ci-body">
+      El archivo <strong style="color:#ffdd00">.cegg</strong>
+      es generado por <strong style="color:#ffcc55">Killer Pendiente</strong>
+      y contiene la psique operacional completa: arquetipos, victorias, sombras,
+      XP acumulado, Mu, campañas del Eneagramator e historial.
+      <br><br>
+      Al cargarlo aquí, el Sol de Voluntad cobra vida: cada PV se convierte en
+      brillo, cada arquetipo en un filamento de luz, cada distracción en un
+      anillo de sombra.
+    </div>
+    <a href="https://mega.nz" target="_blank" class="ci-link">⬇ Descargar Killer Pendiente (MEGA)</a>
+    <a href="https://durirock.github.io/blog" target="_blank" class="ci-link">📖 Blog + Instrucciones</a>
+    <div class="ci-body" style="margin-top:12px; font-size:.72rem; color:rgba(255,255,255,.32)">
+      Ecosistema Python incluido: killer_pendiente.py · eneagramator5.py ·
+      editor2pegarautosave.py · incubator.py · banco.py (próx.)<br>
+      Licencia Pulmón Verde v1.0
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ NOMBRE PLANETA ═══════════ -->
+<div id="planet-name-tag"></div>
+
+<!-- ═══════════ PANEL PLANETA — UNIFIED SCROLL ═══════════ -->
+<div id="planet-panel">
+  <div id="pp-hdr">
+    <div id="pp-name">—</div>
+    <div id="pp-subtitle" style="font-size:.48rem;color:rgba(255,255,255,.3);letter-spacing:.1em"></div>
+    <button id="pp-close" onclick="closePP()">✕</button>
+  </div>
+  <div id="pp-body">
+    <!-- Contenido generado dinámicamente por openPP() -->
+  </div>
+</div>
+
+<!-- ═══════════ PANEL NEXUS (sol) ═══════════ -->
+<div id="panel-nexus">
+  <div id="nx-hdr">
+    <div id="nx-title">Sol de Voluntad</div>
+    <button id="nx-close" onclick="closeNexus()">✕</button>
+  </div>
+  <div id="nx-body"></div>
+</div>
+
+<!-- ═══════════ HOVER INFO ═══════════ -->
+<div id="hover-info">
+  <div class="hi-name" id="hi-name">—</div>
+  <div class="hi-sub"  id="hi-sub">—</div>
+</div>
+
+<!-- ═══════════ CTRL HINT ═══════════ -->
+<div id="ctrl-hint">
+  <div class="key-h"><span class="key-b">W A S D</span>mover</div>
+  <div class="key-h"><span class="key-b">Q E</span>girar</div>
+  <div class="key-h"><span class="key-b">Z X</span>sube/baja</div>
+  <div class="key-h"><span class="key-b">drag</span>rotar vista</div>
+  <div class="key-h"><span class="key-b">dblclick</span>orbitar</div>
+  <div class="key-h"><span class="key-b">H</span>centro</div>
+</div>
+
+<!-- ═══════════ CEGG MICRO ═══════════ -->
+<div id="cegg-micro"
+  onclick="document.getElementById('cegg-file').click()"
+  title="Cargar .cegg — doble clic sobre el sol también funciona">🥚</div>
+<input type="file" id="cegg-file" accept=".cegg" onchange="loadCeggFile(this)">
+<div id="cegg-dot">buscando .cegg…</div>
+
+<!-- ════════════════════════════════════════════════
+     THREE.JS r165
+════════════════════════════════════════════════ -->
+<script type="importmap">
+{
+  "imports": {
+    "three":          "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer }   from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }       from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass }  from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass }       from 'three/addons/postprocessing/OutputPass.js';
+/* CSS3DRenderer ELIMINADO — reemplazado por overlay HTML posicionado via projection.
+   Esto elimina el costo de recalcular matrices CSS3D de 6+ nodos DOM cada frame.
+   En su lugar: un solo <div> overlay se muestra SOLO en modo órbita. */
+
+/* ════════════════════════════════════
+   RENDERER + COMPOSER
+════════════════════════════════════ */
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.85;
+renderer.setClearColor(0x030108, 1);
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 2000);
+
+camera.position.set(0, 12, 90);
+camera.lookAt(0, 0, 0);
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(
+  new THREE.Vector2(512, 512),
+  0.9,   // strength — original v1
+  0.4,   // radius
+  0.25   // threshold — solo picos brillan
+);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+function onResize() {
+  const W = innerWidth, H = innerHeight;
+  renderer.setSize(W, H);
+  composer.setSize(W, H);
+  camera.aspect = W / H;
+  camera.updateProjectionMatrix();
+  bloom.resolution.set(W, H);
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+/* ════════════════════════════════════
+   FONDO ESTELAR — SHADER CIRCULAR (sin cuadrados)
+   gl_PointCoord + discard para círculos perfectos
+════════════════════════════════════ */
+{
+  const N   = 3200;
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  const sz  = new Float32Array(N);
+
+  for (let i = 0; i < N; i++) {
+    const r = 500 + Math.random() * 900;
+    const t = Math.random() * Math.PI * 2;
+    const p = Math.random() * Math.PI;
+    pos[i*3]   = r * Math.sin(p) * Math.cos(t);
+    pos[i*3+1] = r * Math.sin(p) * Math.sin(t);
+    pos[i*3+2] = r * Math.cos(p);
+
+    // Paleta sutil — blancos, azules, violetas
+    const hue = Math.random();
+    const c = new THREE.Color().setHSL(hue, 0.5 + Math.random() * 0.4, 0.35 + Math.random() * 0.3);
+    col[i*3]   = c.r;
+    col[i*3+1] = c.g;
+    col[i*3+2] = c.b;
+
+    sz[i] = 0.6 + Math.random() * 1.8;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('aSize',    new THREE.BufferAttribute(sz, 1));
+
+  /* ★ SHADER CIRCULAR ★
+     Única forma de tener puntos redondos en Three.js:
+     ShaderMaterial + gl_PointCoord + discard si distance > 0.5 */
+  const starMat = new THREE.ShaderMaterial({
+    vertexShader: `
+      attribute float aSize;
+      varying vec3 vCol;
+      void main() {
+        vCol = color;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        // tamaño en píxeles de pantalla
+        gl_PointSize = aSize * (280.0 / -mv.z);
+        gl_Position  = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vCol;
+      void main() {
+        // Distancia al centro del punto — CIRCULO perfecto
+        float d = length(gl_PointCoord - vec2(0.5)) * 2.0;
+        if (d > 1.0) discard;
+        // Suavidad en el borde
+        float alpha = smoothstep(1.0, 0.25, d) * 0.55;
+        gl_FragColor = vec4(vCol, alpha);
+      }
+    `,
+    transparent:  true,
+    vertexColors: true,
+    blending:     THREE.AdditiveBlending,
+    depthWrite:   false,
+  });
+
+  scene.add(new THREE.Points(geo, starMat));
+}
+
+/* ════════════════════════════════════
+   SOL DE VOLUNTAD — núcleo
+   Igual que v1 que funcionaba bien:
+   MeshStandardMaterial con emissive + 3 PointLights
+   Solo se agrega un mínimo de brillo base siempre presente
+════════════════════════════════════ */
+const coreGeo = new THREE.IcosahedronGeometry(3.2, 10);
+const coreMat = new THREE.MeshStandardMaterial({
+  color:             0x080015,
+  emissive:          new THREE.Color(0.06, 0.01, 0.14), // mínimo siempre encendido
+  roughness:         0.05,
+  metalness:         0.9,
+  emissiveIntensity: 0.4,  // base — siempre visible, nunca cero
+});
+const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+scene.add(coreMesh);
+window._coreMat = coreMat;
+
+const L1 = new THREE.PointLight(0xffffff, 0.5, 200);
+const L2 = new THREE.PointLight(0x8844ff, 0.3, 150);
+const L3 = new THREE.PointLight(0x00ffcc, 0.2, 180);
+scene.add(L1, L2, L3);
+
+/* Halo exterior suave */
+const haloGeo = new THREE.SphereGeometry(5.5, 24, 24);
+const haloMat = new THREE.MeshBasicMaterial({
+  color:       0x8844ff,
+  transparent: true,
+  opacity:     0.04,    // muy sutil
+  blending:    THREE.AdditiveBlending,
+  depthWrite:  false,
+  side:        THREE.BackSide,
+});
+scene.add(new THREE.Mesh(haloGeo, haloMat));
+
+/* ════════════════════════════════════
+   CORONA — SHADER CIRCULAR (igual que estrellas)
+   Parámetro uOpacity controlable
+════════════════════════════════════ */
+let coronaPoints = null;
+let coronaGeo    = null;
+let filamentos   = [];
+let shadowRings  = [];
+let starPower    = 0;
+
+// Opacidad calibrable desde config
+window._coronaOpacity = 0.55;
+
+function buildCorona(totalXP) {
+  if (coronaPoints) { scene.remove(coronaPoints); coronaGeo.dispose(); }
+
+  const N = Math.min(8000, Math.max(500, Math.floor(Math.log(totalXP + 1) * 180)));
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  const sz  = new Float32Array(N);
+
+  for (let i = 0; i < N; i++) {
+    // Distribución en espiral áurea — implosión hacia el centro
+    const phi   = Math.acos(1 - 2 * (i + 0.5) / N);
+    const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+    const r     = 4.5 + Math.random() * 9;
+
+    pos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+    pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    pos[i*3+2] = r * Math.cos(phi);
+
+    // Paleta morado-fucsia-rubedo-citrinitas (colores lentos, ígneos)
+    const hues = [0.78, 0.82, 0.87, 0.93, 0.97, 0.02, 0.08, 0.14];
+    const h    = hues[i % hues.length] + (Math.random() - 0.5) * 0.04;
+    const c    = new THREE.Color().setHSL(h, 0.95, 0.6 + Math.random() * 0.2);
+    col[i*3]   = c.r;
+    col[i*3+1] = c.g;
+    col[i*3+2] = c.b;
+
+    sz[i] = 1.5 + Math.random() * 3.5;  // tamaño moderado, no encandilante
+  }
+
+  coronaGeo = new THREE.BufferGeometry();
+  coronaGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  coronaGeo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+  coronaGeo.setAttribute('aSize',    new THREE.BufferAttribute(sz, 1));
+  coronaGeo.userData.orig = pos.slice();
+
+  /* ★ MISMO SHADER CIRCULAR ★ — nunca cuadrados */
+  const mat = new THREE.ShaderMaterial({
+    uniforms: {
+      uOpacity: { value: 0.0 },
+    },
+    vertexShader: `
+      attribute float aSize;
+      varying vec3 vC;
+      void main() {
+        vC = color;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = aSize * (350.0 / -mv.z);
+        gl_Position  = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      uniform float uOpacity;
+      varying vec3 vC;
+      void main() {
+        float d = length(gl_PointCoord - vec2(0.5)) * 2.0;
+        if (d > 1.0) discard;
+        // Círculo suave — no encandila
+        float a = smoothstep(1.0, 0.2, d) * uOpacity * 0.72;
+        gl_FragColor = vec4(vC, a);
+      }
+    `,
+    transparent:  true,
+    vertexColors: true,
+    blending:     THREE.AdditiveBlending,
+    depthWrite:   false,
+  });
+
+  coronaPoints = new THREE.Points(coronaGeo, mat);
+  window._coronaMat = mat;
+  scene.add(coronaPoints);
+}
+
+function buildFilamentos(arqs) {
+  filamentos.forEach(f => { scene.remove(f); f.geometry.dispose(); });
+  filamentos = [];
+
+  arqs.forEach((arq, i) => {
+    const hue   = i / arqs.length;
+    const color = new THREE.Color().setHSL(hue, 1.0, 0.55);
+    const pts   = [];
+    const N     = 60;
+
+    for (let j = 0; j < N; j++) {
+      const t   = j / (N - 1);
+      const r   = (1 - t) * (12 + i * 0.8) + t * 3.2;
+      const ang = hue * Math.PI * 2 + t * Math.PI * 4.5;
+      const elev = Math.sin(t * Math.PI) * 2.5 * (i % 2 === 0 ? 1 : -1);
+      pts.push(new THREE.Vector3(
+        Math.cos(ang) * r,
+        elev,
+        Math.sin(ang) * r
+      ));
+    }
+
+    const curve = new THREE.CatmullRomCurve3(pts);
+    const geo   = new THREE.TubeGeometry(curve, 40, 0.055, 4, false);
+    const mat   = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity:     0,
+      blending:    THREE.AdditiveBlending,
+      depthWrite:  false,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.userData = { hue, arq };
+    scene.add(mesh);
+    filamentos.push(mesh);
+  });
+}
+
+function buildShadowRings(totalDistr) {
+  shadowRings.forEach(r => { scene.remove(r); r.geometry.dispose(); });
+  shadowRings = [];
+
+  const cnt = Math.min(5, Math.max(1, Math.ceil(totalDistr / 10)));
+  for (let i = 0; i < cnt; i++) {
+    const geo = new THREE.TorusGeometry(5 + i * 0.9, 0.05, 4, 90);
+    const mat = new THREE.MeshBasicMaterial({
+      color:       0x220008,
+      transparent: true,
+      opacity:     0,
+      blending:    THREE.AdditiveBlending,
+      depthWrite:  false,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.x = Math.PI / 2 + i * 0.4;
+    mesh.userData.spd = 0.002 + i * 0.0008;
+    scene.add(mesh);
+    shadowRings.push(mesh);
+  }
+}
+
+/* ════════════════════════════════════
+   ASPECTOS INTERNOS — esferas dentro del sol
+   Emergen al acercar el mouse al centro
+════════════════════════════════════ */
+let aspectInner = [];
+
+function buildAspectInner(arqs) {
+  aspectInner.forEach(a => { scene.remove(a.mesh); });
+  aspectInner = [];
+
+  arqs.forEach((arq, i) => {
+    const hue = i / arqs.length;
+    const c   = new THREE.Color().setHSL(hue, 1.0, 0.62);
+
+    const geo = new THREE.SphereGeometry(0.3, 8, 8);
+    const mat = new THREE.MeshBasicMaterial({
+      color:       c,
+      transparent: true,
+      opacity:     0,
+      blending:    THREE.AdditiveBlending,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+
+    const phi   = Math.acos(1 - 2 * (i + 0.5) / arqs.length);
+    const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+    const r     = 2.2 + Math.random() * 1.8;
+    mesh.position.set(
+      r * Math.sin(phi) * Math.cos(theta),
+      r * Math.sin(phi) * Math.sin(theta),
+      r * Math.cos(phi)
+    );
+    mesh.userData = {
+      arq,
+      basePos:   mesh.position.clone(),
+      hue,
+      emerging:  false,
+      flashTimer: 0,
+    };
+    scene.add(mesh);
+    aspectInner.push({ mesh });
+  });
+}
+
+/* ════════════════════════════════════
+   PLANETAS — Icosaedros SIN wireframe
+   Tamaños distintos. Órbitas amplias.
+   El shader Fresnel les da borde luminoso
+════════════════════════════════════ */
+const PLANETS = [
+  {
+    id: 'musicosmos',
+    name: 'Musicosmos',
+    url: 'https://www.musicosmosonline.com',
+    blogUrl: 'https://durirock.github.io/blog',
+    col: 0xa87fff,
+    orbitR: 30, spd: 0.0055, sz: 3.2, detail: 4, incl: 0.12,
+    /* ── METADATA EDITABLE ── */
+    subtitle: 'Universo Musical Interactivo 3D',
+    desc: 'Espacio tridimensional donde la música cobra vida. Cada nodo es un instrumento, cada conexión una armonía. Multiplayer en tiempo real.',
+    version: 'v2.1',
+    status: 'activo',
+    updates: [
+      'Multiplayer WebSocket estable',
+      'XenoSynth integrado con looper RC-300',
+    ],
+    upcoming: [
+      'P2P descentralizado con libp2p',
+      'Raspberry Pi Zero 2W como nodos físicos',
+    ],
+  },
+  {
+    id: 'kalpa',
+    name: 'Kalpa',
+    url: 'https://durirock.github.io/chamlanquimyxperiments/kalpa6.0.html',
+    blogUrl: 'https://durirock.github.io/blog',
+    col: 0xff6a5a,
+    orbitR: 42, spd: 0.004, sz: 2.5, detail: 2, incl: -0.18,
+    subtitle: 'Túnel Orgánico de Shaders',
+    desc: 'Experiencia contemplativa de túnel infinito con shaders de coseno. Cada ciclo es un Kalpa — una era cósmica que se renueva.',
+    version: 'v6.0',
+    status: 'activo',
+    updates: [
+      'Paleta espectral electromagnética',
+      'Portal pulsar conectado al sistema',
+    ],
+    upcoming: [
+      'Kalpa v7 con geometría fractal',
+      'Sincronización con ritmo cardíaco',
+    ],
+  },
+  {
+    id: 'archhtml',
+    name: 'Mundo Interior',
+    url: 'https://durirock.github.io/paramispacientespacientes/',
+    blogUrl: 'https://durirock.github.io/blog',
+    col: 0x00e5cc,
+    orbitR: 55, spd: 0.003, sz: 2.9, detail: 5, incl: 0.24,
+    subtitle: 'Explorador Espacial de Archivos',
+    desc: 'Navegador de archivos 3D con CSS3DRenderer. Buceo interior — cada carpeta es un ecosistema, cada archivo un ser bioluminiscente.',
+    version: 'v2.0',
+    status: 'activo',
+    updates: [
+      'Seres Áuricos con respiración 0.04-0.09Hz',
+      'Joypads touch + DeviceDetector GPU',
+      'Micelator integrado con nodos 3D',
+    ],
+    upcoming: [
+      'Electron.js para acceso nativo a discos',
+      'Indexado async con InstancedMesh',
+    ],
+  },
+  {
+    id: 'pfunk',
+    name: 'PlanetaFunk',
+    url: 'https://durirock.github.io/musicosmosonline/planetafunk.html',
+    blogUrl: 'https://durirock.github.io/blog',
+    col: 0x66ff99,
+    orbitR: 68, spd: 0.0022, sz: 3.5, detail: 3, incl: -0.1,
+    subtitle: 'Terreno Procedural Planetario',
+    desc: 'Mundo procedural con terreno fBm. Originalmente concebido como visualizador de portafolio bursátil — cada bioma es un sector económico.',
+    version: 'v1.5',
+    status: 'activo',
+    updates: [
+      'Terreno 4-octave fBm',
+      'Biomas por altitud con paleta orgánica',
+    ],
+    upcoming: [
+      'Ecosistema biótico procedural',
+      'Conexión con datos financieros reales',
+    ],
+  },
+  {
+    id: 'kp',
+    name: 'Killer Pendiente',
+    url: 'https://durirock.github.io/blog',
+    blogUrl: 'https://durirock.github.io/blog',
+    col: 0xffcc55,
+    orbitR: 80, spd: 0.0016, sz: 3.8, detail: 2, incl: 0.2,
+    isKP: true,
+    subtitle: 'Motor de Atención Soberana',
+    desc: 'Sistema gamificado de productividad. Tus tareas son misiones, tus arquetipos son caballeros, tu energía volitiva alimenta este universo.',
+    version: 'v79',
+    status: 'activo',
+    updates: [
+      'Protocolo .cegg v1.2 estable',
+      'Eneagramator v5 con leyes sagradas',
+      'Ecosistema Python completo',
+    ],
+    upcoming: [
+      'Google Tasks API integración',
+      'Google Drive para portabilidad .cegg',
+      'WebSocket relay en Railway.app',
+    ],
+  },
+  {
+    id: 'bitacora',
+    name: 'Bitácora',
+    url: 'https://durirock.github.io/blog',
+    blogUrl: 'https://durirock.github.io/blog',
+    col: 0xffaa33,
+    orbitR: 92, spd: 0.0012, sz: 2.7, detail: 3, incl: -0.15,
+    subtitle: 'Blog Interactivo del Multiverso',
+    desc: 'Museo viviente del ecosistema Chamalnquimyst. Versiones históricas con apps embebidas, YouTube, y documentación del viaje creativo.',
+    version: 'v0.1',
+    status: 'en desarrollo',
+    updates: [
+      'Concepto y arquitectura definidos',
+    ],
+    upcoming: [
+      'Next.js/Astro + MDX en Vercel',
+      'Apps embebidas por versión',
+      'Patreon monetización',
+    ],
+  },
+  {
+    id: 'botica',
+    name: 'La Botica',
+    url: '#',
+    blogUrl: 'https://durirock.github.io/blog',
+    col: 0xff44cc,
+    orbitR: 104, spd: 0.0009, sz: 2.4, detail: 4, incl: 0.3,
+    isBotica: true,
+    subtitle: 'Medicina Ancestral Digital',
+    desc: 'Espacio de convergencia entre medicina occidental y sabiduría ancestral. Cerroterapia, Arhuaco, Aikido, Zen.',
+    version: 'próximamente',
+    status: 'concepto',
+    updates: [],
+    upcoming: [
+      'e-shop de medicina natural',
+      'Guías de Cerroterapia',
+    ],
+  },
+];
+
+const planetMeshes = [];
+const ray  = new THREE.Raycaster();
+const mpos = new THREE.Vector2();
+
+PLANETS.forEach((p, i) => {
+  /* Anillo de órbita — muy sutil */
+  const rg  = new THREE.RingGeometry(p.orbitR - 0.12, p.orbitR + 0.12, 128);
+  const rm  = new THREE.MeshBasicMaterial({
+    color: p.col, side: THREE.DoubleSide,
+    transparent: true, opacity: 0.045,
+  });
+  const ring = new THREE.Mesh(rg, rm);
+  ring.rotation.x = Math.PI / 2 + p.incl;
+  scene.add(ring);
+
+  /* Planeta — IcosahedronGeometry + shader Fresnel SIN wireframe */
+  const pg  = new THREE.IcosahedronGeometry(p.sz, p.detail);
+  const col = new THREE.Color(p.col);
+
+  const pm = new THREE.ShaderMaterial({
+    uniforms: {
+      uTime:  { value: 0 },
+      uCol:   { value: col.clone() },
+      uIdx:   { value: i },
+    },
+    vertexShader: `
+      uniform float uTime;
+      uniform float uIdx;
+      varying vec3 vN;
+      varying vec3 vV;
+      void main() {
+        vN = normalize(normalMatrix * normal);
+        float breath = sin(uTime * 0.75 + uIdx * 0.9) * 0.04;
+        vec4 mv = modelViewMatrix * vec4(position + normal * breath, 1.0);
+        vV = -normalize(mv.xyz);
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3  uCol;
+      uniform float uTime;
+      uniform float uIdx;
+      varying vec3 vN;
+      varying vec3 vV;
+      void main() {
+        float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.0);
+        vec3 inner = uCol * 0.28;
+        vec3 edge  = uCol * 1.3;
+        float shift = sin(uTime * 0.12 + uIdx) * 0.08;
+        edge += vec3(shift * 0.5, shift * 0.3, -shift * 0.2);
+        vec3 c = mix(inner, edge, f);
+        float alpha = f * 0.88 + 0.08;
+        gl_FragColor = vec4(c, alpha);
+      }
+    `,
+    transparent: true,
+    side:        THREE.FrontSide,
+    blending:    THREE.AdditiveBlending,
+    depthWrite:  false,
+  });
+
+  const mesh = new THREE.Mesh(pg, pm);
+  mesh.userData = {
+    ...p,
+    type:      'planet',
+    angle:     i * (Math.PI * 2 / PLANETS.length),
+    uTime:     pm.uniforms.uTime,
+    clickCnt:  0,
+    lastClick: 0,
+  };
+  scene.add(mesh);
+  planetMeshes.push(mesh);
+
+  /* Glow suave — proporción 85% planeta / 15% halo */
+  const gg = new THREE.SphereGeometry(p.sz * 1.18, 12, 12);
+  const gm = new THREE.MeshBasicMaterial({
+    color: p.col, transparent: true, opacity: 0.035,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  mesh.add(new THREE.Mesh(gg, gm));
+  mesh.userData.glowMat = gm;
+
+  /* ── DISCO DIMENSIONAL — puro Three.js, CERO DOM ──
+     Disco circular inscrito DENTRO de la esfera (95% del radio).
+     Shader ligero con gradiente radial + anillo fino.
+     A futuro: reemplazable por imagen/gif estático. */
+  if (!p.isBotica) {
+    const discGeo = new THREE.CircleGeometry(p.sz * 0.95, 32);
+    const discMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uColor:   { value: new THREE.Color(p.col) },
+        uOpacity: { value: 0.18 },
+        uTime:    { value: 0 },
+        uIdx:     { value: i },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3  uColor;
+        uniform float uOpacity;
+        uniform float uTime;
+        uniform float uIdx;
+        varying vec2  vUv;
+        
+        /* Hash pseudo-random para generar estrellas procedurales */
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        }
+        
+        void main() {
+          float d = length(vUv - vec2(0.5)) * 2.0;
+          if (d > 1.0) discard;
+          
+          /* ── Universo procedural dentro del disco ── */
+          /* Estrellas (puntos brillantes) */
+          vec2 starUv = vUv * 12.0 + vec2(uIdx * 3.7, uIdx * 2.1);
+          float star = step(0.985, hash(floor(starUv)));
+          star *= smoothstep(1.0, 0.5, d); // solo dentro del disco
+          
+          /* Nebulosa sutil (gradiente ondulante) */
+          float neb = sin(vUv.x * 6.0 + uTime * 0.08 + uIdx) * 
+                      cos(vUv.y * 5.0 - uTime * 0.06 + uIdx * 2.0) * 0.5 + 0.5;
+          neb *= smoothstep(1.0, 0.3, d) * 0.3;
+          
+          /* Borde luminoso — anillo fino */
+          float ring = smoothstep(0.82, 0.92, d) * smoothstep(1.0, 0.94, d);
+          float breath = 0.9 + sin(uTime * 0.35 + uIdx * 1.7) * 0.1;
+          
+          /* Composición final */
+          float alpha = (neb + star * 0.8 + ring * 1.5) * uOpacity * breath;
+          alpha += smoothstep(1.0, 0.6, d) * uOpacity * 0.15; // base fill sutil
+          
+          vec3 nebCol = mix(uColor * 0.3, uColor * 0.8, neb);
+          vec3 col = mix(nebCol, uColor * 1.6, ring);
+          col += vec3(star) * 0.6; // estrellas blancas
+          
+          gl_FragColor = vec4(col, alpha);
+        }
+      `,
+      transparent: true,
+      blending:    THREE.AdditiveBlending,
+      depthWrite:  false,
+      side:        THREE.DoubleSide,
+    });
+    const disc = new THREE.Mesh(discGeo, discMat);
+    mesh.add(disc);
+    mesh.userData.dimensionDisc = disc;
+    mesh.userData.discMat = discMat;
+  }
+});
+
+/* Restaurar opacidad de discos desde localStorage */
+try {
+  const savedOp = localStorage.getItem('cml_disc_opacity');
+  if (savedOp !== null) {
+    window._discOpacity = parseFloat(savedOp);
+    /* Sincronizar slider HTML (se ejecuta cuando el DOM ya existe) */
+    setTimeout(() => {
+      const sl = document.getElementById('sl-disc');
+      const vd = document.getElementById('v-disc');
+      if (sl && vd) {
+        sl.value = Math.round(window._discOpacity * 100);
+        vd.textContent = Math.round(window._discOpacity * 100) + '%';
+      }
+    }, 100);
+  } else {
+    window._discOpacity = 0.18;
+  }
+} catch(_){ window._discOpacity = 0.18; }
+
+/* ═══ ORBIT IFRAME OVERLAY ═══
+   Un SOLO iframe HTML que se posiciona via CSS transform,
+   solo visible cuando la cámara está en modo órbita.
+   Se crea/destruye dinámicamente. CERO costo cuando no está activo. */
+const orbitOverlay = document.createElement('div');
+orbitOverlay.id = 'orbit-overlay';
+orbitOverlay.style.cssText = `
+  position:fixed; z-index:10; pointer-events:none;
+  display:none; border-radius:50%; overflow:hidden;
+  background:rgba(4,2,16,0.08);
+`;
+const orbitIframe = document.createElement('iframe');
+orbitIframe.id = 'orbit-iframe';
+orbitIframe.style.cssText = `
+  width:130%; height:130%; position:absolute; left:-15%; top:-15%;
+  border:none; pointer-events:none; opacity:0;
+  transition: opacity 0.6s ease;
+`;
+orbitIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
+orbitOverlay.appendChild(orbitIframe);
+document.body.appendChild(orbitOverlay);
+
+/* Activar/desactivar el iframe overlay */
+function showOrbitOverlay(pd) {
+  /* Doble click → cargar iframe inmediatamente con fade-in */
+  orbitOverlay.dataset.pendingUrl = pd.url;
+  orbitOverlay.style.display = 'block';
+  const cr = new THREE.Color(pd.col);
+  orbitOverlay.style.border = `1px solid rgba(${cr.r*255|0},${cr.g*255|0},${cr.b*255|0}, 0.25)`;
+  /* Cargar el universo ahora */
+  if (pd.url && pd.url !== '#') {
+    orbitIframe.src = pd.url;
+    /* Fade in suave cuando llega al planeta */
+    setTimeout(() => { orbitIframe.style.opacity = '0.88'; }, 800);
+  }
+}
+
+function hideOrbitOverlay() {
+  orbitOverlay.style.display = 'none';
+  orbitIframe.style.pointerEvents = 'none';
+  orbitOverlay.style.pointerEvents = 'none';
+  orbitIframe.style.opacity = '0';
+  orbitIframe.src = 'about:blank';
+  orbitOverlay.dataset.pendingUrl = '';
+}
+
+function activateOrbitIframe() {
+  /* Click en órbita → activar interacción con el iframe ya cargado */
+  orbitIframe.style.pointerEvents = 'auto';
+  orbitOverlay.style.pointerEvents = 'auto';
+}
+
+function deactivateOrbitIframe() {
+  orbitIframe.style.pointerEvents = 'none';
+  orbitOverlay.style.pointerEvents = 'none';
+  /* Fade out — descargar después de la transición */
+  orbitIframe.style.opacity = '0';
+  setTimeout(() => {
+    if (orbitIframe.style.opacity === '0') {
+      orbitIframe.src = 'about:blank';
+    }
+  }, 700);
+}
+
+/* Posicionar overlay via projection 3D→2D — tamaño calza con la esfera */
+function updateOrbitOverlayPosition() {
+  if (orbitOverlay.style.display === 'none' || !_flyTarget) return;
+
+  const pd = _flyTarget.userData;
+  const planetPos = _flyTarget.position.clone();
+
+  /* Proyectar centro del planeta */
+  const v = planetPos.clone().project(camera);
+  const cx = ( v.x * 0.5 + 0.5) * innerWidth;
+  const cy = (-v.y * 0.5 + 0.5) * innerHeight;
+
+  /* Calcular diámetro proyectado de la esfera en píxeles.
+     Proyectamos un punto en el borde de la esfera (radio = pd.sz)
+     y medimos la distancia en pantalla al centro. */
+  const dist = camera.position.distanceTo(planetPos);
+  const fov  = camera.fov * Math.PI / 180;
+  const screenH = innerHeight;
+  /* Diámetro angular → píxeles — 95% del radio para inscribirse dentro */
+  const projRadius = (pd.sz * 0.95 / dist) * (screenH / (2 * Math.tan(fov / 2)));
+  const finalSz = projRadius * 2 * 1.05; // 1.05 = ajuste fino para calzar
+
+  orbitOverlay.style.width  = finalSz + 'px';
+  orbitOverlay.style.height = finalSz + 'px';
+  orbitOverlay.style.left   = (cx - finalSz / 2) + 'px';
+  orbitOverlay.style.top    = (cy - finalSz / 2) + 'px';
+}
+
+/* ════════════════════════════════════
+   ACTIVAR UNIVERSO CON CEGG
+════════════════════════════════════ */
+let _arqs = [];
+
+function activateUniverse(data) {
+  const usuarios = data.perfiles_usuarios || {};
+  const glob     = data.perfil_global     || {};
+  const totalXP  = glob.estadisticas_globales?.total_pv_acumulado || 0;
+  const totalMu  = Object.values(usuarios)
+    .reduce((s, p) => s + (p.datos_cuantitativos?.nivel_y_xp?.mu_disponibles || 0), 0);
+  const totalD   = Object.values(usuarios)
+    .reduce((s, p) => s + (p.datos_cuantitativos?.informacion_mara_egosombra?.total_distracciones || 0), 0);
+
+  _arqs = Object.entries(usuarios).map(([nombre, p]) => ({
+    nombre,
+    xp:    p.datos_cuantitativos?.nivel_y_xp?.xp_total                           || 0,
+    mu:    p.datos_cuantitativos?.nivel_y_xp?.mu_disponibles                      || 0,
+    comp:  p.datos_cuantitativos?.estadisticas_tareas?.completadas                || 0,
+    pend:  p.datos_cuantitativos?.estadisticas_tareas?.pendientes                 || 0,
+    distr: p.datos_cuantitativos?.informacion_mara_egosombra?.total_distracciones || 0,
+    bitac: p.datos_cualitativos?.bitacora_personal  || [],
+    tareas:p.datos_cualitativos?.tareas_detalladas  || [],
+  })).sort((a, b) => b.xp - a.xp);
+
+  // HUD
+  document.getElementById('s-xp').textContent  = (totalXP / 1000).toFixed(1) + 'k';
+  document.getElementById('s-arq').textContent = _arqs.length;
+  document.getElementById('s-mu').textContent  = totalMu;
+
+  starPower = Math.min(1, Math.log(totalXP + 1) / Math.log(500000));
+
+  buildCorona(totalXP);
+  buildFilamentos(_arqs);
+  buildShadowRings(totalD);
+  buildAspectInner(_arqs);
+
+  window._ARQS  = _arqs;
+  window._CEGG  = true;
+  window._buildNexus(_arqs, totalXP, totalMu);
+
+  /* Animación de entrada — igual que v1 */
+  let f = 0;
+  const D = 200;
+  const targetCoronaOpacity = window._coronaOpacity;
+
+  (function step() {
+    f++;
+    const p = Math.min(1, f / D);
+    const e = 1 - Math.pow(1 - p, 4); // ease-out quart
+
+    // Sol — igual que v1
+    const ei = coreMat.emissiveIntensity;
+    coreMat.emissiveIntensity = 0.4 + e * starPower * 2.5;
+    coreMat.emissive.setHSL(e * 0.6, 0.85, 0.45);
+    L1.intensity = e * starPower * 4;
+    L2.intensity = e * starPower * 2.5;
+    L3.intensity = e * starPower * 2;
+    L1.color.setHSL((f * 0.003) % 1, 1, 0.7);
+
+    // Corona
+    if (coronaPoints) {
+      window._coronaMat.uniforms.uOpacity.value = e * targetCoronaOpacity;
+      // Implosión desde afuera hacia adentro
+      const orig = coronaGeo.userData.orig;
+      const cur  = coronaGeo.attributes.position.array;
+      const fac  = 0.25 + e * 0.75;
+      for (let j = 0; j < cur.length; j++) cur[j] = orig[j] * fac;
+      coronaGeo.attributes.position.needsUpdate = true;
+    }
+
+    // Filamentos
+    filamentos.forEach((fl, i) => {
+      const delay = i / filamentos.length;
+      const fp    = Math.max(0, (p - delay * 0.5) / 0.5);
+      fl.material.opacity = Math.min(0.4, fp * 0.4) * starPower;
+    });
+
+    // Anillos de sombra
+    shadowRings.forEach(r => { r.material.opacity = e * 0.15; });
+
+    // Aspectos
+    aspectInner.forEach(a => { a.mesh.material.opacity = e * 0.55; });
+
+    if (f < D) {
+      requestAnimationFrame(step);
+    } else {
+      document.getElementById('cegg-dot').textContent = '● cegg activo';
+      const ch = document.getElementById('ctrl-hint');
+      ch.classList.add('vis');
+      setTimeout(() => ch.classList.add('fade'), 8000);
+    }
+  })();
+
+  // Evento tarea completada en tiempo real
+  const ev = data.estado_vivo || {};
+  if (ev.ultimo_evento?.usuario) {
+    const age = (Date.now() / 1000) - (ev.ultimo_evento.timestamp || 0);
+    if (age < 6) triggerFlash(ev.ultimo_evento.usuario);
+  }
+}
+
+window._ACTIVATE = activateUniverse;
+
+function triggerFlash(nombre) {
+  document.getElementById('flash').style.opacity = '1';
+  setTimeout(() => { document.getElementById('flash').style.opacity = '0'; }, 300);
+  aspectInner.forEach(a => {
+    if (a.mesh.userData.arq?.nombre === nombre) a.mesh.userData.flashTimer = 3;
+  });
+}
+
+/* ════════════════════════════════════
+   RAYCASTER — hover y clicks
+════════════════════════════════════ */
+let hoveredPlanet   = null;
+let nameTagTimer    = null;
+const nameTag       = document.getElementById('planet-name-tag');
+
+/* Proyección 3D → 2D pantalla */
+function worldToScreen(pos3d) {
+  const v = pos3d.clone().project(camera);
+  return {
+    x: ( v.x * 0.5 + 0.5) * innerWidth,
+    y: (-v.y * 0.5 + 0.5) * innerHeight,
+  };
+}
+
+window.addEventListener('mousemove', e => {
+  mpos.x = (e.clientX / innerWidth)  * 2 - 1;
+  mpos.y = -(e.clientY / innerHeight) * 2 + 1;
+  ray.setFromCamera(mpos, camera);
+
+  const hi      = document.getElementById('hover-info');
+  const nameTag = document.getElementById('planet-name-tag');
+  const targets = [coreMesh, ...planetMeshes];
+  const hits    = ray.intersectObjects(targets, false);
+
+  if (hits.length) {
+    const obj = hits[0].object;
+
+    if (obj === coreMesh) {
+      document.getElementById('hi-name').textContent = 'Sol de Voluntad';
+      document.getElementById('hi-sub').textContent  =
+        window._CEGG
+          ? `${document.getElementById('s-xp').textContent} PV — doble clic para aspectos`
+          : 'doble clic → cargar .cegg';
+      hi.style.left = (e.clientX + 14) + 'px';
+      hi.style.top  = (e.clientY - 10) + 'px';
+      hi.classList.add('vis');
+      document.body.style.cursor = 'pointer';
+
+      if (hoveredPlanet) {
+        hoveredPlanet = null;
+        clearTimeout(nameTagTimer);
+        nameTagTimer = setTimeout(() => {
+          nameTag.classList.remove('vis'); nameTag.classList.add('hide');
+        }, 400);
+      }
+
+    } else if (obj.userData.type === 'planet') {
+      const pd = obj.userData;
+      const colHex = '#' + new THREE.Color(pd.col).getHexString();
+
+      // Nombre BAJO el planeta
+      const sc = worldToScreen(obj.position);
+      nameTag.textContent = pd.name;
+      nameTag.style.color = colHex;
+      nameTag.style.left  = sc.x + 'px';
+      nameTag.style.top   = (sc.y + pd.sz * 18 + 6) + 'px';
+      if (obj !== hoveredPlanet) {
+        nameTag.classList.add('vis');
+        nameTag.classList.remove('hide');
+        clearTimeout(nameTagTimer);
+      }
+      hoveredPlanet = obj;
+
+      // Info panel ARRIBA del planeta — posición proyectada
+      document.getElementById('hi-name').innerHTML =
+        `${pd.name} <span style="font-size:.5rem;opacity:.4;margin-left:4px">${pd.version || ''}</span>`;
+      document.getElementById('hi-sub').textContent = pd.subtitle || '';
+      hi.style.left = (sc.x - 70) + 'px';
+      hi.style.top  = (sc.y - pd.sz * 18 - 50) + 'px';
+      hi.classList.add('vis');
+      document.body.style.cursor = 'pointer';
+    }
+
+  } else {
+    hi.classList.remove('vis');
+    document.body.style.cursor = 'crosshair';
+
+    if (hoveredPlanet) {
+      hoveredPlanet = null;
+      clearTimeout(nameTagTimer);
+      nameTagTimer = setTimeout(() => {
+        nameTag.classList.remove('vis');
+        nameTag.classList.add('hide');
+      }, 500);
+    }
+  }
+
+  // Actualizar posición del tag mientras el planeta está visible
+  if (hoveredPlanet) {
+    const sc = worldToScreen(hoveredPlanet.position);
+    nameTag.style.left = sc.x + 'px';
+    nameTag.style.top  = (sc.y + hoveredPlanet.userData.sz * 18 + 6) + 'px';
+  }
+
+  // Aspectos emergen al acercar mouse al centro
+  const d2 = mpos.x * mpos.x + mpos.y * mpos.y;
+  aspectInner.forEach(a => { a.mesh.userData.emerging = d2 < 0.12 && starPower > 0; });
+});
+
+/* ═══════════════════════════════════════════════
+   SISTEMA DE INTERACCIÓN v2.5
+   
+   1 click      → abre panel lateral
+   doble click  → vuelo archhtml + cámara sigue al planeta (modo ORBIT)
+   doble click en modo ORBIT (o Enter) → navega al universo (mismo tab)
+   doble click fuera / Backspace / ESC  → vuelve a vista de pájaro
+   
+   Al navegar, se guarda anclaje en sessionStorage.
+   Al volver con botón atrás del browser, se restaura la órbita.
+═══════════════════════════════════════════════ */
+
+/* Detección de clicks y doble clicks manual — más fiable que dblclick nativo */
+let _lastClickTime = 0;
+let _lastClickObj  = null;
+const DBLCLICK_THRESHOLD = 400; // ms
+
+window.addEventListener('click', e => {
+  /* Ignorar clicks sobre UI (paneles, botones, etc.) */
+  if (e.target.closest('#panel-cfg, #panel-cegg-info, #planet-panel, #panel-nexus, #top-bar, #cegg-micro, #orbit-overlay')) return;
+
+  /* Click fuera de config → cerrar config */
+  closeCfg();
+
+  mpos.x = (e.clientX / innerWidth)  * 2 - 1;
+  mpos.y = -(e.clientY / innerHeight) * 2 + 1;
+  ray.setFromCamera(mpos, camera);
+
+  const hits = ray.intersectObjects([coreMesh, ...planetMeshes], false);
+  const now  = Date.now();
+
+  if (hits.length) {
+    const obj = hits[0].object;
+
+    /* SOL */
+    if (obj === coreMesh) {
+      if (window._CEGG) openNexus();
+      else document.getElementById('cegg-file').click();
+      _lastClickTime = 0;
+      return;
+    }
+
+    /* PLANETA */
+    const pd = obj.userData;
+
+    /* ¿Es doble click sobre el mismo planeta? */
+    const isDbl = (now - _lastClickTime < DBLCLICK_THRESHOLD) && _lastClickObj === obj;
+    _lastClickTime = now;
+    _lastClickObj  = obj;
+
+    if (isDbl) {
+      /* ── DOBLE CLICK ── */
+      if (_isOrbiting && _flyTarget === obj) {
+        /* Ya estamos orbitando ESTE planeta → ENTRAR al universo */
+        navigateToUniverse(pd);
+      } else {
+        /* Vuelo archhtml → modo ORBIT */
+        closePP();
+        enterOrbit(obj);
+      }
+    } else {
+      /* ── SINGLE CLICK — delay para distinguir de doble ── */
+      setTimeout(() => {
+        /* Solo actúa si NO hubo doble click después */
+        if (Date.now() - _lastClickTime >= DBLCLICK_THRESHOLD) {
+          if (_isOrbiting && _flyTarget === obj) {
+            /* Ya orbitando → activar iframe interactivo (como archhtml) */
+            activateOrbitIframe();
+          } else if (!_isOrbiting) {
+            /* Vista de pájaro — abrir panel */
+            window.openPP(pd);
+          }
+        }
+      }, DBLCLICK_THRESHOLD + 20);
+    }
+
+  } else {
+    /* Click en el vacío */
+    if (_isOrbiting) {
+      /* Single click en vacío → desactivar iframe interactivo */
+      deactivateOrbitIframe();
+      /* Doble click en vacío → salir de órbita completamente */
+      const isDblVoid = (now - _lastClickTime < DBLCLICK_THRESHOLD) && _lastClickObj === null;
+      _lastClickTime = now;
+      _lastClickObj  = null;
+      if (isDblVoid) {
+        exitOrbit();
+      }
+    } else {
+      _lastClickTime = now;
+      _lastClickObj  = null;
+    }
+  }
+});
+
+/* Prevenir el dblclick nativo del browser (selección de texto, etc.) */
+window.addEventListener('dblclick', e => { e.preventDefault(); });
+
+/* ════════════════════════════════════
+   TECLADO
+   Backspace / ESC → salir de órbita + cerrar paneles
+   Enter → entrar al universo si está orbitando
+   H → volver al centro
+════════════════════════════════════ */
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' || e.key === 'Backspace') {
+    if (_isOrbiting) {
+      exitOrbit();
+      e.preventDefault();
+    }
+    closePP();
+    closeNexus();
+  }
+  if (e.key === 'Enter') {
+    if (_isOrbiting && _flyTarget?.userData) {
+      navigateToUniverse(_flyTarget.userData);
+    } else if (window._currentPD?.url && window._currentPD.url !== '#') {
+      navigateToUniverse(window._currentPD);
+    }
+  }
+});
+
+/* ════════════════════════════════════
+   SISTEMA DE VUELO + ÓRBITA
+   
+   enterOrbit(planet) → lerp cámara hacia el planeta, luego SIGUE orbitando con él
+   exitOrbit()        → vuelve suavemente a la posición guardada (vista de pájaro)
+   navigateToUniverse(pd) → guarda anclaje + window.location.href
+   
+   _isOrbiting = la cámara está anclada siguiendo un planeta
+   _isTransitioning = animación de lerp en curso
+════════════════════════════════════ */
+let _isTransitioning = false;
+let _isOrbiting      = false;  // nuevo: cámara sigue al planeta
+let _isFlyingTo      = false;  // transición HACIA planeta
+let _flyTarget       = null;
+let _flyTargetPos    = new THREE.Vector3();
+let _flyTargetQuat   = new THREE.Quaternion();
+let _lastCamPos      = new THREE.Vector3();
+let _lastCamQuat     = new THREE.Quaternion();
+/* Offset relativo de la cámara respecto al planeta cuando orbita */
+let _orbitOffset     = new THREE.Vector3();
+
+function enterOrbit(planetMesh) {
+  /* Guardar posición actual para poder volver */
+  if (!_isOrbiting) {
+    _lastCamPos.copy(camera.position);
+    _lastCamQuat.copy(camera.quaternion);
+  }
+  _flyTarget = planetMesh;
+  _isFlyingTo = true;
+  _isTransitioning = true;
+  _isOrbiting = false;
+
+  /* Posición objetivo: frente al planeta a distancia sz*2.8
+     Esto hace que el planeta ocupe ~75% de la pantalla */
+  const pd = planetMesh.userData;
+  const dir = camera.position.clone().sub(planetMesh.position).normalize();
+  _orbitOffset.copy(dir).multiplyScalar(pd.sz * 2.8);
+  _flyTargetPos.copy(planetMesh.position).add(_orbitOffset);
+
+  /* Quaternion objetivo — mirando al planeta */
+  const m = new THREE.Matrix4();
+  m.lookAt(_flyTargetPos, planetMesh.position, camera.up);
+  _flyTargetQuat.setFromRotationMatrix(m);
+
+  /* Mostrar el overlay iframe — carga el universo */
+  showOrbitOverlay(pd);
+}
+
+function exitOrbit() {
+  if (!_isOrbiting && !_isFlyingTo) return;
+  _isFlyingTo = false;
+  _isOrbiting = false;
+  _isTransitioning = true;
+  hideOrbitOverlay();
+  _flyTarget = null;
+}
+
+/* ── Navegar al universo en el MISMO tab ──
+   Guarda punto de anclaje en sessionStorage para que al volver
+   con el botón atrás del browser, se restaure la órbita */
+function navigateToUniverse(pd) {
+  if (!pd.url || pd.url === '#') return;
+
+  /* Guardar anclaje */
+  const anchor = {
+    planetId:    pd.id,
+    camPos:      { x: _lastCamPos.x, y: _lastCamPos.y, z: _lastCamPos.z },
+    camYaw:      camYaw,
+    camPitch:    camPitch,
+    camRadius:   camRadius,
+    camTarget:   { x: camTarget.x, y: camTarget.y, z: camTarget.z },
+    timestamp:   Date.now(),
+  };
+  try {
+    sessionStorage.setItem('cml_anchor', JSON.stringify(anchor));
+  } catch(_){}
+
+  /* Navegar en el mismo tab */
+  window.location.href = pd.url;
+}
+
+/* ── Al cargar: restaurar anclaje si venimos de "volver atrás" ──
+   Detecta si hay un anclaje guardado y restaura la órbita */
+function restoreAnchorIfNeeded() {
+  try {
+    const raw = sessionStorage.getItem('cml_anchor');
+    if (!raw) return;
+    const anchor = JSON.parse(raw);
+    /* Solo restaurar si es reciente (< 30 min) */
+    if (Date.now() - anchor.timestamp > 30 * 60 * 1000) {
+      sessionStorage.removeItem('cml_anchor');
+      return;
+    }
+
+    /* Restaurar posición de cámara de vista pájaro */
+    camYaw    = anchor.camYaw    || 0;
+    camPitch  = anchor.camPitch  || -0.13;
+    camRadius = anchor.camRadius || 90;
+    camTarget.set(
+      anchor.camTarget?.x || 0,
+      anchor.camTarget?.y || 0,
+      anchor.camTarget?.z || 0
+    );
+
+    /* Buscar el planeta y volar hacia él */
+    const pm = planetMeshes.find(p => p.userData.id === anchor.planetId);
+    if (pm) {
+      /* Primero dejar que los planetas calculen sus posiciones (1 frame) */
+      setTimeout(() => {
+        _lastCamPos.set(anchor.camPos.x, anchor.camPos.y, anchor.camPos.z);
+        _lastCamQuat.copy(camera.quaternion);
+        enterOrbit(pm);
+      }, 100);
+    }
+
+    /* NO borrar el anclaje — se borrará cuando el usuario salga de la órbita */
+  } catch(_){}
+}
+
+/* Limpiar anclaje cuando el usuario sale de la órbita voluntariamente */
+function clearAnchor() {
+  try { sessionStorage.removeItem('cml_anchor'); } catch(_){}
+}
+
+/* Exponer funciones al scope global */
+window._ACTIVATE   = activateUniverse;
+window._enterOrbit = enterOrbit;
+window._exitOrbit  = exitOrbit;
+window._openNexus  = openNexus;
+
+/* ════════════════════════════════════
+   MOVIMIENTO DE CÁMARA — WASD Q E Z X
+   
+   W/S = adelante/atrás
+   A/D = izquierda/derecha (strafe)
+   Q/E = girar izquierda/derecha (yaw)
+   Z/X = subir/bajar
+   H   = volver al centro
+   Shift = velocidad rápida
+════════════════════════════════════ */
+const KEYS = { w:0, a:0, s:0, d:0, q:0, e:0, z:0, x:0, shift:0 };
+const CAM_SPEED = 18;
+const CAM_FAST  = 50;
+const YAW_SPEED = 1.2; // radianes por segundo para Q/E
+let camYaw   = 0;
+let camPitch = -0.13;
+let camRadius = 90;
+let camTarget = new THREE.Vector3(0, 0, 0);
+let isDrag    = false;
+let prevMouse = { x: 0, y: 0 };
+
+document.addEventListener('keydown', ke => {
+  const k = ke.key.toLowerCase();
+  if (k in KEYS) KEYS[k] = 1;
+  if (ke.shiftKey) KEYS.shift = 1;
+  if (k === 'h') {
+    if (_isOrbiting) exitOrbit();
+    camTarget.set(0, 0, 0);
+    camYaw    = 0;
+    camPitch  = -0.13;
+    camRadius = 90;
+  }
+});
+document.addEventListener('keyup', ke => {
+  const k = ke.key.toLowerCase();
+  if (k in KEYS) KEYS[k] = 0;
+  if (!ke.shiftKey) KEYS.shift = 0;
+});
+
+renderer.domElement.addEventListener('mousedown', e => {
+  if (e.button === 0) { isDrag = true; prevMouse = { x: e.clientX, y: e.clientY }; }
+});
+window.addEventListener('mouseup', () => { isDrag = false; });
+window.addEventListener('mousemove', e => {
+  if (!isDrag) return;
+  if (_isOrbiting) {
+    deactivateOrbitIframe(); // drag desactiva iframe interactivo pero sigue orbitando
+  }
+  camYaw   -= (e.clientX - prevMouse.x) * 0.003;
+  camPitch -= (e.clientY - prevMouse.y) * 0.003;
+  camPitch  = Math.max(-Math.PI / 2.1, Math.min(0.45, camPitch));
+  prevMouse = { x: e.clientX, y: e.clientY };
+});
+renderer.domElement.addEventListener('wheel', e => {
+  if (_isOrbiting) {
+    /* En modo órbita, wheel ajusta distancia al planeta */
+    const len = _orbitOffset.length();
+    const minDist = _flyTarget ? _flyTarget.userData.sz * 2 : 4;
+    const newLen = Math.max(minDist, Math.min(60, len + e.deltaY * 0.04));
+    _orbitOffset.normalize().multiplyScalar(newLen);
+  } else {
+    camRadius += e.deltaY * 0.07;
+    camRadius  = Math.max(15, Math.min(280, camRadius));
+  }
+  
+}, { passive: true });
+
+function updateCamera(dt) {
+  const sp  = (KEYS.shift ? CAM_FAST : CAM_SPEED) * dt;
+  const fwd = new THREE.Vector3(
+    -Math.sin(camYaw) * Math.cos(camPitch), 0,
+    -Math.cos(camYaw) * Math.cos(camPitch)
+  );
+  const right = new THREE.Vector3(Math.cos(camYaw), 0, -Math.sin(camYaw));
+
+  /* Q/E = girar izquierda/derecha (yaw rotation) */
+  if (KEYS.q) { camYaw += YAW_SPEED * dt;  }
+  if (KEYS.e) { camYaw -= YAW_SPEED * dt;  }
+
+  /* Z/X = subir/bajar */
+  if (KEYS.z) { camTarget.y += sp;  }
+  if (KEYS.x) { camTarget.y -= sp;  }
+
+  const movingWASD = KEYS.w || KEYS.s || KEYS.a || KEYS.d;
+  const movingAll  = movingWASD || KEYS.q || KEYS.e || KEYS.z || KEYS.x;
+  if (movingAll) 
+
+  /* WASD en modo órbita sale del modo órbita */
+  if (movingWASD && _isOrbiting) {
+    exitOrbit();
+  }
+
+  if (KEYS.w) camTarget.addScaledVector(fwd,   sp);
+  if (KEYS.s) camTarget.addScaledVector(fwd,  -sp);
+  if (KEYS.a) camTarget.addScaledVector(right, -sp);
+  if (KEYS.d) camTarget.addScaledVector(right,  sp);
+
+  /* En modo libre (no orbitando, no transitando) → cámara orbital clásica */
+  if (!_isTransitioning && !_isOrbiting) {
+    const tx = camTarget.x + camRadius * Math.sin(camYaw)  * Math.cos(camPitch);
+    const ty = camTarget.y + camRadius * Math.sin(camPitch);
+    const tz = camTarget.z + camRadius * Math.cos(camYaw)  * Math.cos(camPitch);
+    camera.position.lerp(new THREE.Vector3(tx, ty, tz), 0.06);
+    camera.lookAt(camTarget);
+  }
+}
+
+/* Oscilación contemplativa muy leve — NO rota, solo respira */
+function applyContemplativeBreath(t) {
+  if (_isOrbiting) return; // sin oscilación cuando estamos fijos en un planeta
+  camera.position.x += Math.sin(t * 0.04) * 0.008;
+  camera.position.y += Math.sin(t * 0.05) * 0.006;
+}
+
+/* ════════════════════════════════════
+   LOOP DE ANIMACIÓN
+   Ritmo lento — genera paz, no ansiedad
+════════════════════════════════════ */
+const clock = new THREE.Clock();
+window._orbitAuto = true;
+let _orbSpeedMult = 0.4;
+
+(function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t  = clock.getElapsedTime();
+
+  updateCamera(dt);
+  applyContemplativeBreath(t);
+
+  /* SOL — rotación muy lenta + pulso suave */
+  coreMesh.rotation.x = t * 0.025;
+  coreMesh.rotation.y = t * 0.035;
+  coreMesh.rotation.z = t * 0.018;
+
+  const pulse = Math.sin(t * 0.35) * 0.5 + 0.5; // lento: ~0.056 Hz
+
+  if (starPower > 0) {
+    // Escala con pulso — muy suave
+    const sc = 1 + pulse * 0.05 * starPower;
+    coreMesh.scale.setScalar(sc);
+
+    // Color arcoíris muy lento — 1 ciclo en ~25 seg
+    const hue = (t * 0.04) % 1;
+    coreMat.emissive.setHSL(hue, 0.9, 0.42);
+    coreMat.emissiveIntensity = 0.4 + starPower * (1.8 + pulse * 0.8);
+
+    L1.color.setHSL(hue,              1.0, 0.65);
+    L2.color.setHSL((hue + 0.33) % 1, 1.0, 0.6);
+    L3.color.setHSL((hue + 0.66) % 1, 1.0, 0.6);
+    L1.intensity = starPower * 3.5 * (0.6 + pulse * 0.4);
+    L2.intensity = starPower * 2.0;
+    L3.intensity = starPower * 1.8;
+
+  } else {
+    /* Sin cegg — brillo base mínimo siempre incandescente */
+    const lv  = Math.sin(t * 0.28) * 0.5 + 0.5;
+    const hue = (t * 0.02) % 1;
+    coreMat.emissive.setHSL(hue, 0.75, 0.35);
+    coreMat.emissiveIntensity = 0.25 + lv * 0.15;
+    L1.intensity = 0.18 + lv * 0.08;
+    L2.intensity = 0.1  + lv * 0.05;
+    L1.color.setHSL(hue, 0.8, 0.6);
+  }
+
+  /* CORONA — rotación lenta */
+  if (coronaPoints && starPower > 0) {
+    coronaPoints.rotation.y = t * 0.018;
+    coronaPoints.rotation.x = t * 0.009;
+  }
+
+  /* FILAMENTOS */
+  filamentos.forEach((fl, i) => {
+    fl.rotation.y = t * (0.012 + i * 0.002);
+    fl.rotation.z = Math.sin(t * 0.06 + i) * 0.025;
+  });
+
+  /* ANILLOS DE SOMBRA */
+  shadowRings.forEach(r => {
+    r.rotation.z += r.userData.spd;
+    r.rotation.x += r.userData.spd * 0.6;
+  });
+
+  /* ASPECTOS INTERNOS — emergen lentamente */
+  aspectInner.forEach((a, i) => {
+    const d  = a.mesh.userData;
+    const bp = d.basePos.clone();
+    const em = d.emerging || d.flashTimer > 0;
+    const targetR = em ? 8.5 : 2.5;
+    const curLen  = a.mesh.position.length();
+    const delta   = (targetR - curLen) * 0.04; // movimiento suave
+    if (curLen > 0.1) {
+      a.mesh.position.copy(bp.normalize().multiplyScalar(curLen + delta));
+    }
+    a.mesh.rotation.y = t * 0.3 + i;
+
+    if (d.flashTimer > 0) {
+      d.flashTimer -= dt;
+      a.mesh.material.color.setHSL(d.flashTimer / 3, 0.9, 0.72);
+      a.mesh.scale.setScalar(1 + Math.sin(d.flashTimer * 6) * 0.35);
+    } else {
+      a.mesh.material.color.setHSL(d.hue, 1, 0.62);
+      a.mesh.scale.setScalar(1);
+    }
+    if (starPower > 0) a.mesh.material.opacity = em ? 0.8 : 0.42;
+  });
+
+  /* PLANETAS — orbitan solos, cámara quieta */
+  planetMeshes.forEach((pm, i) => {
+    const d = pm.userData;
+    if (window._orbitAuto) d.angle += d.spd * _orbSpeedMult;
+    const inc = d.incl;
+    pm.position.x = Math.cos(d.angle) * d.orbitR;
+    pm.position.y = Math.sin(d.angle) * d.orbitR * Math.sin(inc);
+    pm.position.z = Math.sin(d.angle) * d.orbitR * Math.cos(inc);
+    pm.rotation.y = t * 0.15 + i;
+    d.uTime.value = t;
+    if (d.glowMat) d.glowMat.opacity = 0.03 + Math.sin(t * 0.8 + i) * 0.015;
+
+    /* Disco dimensional billboarding — siempre mira a la cámara */
+    if (d.dimensionDisc) {
+      d.dimensionDisc.lookAt(
+        pm.worldToLocal(camera.position.clone())
+      );
+      /* Pasar tiempo y opacidad configurable al shader */
+      d.discMat.uniforms.uTime.value = t;
+      if (window._discOpacity !== undefined) {
+        d.discMat.uniforms.uOpacity.value = window._discOpacity;
+      }
+    }
+  });
+
+  /* ══ VUELO + ÓRBITA ══ */
+  if (_isTransitioning) {
+    if (_isFlyingTo && _flyTarget) {
+      /* Recalcular target (planeta se mueve) */
+      _flyTargetPos.copy(_flyTarget.position).add(_orbitOffset);
+      const m = new THREE.Matrix4();
+      m.lookAt(_flyTargetPos, _flyTarget.position, camera.up);
+      _flyTargetQuat.setFromRotationMatrix(m);
+
+      /* Lerp progresivo: empieza lento, acelera al acercarse */
+      const distLeft = camera.position.distanceTo(_flyTargetPos);
+      const totalDist = _lastCamPos.distanceTo(_flyTargetPos);
+      const progress = 1 - Math.min(1, distLeft / (totalDist || 1));
+      const lerpRate = 0.03 + progress * 0.07; // 0.03→0.10 suave
+      
+      camera.position.lerp(_flyTargetPos, lerpRate);
+      camera.quaternion.slerp(_flyTargetQuat, lerpRate);
+
+      if (distLeft < 0.3) {
+        /* Transición completada — handoff suave a modo órbita */
+        _isTransitioning = false;
+        _isFlyingTo = false;
+        _isOrbiting = true;
+        /* Sincronizar offset con la posición real actual para evitar snap */
+        _orbitOffset.copy(camera.position).sub(_flyTarget.position);
+      }
+
+    } else if (!_isFlyingTo) {
+      /* Volviendo a vista de pájaro */
+      const distLeft = camera.position.distanceTo(_lastCamPos);
+      const lerpRate = 0.04 + Math.max(0, 1 - distLeft / 50) * 0.06;
+      
+      camera.position.lerp(_lastCamPos, lerpRate);
+      camera.quaternion.slerp(_lastCamQuat, lerpRate);
+
+      if (distLeft < 0.5) {
+        _isTransitioning = false;
+        clearAnchor();
+      }
+    }
+  }
+
+  /* ── MODO ÓRBITA — cámara sigue al planeta suavemente ── */
+  if (_isOrbiting && _flyTarget) {
+    const targetPos = _flyTarget.position.clone().add(_orbitOffset);
+    camera.position.lerp(targetPos, 0.08);
+    /* lookAt suave via quaternion — evita el snap de lookAt directo */
+    const lookM = new THREE.Matrix4();
+    lookM.lookAt(camera.position, _flyTarget.position, camera.up);
+    const lookQ = new THREE.Quaternion().setFromRotationMatrix(lookM);
+    camera.quaternion.slerp(lookQ, 0.08);
+  }
+
+  composer.render();
+
+  /* Posicionar overlay HTML (solo si está visible — costo ~0.01ms) */
+  updateOrbitOverlayPosition();
+})(); // ← cierre del IIFE animate
+
+/* ── Restaurar anclaje al cargar ── */
+restoreAnchorIfNeeded();
+</script>
+
+<!-- ════════════════════
+     LÓGICA CLÁSICA
+════════════════════ -->
+<script>
+/* ─── POLLING .CEGG cada 2s ───
+   NOTA: el fetch() falla cuando abres desde file:// (CORS de Chrome).
+   Solución A (recomendada): subir a Render/GitHub Pages — funciona directo.
+   Solución B (local): python -m http.server 8080 en la carpeta del proyecto
+                       luego abrir http://localhost:8080/chamalnquimyst_universe.html
+   El botón 🥚 siempre funciona para cargar el .cegg manualmente. */
+const _isFileProtocol = location.protocol === 'file:';
+
+if (_isFileProtocol) {
+  // Mostrar ayuda en lugar de spam de errores CORS
+  document.getElementById('cegg-dot').textContent = '🥚 abre desde http:// para polling automático';
+} else {
+  setInterval(() => {
+    fetch('HuevoCosmico_LIVE.cegg?t=' + Date.now())
+      .then(r => { if (!r.ok) throw 0; return r.text(); })
+      .then(txt => {
+        const d = parseCegg(txt);
+        if (d && window._ACTIVATE) window._ACTIVATE(d);
+        document.getElementById('cegg-dot').textContent = '● cegg live';
+      })
+      .catch(() => {});
+  }, 2000);
+}
+
+/* ─── WEBSOCKET LOCAL KP ───
+   Conecta con el relay local cuando KP está abierto.
+   Falla silenciosamente si no hay relay corriendo. */
+(function connectWS() {
+  if (_isFileProtocol) return; // desde file:// Chrome bloquea WS también
+  try {
+    const ws = new WebSocket('ws://localhost:8765');
+    ws.onmessage = e => {
+      try {
+        const d = JSON.parse(e.data);
+        if (d.tipo === 'tarea_completada') {
+          document.getElementById('flash').style.opacity = '1';
+          setTimeout(() => { document.getElementById('flash').style.opacity = '0'; }, 300);
+          document.getElementById('cegg-dot').textContent = '⚡ tarea completada!';
+          setTimeout(() => { document.getElementById('cegg-dot').textContent = '● cegg live'; }, 2000);
+        }
+      } catch (_) {}
+    };
+    ws.onclose = () => setTimeout(connectWS, 6000);
+  } catch (_) {}
+})();
+
+/* ─── PARSEAR CEGG ─── */
+function parseCegg(txt) {
+  try {
+    const s  = txt.indexOf('<<<DATA-START>>>') + 16;
+    const en = txt.indexOf('<<<DATA-END>>>');
+    if (s < 16 || en < 0) return null;
+    return JSON.parse(txt.slice(s, en).trim());
+  } catch (_) { return null; }
+}
+
+function loadCeggFile(inp) {
+  const f = inp.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    const d = parseCegg(e.target.result);
+    if (d && window._ACTIVATE) window._ACTIVATE(d);
+  };
+  r.readAsText(f, 'utf-8');
+}
+
+/* ─── CONFIGURACIÓN ─── */
+function toggleCfg() { document.getElementById('panel-cfg').classList.toggle('open'); }
+function closeCfg()  { document.getElementById('panel-cfg').classList.remove('open'); }
+
+function setSolBright(v) {
+  const f = v / 100;
+  document.getElementById('v-bright').textContent = f.toFixed(2);
+  if (window._coreMat) {
+    window._coreMat.emissiveIntensity = 0.15 + f * 2;
+  }
+}
+function setCoronaBright(v) {
+  const f = v / 100;
+  document.getElementById('v-corona').textContent = f.toFixed(2);
+  window._coronaOpacity = f;
+  if (window._coronaMat) window._coronaMat.uniforms.uOpacity.value = f;
+}
+function setPulseSpeed(v) {
+  const labels = ['muy lento','lento','normal','rápido','muy rápido'];
+  document.getElementById('v-pulse').textContent = labels[Math.min(4, Math.floor(v/2))];
+  // Mapear v (1-10) a frecuencia 0.1-0.7 Hz
+  window._pulseSpeed = 0.1 + (v - 1) / 9 * 0.6;
+}
+function setOrbSpeed(v) {
+  const f = v / 10;
+  document.getElementById('v-orb').textContent = f.toFixed(1) + '×';
+  window._orbSpeedMult = f;
+  if (window._setOrbSpeedMod) window._setOrbSpeedMod(f);
+}
+
+/* ─── TRANSPARENCIA DIMENSIONES ───
+   Slider 0-100 que controla la opacidad de los discos dimensionales
+   en la superficie de cada planeta. 0 = invisible, 100 = sólido brillante.
+   Se guarda en localStorage para persistencia. */
+function setDiscTransparency(v) {
+  const f = v / 100;
+  document.getElementById('v-disc').textContent = Math.round(v) + '%';
+  /* Comunicar al módulo ES via window global */
+  window._discOpacity = f;
+  try { localStorage.setItem('cml_disc_opacity', f); } catch(_){}
+}
+
+function openCeggInfo()  { document.getElementById('panel-cegg-info').classList.add('open'); }
+function closeCeggInfo() { document.getElementById('panel-cegg-info').classList.remove('open'); }
+function loginGoogle()   { closeCfg(); alert('Firebase próximamente — arrastra tu .cegg para activar el universo.'); }
+
+/* ─── PANEL PLANETA ─── */
+let currentPD = null;
+window._currentPD = null;
+
+/* ── Drag desde el header ── */
+let ppDrag = false, ppDragOX = 0, ppDragOY = 0;
+const ppEl = document.getElementById('planet-panel');
+
+document.getElementById('pp-hdr').addEventListener('mousedown', e => {
+  if (e.target.tagName === 'BUTTON') return;
+  ppDrag = true;
+  if (!ppEl.classList.contains('free')) {
+    const r = ppEl.getBoundingClientRect();
+    ppEl.style.left = r.left + 'px';
+    ppEl.style.top  = r.top + 'px';
+    ppEl.classList.add('free');
+  }
+  const r = ppEl.getBoundingClientRect();
+  ppDragOX = e.clientX - r.left;
+  ppDragOY = e.clientY - r.top;
+  e.preventDefault();
+});
+/* Touch drag para móvil */
+document.getElementById('pp-hdr').addEventListener('touchstart', e => {
+  if (e.target.tagName === 'BUTTON') return;
+  ppDrag = true;
+  const touch = e.touches[0];
+  if (!ppEl.classList.contains('free')) {
+    const r = ppEl.getBoundingClientRect();
+    ppEl.style.left = r.left + 'px';
+    ppEl.style.top  = r.top + 'px';
+    ppEl.classList.add('free');
+  }
+  const r = ppEl.getBoundingClientRect();
+  ppDragOX = touch.clientX - r.left;
+  ppDragOY = touch.clientY - r.top;
+}, { passive: true });
+
+window.addEventListener('mousemove', e => {
+  if (ppDrag) {
+    ppEl.style.left = (e.clientX - ppDragOX) + 'px';
+    ppEl.style.top  = (e.clientY - ppDragOY) + 'px';
+  }
+});
+window.addEventListener('touchmove', e => {
+  if (ppDrag) {
+    const touch = e.touches[0];
+    ppEl.style.left = (touch.clientX - ppDragOX) + 'px';
+    ppEl.style.top  = (touch.clientY - ppDragOY) + 'px';
+  }
+}, { passive: true });
+window.addEventListener('mouseup',  () => { ppDrag = false; });
+window.addEventListener('touchend', () => { ppDrag = false; });
+
+window.openPP = function(pd) {
+  currentPD = pd;
+  window._currentPD = pd;
+  const pp = document.getElementById('planet-panel');
+  const colHex = '#' + pd.col.toString(16).padStart(6, '0');
+  
+  document.getElementById('pp-name').textContent = pd.name;
+  document.getElementById('pp-name').style.color = colHex;
+  document.getElementById('pp-subtitle').textContent = pd.subtitle || '';
+
+  /* ── Construir contenido unificado dinámicamente ── */
+  const statusClass = pd.status === 'activo' ? 'activo' : 
+                      pd.status === 'en desarrollo' ? 'desarrollo' : 'concepto';
+
+  let html = '';
+
+  /* SECCIÓN 1: Nombre heroico + badges */
+  html += `<div class="pp-section" style="text-align:center; padding:18px 16px 12px;">
+    <div style="font-family:'Italiana',serif; font-size:1.4rem; letter-spacing:.22em; color:${colHex}; margin-bottom:4px;">${pd.name}</div>
+    <div style="font-size:.58rem; color:rgba(255,255,255,.35); margin-bottom:8px;">${pd.subtitle || ''}</div>
+    <span class="pp-version-badge" style="border-color:${colHex}44; color:${colHex}aa">${pd.version || ''}</span>
+    <span class="pp-status ${statusClass}">${pd.status || ''}</span>
+  </div>`;
+
+  /* SECCIÓN 2: Descripción */
+  html += `<div class="pp-section">
+    <div class="pp-desc">${pd.desc || ''}</div>
+  </div>`;
+
+  /* SECCIÓN 3: Botón entrar al universo */
+  if (pd.url && pd.url !== '#') {
+    html += `<div class="pp-section" style="padding:10px 16px;">
+      <a href="${pd.url}" target="_blank" class="pp-enter-btn" style="border-color:${colHex}33; color:${colHex}cc">
+        ◈ Entrar a ${pd.name}
+      </a>
+    </div>`;
+  }
+
+  /* SECCIÓN 4: Universo embebido — iframe interactivo */
+  if (pd.url && pd.url !== '#') {
+    html += `<div class="pp-section" style="padding:0;">
+      <iframe class="pp-universe-frame" src="${pd.url}"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        referrerpolicy="no-referrer"></iframe>
+    </div>`;
+  }
+
+  /* SECCIÓN 5: Actualizaciones recientes */
+  if (pd.updates && pd.updates.length > 0) {
+    html += `<div class="pp-section">
+      <div class="pp-section-title" style="color:${colHex}88">Actualizaciones</div>
+      ${pd.updates.map(u => `<div class="pp-update-item">${u}</div>`).join('')}
+    </div>`;
+  }
+
+  /* SECCIÓN 6: Próximamente */
+  if (pd.upcoming && pd.upcoming.length > 0) {
+    html += `<div class="pp-section">
+      <div class="pp-section-title" style="color:rgba(255,200,80,.5)">Próximamente</div>
+      ${pd.upcoming.map(u => `<div class="pp-upcoming-item">${u}</div>`).join('')}
+    </div>`;
+  }
+
+  /* SECCIÓN 7: Links */
+  html += `<div class="pp-section" style="padding:12px 16px 18px; display:flex; gap:6px; flex-wrap:wrap;">
+    ${pd.url && pd.url !== '#' ? `<a href="${pd.url}" target="_blank" class="pp-enter-btn" style="flex:1; min-width:120px; font-size:.56rem; padding:7px; border-color:${colHex}22">◈ Universo</a>` : ''}
+    <a href="${pd.blogUrl || 'https://durirock.github.io/blog'}" target="_blank" class="pp-enter-btn" style="flex:1; min-width:120px; font-size:.56rem; padding:7px; border-color:rgba(255,255,255,.08)">📖 Blog</a>
+  </div>`;
+
+  document.getElementById('pp-body').innerHTML = html;
+
+  /* Siempre abre centrado — resetear drag previo */
+  pp.classList.remove('free');
+  pp.style.left = '50%';
+  pp.style.top  = '50%';
+  pp.classList.add('open');
+};
+
+function closePP() {
+  const pp = document.getElementById('planet-panel');
+  pp.classList.remove('open', 'free');
+  pp.style.left = '50%';
+  pp.style.top  = '50%';
+  /* Destruir iframes del panel para liberar memoria */
+  document.getElementById('pp-body').innerHTML = '';
+}
+
+/* ─── PANEL NEXUS ─── */
+window._buildNexus = function(arqs, totalXP, totalMu) {
+  const body   = document.getElementById('nx-body');
+  const maxXP  = arqs[0]?.xp || 1;
+
+  let h = `<div class="nx-summary">
+    <div class="nx-sum-row"><span>PV Total Sistema</span><b>${totalXP.toLocaleString()}</b></div>
+    <div class="nx-sum-row"><span>Mu Total</span><b>${totalMu}</b></div>
+    <div class="nx-sum-row"><span>Arquetipos</span><b>${arqs.length}</b></div>
+    <div class="nx-sum-row"><span>Sombra total</span><b>${arqs.reduce((s,a)=>s+a.distr,0)}</b></div>
+  </div>`;
+
+  arqs.forEach((arq, i) => {
+    const hsl  = `hsl(${Math.round(i / arqs.length * 360)}, 80%, 62%)`;
+    const pct  = Math.round(arq.xp / maxXP * 100);
+    const top2 = arq.tareas.filter(t => !t.completed).slice(0, 2).map(t => t.name).join(' · ') || '—';
+
+    h += `
+    <div class="nx-card" style="border-left-color:${hsl}">
+      <div class="nx-card-name" style="color:${hsl}">${arq.nombre}</div>
+      <div class="nx-card-xp">${arq.xp.toLocaleString()} PV · ${arq.mu} Mu</div>
+      <div class="nx-bar">
+        <div class="nx-fill" style="width:${pct}%; background:${hsl}"></div>
+      </div>
+      <div class="nx-pend">⏳ ${top2}</div>
+      ${arq.distr > 0 ? `<div class="nx-distr">⚠ Sombra: ${arq.distr}</div>` : ''}
+    </div>`;
+  });
+
+  body.innerHTML = h;
+};
+
+function openNexus()  { document.getElementById('panel-nexus').classList.add('open'); }
+function closeNexus() { document.getElementById('panel-nexus').classList.remove('open'); }
+</script>
+
+<!--
+╔══════════════════════════════════════════════════════════╗
+║  GUÍA FIREBASE + SOCKET — próximos pasos                 ║
+╠══════════════════════════════════════════════════════════╣
+║                                                          ║
+║  FIREBASE:                                               ║
+║  1. firebase.google.com → nuevo proyecto "chamalnquimyst"║
+║  2. Authentication → Enable Google Sign-in               ║
+║  3. Storage → crear bucket → subir .cegg desde KP Python ║
+║  4. Activar bloque Firebase en el módulo ES              ║
+║                                                          ║
+║  GOOGLE TASKS:                                           ║
+║  OAuth scope: https://www.googleapis.com/auth/tasks      ║
+║  KP → tareas_detalladas → POST /tasks/v1/lists/ID/tasks  ║
+║                                                          ║
+║  SOCKET DESDE INTERNET:                                  ║
+║  Desplegar relay.py en Render.com (~$7/mes)              ║
+║  KP: cambiar ws://localhost:8765                         ║
+║      → wss://cegg-relay.onrender.com                     ║
+║  Este HTML: cambiar URL en connectWS()                   ║
+║                                                          ║
+╚══════════════════════════════════════════════════════════╝
+-->
+</body>
+</html>
