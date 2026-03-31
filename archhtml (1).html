@@ -1,0 +1,1966 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mundo Interior — Buceo en el Espacio de Recuerdos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS3DRenderer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/BoxLineGeometry.js"></script>
+
+    <style>
+        :root {
+            --primary-glow-color: #4DDBFF;
+            --secondary-glow-color: #0077FF;
+            --text-color: #EAEAEA;
+            --background-color: #02040a;
+            --memory-cyan: #3de8d4;
+            --memory-violet: #7b5ea7;
+        }
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: 'Lato', sans-serif;
+            cursor: default;
+            touch-action: none;
+        }
+        #webgl-container, #css-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+        }
+        #css-container { pointer-events: none; }
+        #css-container .content-panel-wrapper { pointer-events: auto; }
+        #blocker {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0); pointer-events: none; z-index: 10;
+        }
+        #instructions {
+            position: absolute; bottom: 30px; width: 100%; text-align: center;
+            color: rgba(255,255,255,0.6); font-size: 0.9em; z-index: 100;
+            pointer-events: none; opacity: 1; transition: opacity 1s ease-out 5s;
+        }
+        .content-panel-wrapper {
+            transition: transform 0.5s ease-out, box-shadow 0.3s ease;
+            box-sizing: border-box;
+        }
+        .content-panel-wrapper.selected {
+            box-shadow: 0 0 45px var(--primary-glow-color) !important;
+        }
+        .text-panel {
+            background: rgba(2, 4, 10, 0.7);
+            border: 5px solid; box-shadow: 0 0 30px;
+            color: var(--text-color); display: flex;
+            flex-direction: column; box-sizing: border-box;
+        }
+        .text-panel-title {
+            font-family: 'Cinzel', serif; text-align: center;
+            padding: 20px; font-size: 80px; flex-shrink: 0;
+        }
+        .text-panel-content {
+            padding: 0 40px 40px 40px; font-size: 32px;
+            flex-grow: 1; overflow-y: auto;
+        }
+        .text-panel-content::-webkit-scrollbar { width: 12px; }
+        .text-panel-content::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .text-panel-content::-webkit-scrollbar-thumb {
+            background-color: var(--primary-glow-color); border-radius: 20px;
+            border: 3px solid transparent; background-clip: content-box;
+        }
+        .video-panel, .web-panel {
+            width: 1280px; height: 720px;
+            border: 5px solid rgba(77,219,255,0.5);
+            box-shadow: 0 0 30px rgba(77,219,255,0.7);
+            background-color: #000;
+        }
+        .video-panel iframe, .video-panel video, .web-panel iframe {
+            width: 100%; height: 100%; border: none;
+        }
+        .pdf-panel {
+            width: 800px; height: 1131px;
+            border: 5px solid rgba(77,219,255,0.5);
+            box-shadow: 0 0 30px rgba(77,219,255,0.7);
+            background-color: #333; overflow-y: scroll !important;
+        }
+        .pdf-panel iframe, .pdf-panel embed { width: 100%; height: 100%; border: none; }
+        .ui-button {
+            position: fixed; width: 52px; height: 52px;
+            background: rgba(61,232,212,.06);
+            color: rgba(61,232,212,.6);
+            border: 1px solid rgba(61,232,212,.2);
+            border-radius: 50%;
+            font-size: 28px; line-height: 52px; text-align: center;
+            cursor: pointer; z-index: 600;
+            transition: opacity .5s ease, background .35s, border-color .35s, color .35s, box-shadow .35s, transform .35s;
+        }
+        .ui-button:hover {
+            background: rgba(61,232,212,.14);
+            border-color: rgba(61,232,212,.5);
+            color: rgba(61,232,212,.9);
+            box-shadow: 0 0 20px rgba(61,232,212,.2);
+        }
+        .ui-button.faded { opacity: 0; pointer-events: none; }
+        #add-panel-btn { bottom: 30px; right: 30px; }
+        #add-panel-btn:hover { transform: scale(1.05) rotate(90deg); }
+
+        /* ═══ MODAL ═══ */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); display: flex;
+            justify-content: center; align-items: center; z-index: 300;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .modal.visible { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background: var(--background-color);
+            border: 1px solid var(--primary-glow-color);
+            padding: 30px; border-radius: 10px;
+            width: 90%; max-width: 500px;
+            box-shadow: 0 0 30px var(--secondary-glow-color);
+            max-height: 85vh; overflow-y: auto;
+        }
+        .modal-content h3 {
+            font-family: 'Cinzel', serif;
+            color: var(--primary-glow-color); margin-top: 0; text-align: center;
+        }
+        .tab-buttons {
+            display: flex; border-bottom: 1px solid var(--primary-glow-color);
+            margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .tab-button {
+            background: none; border: none; color: var(--text-color);
+            padding: 10px 12px; cursor: pointer; font-size: .95em;
+            opacity: 0.6; border-bottom: 3px solid transparent;
+        }
+        .tab-button.active { opacity: 1; border-bottom-color: var(--primary-glow-color); }
+        .form-section { display: none; }
+        .form-section.active { display: block; }
+        .modal-content input, .modal-content textarea, .modal-content select {
+            width: 100%; padding: 10px; margin-bottom: 15px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--primary-glow-color);
+            color: var(--text-color); border-radius: 5px; box-sizing: border-box;
+        }
+        .modal-content textarea { height: 120px; resize: vertical; }
+        .modal-actions {
+            display: flex; justify-content: space-between; margin-top: 20px;
+        }
+        .modal-actions button {
+            background: var(--primary-glow-color); color: var(--background-color);
+            border: none; padding: 10px 20px; border-radius: 5px;
+            cursor: pointer; font-weight: bold;
+        }
+        .modal-actions button.cancel {
+            background: transparent; border: 1px solid var(--primary-glow-color);
+            color: var(--primary-glow-color);
+        }
+        .file-upload-label {
+            display: block; padding: 20px;
+            border: 2px dashed var(--primary-glow-color); border-radius: 5px;
+            text-align: center; cursor: pointer; margin-bottom: 15px;
+        }
+        .file-upload-label:hover { background: rgba(77,219,255,0.1); }
+        .file-preview {
+            max-width: 100%; max-height: 150px; margin-top: 10px; border-radius: 5px;
+        }
+        .io-buttons button {
+            font-size: 18px; padding: 8px; width: 40px; height: 40px; border-radius: 50%;
+        }
+        .layout-selector, .color-selector {
+            margin-top: 10px; display: flex; align-items: center; gap: 15px;
+        }
+        .layout-selector label { cursor: pointer; }
+        input[type="color"] {
+            -webkit-appearance: none; width: 40px; height: 40px;
+            border: none; cursor: pointer; background: none;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch {
+            border: 2px solid var(--primary-glow-color); border-radius: 50%;
+        }
+
+        /* ═══ JOYPADS TOUCH ═══ */
+        .touch-zone {
+            position: fixed; bottom: 36px; width: 90px; height: 90px;
+            background: rgba(61,232,212,.04);
+            border: 1px solid rgba(61,232,212,.15);
+            border-radius: 50%; z-index: 500;
+            opacity: 0; transition: opacity .8s ease;
+            pointer-events: auto; user-select: none;
+        }
+        .touch-zone.visible { opacity: 1; }
+        #joy-left { left: 28px; }
+        #joy-right { right: 28px; }
+        .knob {
+            position: absolute; top: 50%; left: 50%;
+            width: 28px; height: 28px; margin: -14px;
+            background: rgba(61,232,212,.22);
+            border: 1px solid rgba(61,232,212,.5);
+            border-radius: 50%; pointer-events: none;
+            transition: transform .05s;
+        }
+
+        /* ═══ OJO CÓSMICO — Hipersalto ═══ */
+        #btn-hyperjump {
+            position: fixed; bottom: 92px; right: 30px;
+            width: 52px; height: 52px;
+            background: rgba(61,232,212,.06);
+            border: 1px solid rgba(61,232,212,.2);
+            border-radius: 50%; z-index: 600;
+            transition: opacity .5s ease, background .35s, border-color .35s, box-shadow .35s;
+            pointer-events: auto; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #btn-hyperjump:hover {
+            background: rgba(61,232,212,.14);
+            border-color: rgba(61,232,212,.5);
+            box-shadow: 0 0 20px rgba(61,232,212,.2);
+        }
+        #btn-hyperjump.faded { opacity: 0; pointer-events: none; }
+        #btn-hyperjump.active {
+            background: rgba(61,232,212,.22);
+            border-color: rgba(61,232,212,.6);
+            box-shadow: 0 0 25px rgba(61,232,212,.3);
+        }
+        #btn-hyperjump svg { width: 26px; height: 26px; }
+
+        /* ═══ HUD DE RECUERDOS ═══ */
+        #memory-hud {
+            position: fixed; top: 20px; left: 20px;
+            font-size: .7rem; color: rgba(61,232,212,.5);
+            letter-spacing: 2px; line-height: 1.8;
+            pointer-events: none; z-index: 100;
+            opacity: 0; transition: opacity .6s;
+        }
+        #memory-hud.visible { opacity: 1; }
+        #orbit-indicator {
+            position: fixed; bottom: 18%; width: 100%; text-align: center;
+            font-size: .7rem; letter-spacing: 8px;
+            color: rgba(61,232,212,0); font-family: 'Cinzel', serif;
+            text-transform: uppercase; pointer-events: none;
+            transition: color .7s, text-shadow .7s; z-index: 100;
+        }
+        #orbit-indicator.on {
+            color: rgba(61,232,212,.75);
+            text-shadow: 0 0 30px rgba(61,232,212,.35);
+        }
+    </style>
+</head>
+<body>
+    <div id="webgl-container"></div>
+    <div id="css-container"></div>
+    <div id="blocker"></div>
+    <div id="instructions">
+        WASD — mover · ZX — subir/bajar · QE/Ratón — girar · Click — seleccionar · C — orbitar recuerdo · Supr — borrar
+    </div>
+
+    <button id="add-panel-btn" class="ui-button">+</button>
+
+    <!-- Joypads touch -->
+    <div id="joy-left" class="touch-zone"><div class="knob" id="knob-left"></div></div>
+    <div id="joy-right" class="touch-zone"><div class="knob" id="knob-right"></div></div>
+
+    <!-- Botón Hipersalto — Ojo Cósmico -->
+    <div id="btn-hyperjump">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="24" cy="24" rx="22" ry="12" stroke="rgba(61,232,212,.55)" stroke-width="1.5" fill="none"/>
+            <circle cx="24" cy="24" r="6" fill="rgba(61,232,212,.25)" stroke="rgba(61,232,212,.6)" stroke-width="1"/>
+            <circle cx="24" cy="24" r="2.5" fill="rgba(61,232,212,.7)"/>
+        </svg>
+    </div>
+
+    <!-- HUD de Recuerdos -->
+    <div id="memory-hud">
+        RECUERDOS <span id="mem-count">0</span><br>
+        <span id="mem-nearest" style="font-size:.6rem;color:rgba(123,94,167,.5)">—</span>
+    </div>
+    <div id="orbit-indicator"></div>
+
+    <!-- ═══ MODAL ═══ -->
+    <div id="creation-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Crear Nuevo Panel</h3>
+            <div class="tab-buttons">
+                <button class="tab-button active" data-type="text">Texto</button>
+                <button class="tab-button" data-type="video">Video</button>
+                <button class="tab-button" data-type="web">Web</button>
+                <button class="tab-button" data-type="file">Archivo</button>
+                <button class="tab-button" data-type="memory">Recuerdos</button>
+            </div>
+            <!-- Text form -->
+            <div id="text-form" class="form-section active">
+                <input type="text" id="text-title" placeholder="Título...">
+                <textarea id="text-content" placeholder="Contenido..."></textarea>
+                <div class="color-selector">
+                    <label for="text-color-picker">Color del Marco:</label>
+                    <input type="color" id="text-color-picker" value="#4DDBFF">
+                </div>
+            </div>
+            <!-- Video form -->
+            <div id="video-form" class="form-section">
+                <input type="text" id="video-url" placeholder="URL de YouTube...">
+            </div>
+            <!-- Web form -->
+            <div id="web-form" class="form-section">
+                <input type="text" id="web-url" placeholder="URL de la página web...">
+            </div>
+            <!-- File form -->
+            <div id="file-form" class="form-section">
+                <input type="file" id="file-upload" accept="image/*,video/mp4,video/avi,application/pdf,.txt,.md,text/html" style="display:none;" multiple>
+                <label for="file-upload" class="file-upload-label">
+                    Haz clic para seleccionar archivos
+                    <img id="image-preview" class="file-preview" src="" alt="Vista previa" style="display:none;">
+                </label>
+                <div class="layout-selector">
+                    <strong>Disposición:</strong>
+                    <label><input type="radio" name="layout" value="sphere" checked> Esfera</label>
+                    <label><input type="radio" name="layout" value="cylinder"> Cilindro</label>
+                    <label><input type="radio" name="layout" value="fibonacci"> Fibonacci</label>
+                </div>
+            </div>
+            <!-- ═══ MEMORY FORM — Nebulosas de Recuerdos ═══ -->
+            <div id="memory-form" class="form-section">
+                <p style="font-size:.85em;color:rgba(61,232,212,.6);margin:0 0 12px;line-height:1.6">
+                    Carga grabaciones desde archivos individuales o carpetas enteras.
+                    Puedes agregar múltiples fuentes (discos, USB, carpetas).
+                    Los más antiguos se alejan hacia las profundidades del espacio interior.
+                </p>
+                <!-- Archivos individuales -->
+                <input type="file" id="memory-upload" accept="audio/*,video/*,.webm,.ogg,.m4a,.aac,.flac,.wav,.mp3,.mp4,.mov,.3gp" style="display:none;" multiple>
+                <label for="memory-upload" class="file-upload-label" style="border-color:var(--memory-cyan);margin-bottom:8px;">
+                    Seleccionar archivos de audio/video
+                    <br><span style="font-size:.75em;opacity:.5">mp3, wav, flac, m4a, ogg, webm, mp4, mov, 3gp...</span>
+                </label>
+                <!-- Carpeta completa -->
+                <input type="file" id="memory-folder" webkitdirectory directory style="display:none;">
+                <label for="memory-folder" class="file-upload-label" style="border-color:var(--memory-violet);">
+                    Seleccionar carpeta completa
+                    <br><span style="font-size:.75em;opacity:.5">Escanea todos los audios dentro de la carpeta y subcarpetas</span>
+                </label>
+                <div id="memory-file-list" style="max-height:140px;overflow-y:auto;font-size:.8em;color:rgba(61,232,212,.5);margin-bottom:8px;"></div>
+                <div id="memory-progress" style="display:none;margin-bottom:10px;">
+                    <div style="background:rgba(61,232,212,.1);border-radius:4px;overflow:hidden;height:6px;">
+                        <div id="memory-progress-bar" style="width:0%;height:100%;background:var(--memory-cyan);transition:width .2s;"></div>
+                    </div>
+                    <div id="memory-progress-text" style="font-size:.7em;color:rgba(61,232,212,.4);margin-top:4px;"></div>
+                </div>
+                <div class="layout-selector">
+                    <strong style="color:var(--memory-cyan)">Disposición:</strong>
+                    <label><input type="radio" name="mem-layout" value="fibonacci" checked> Fibonacci</label>
+                    <label><input type="radio" name="mem-layout" value="spiral"> Espiral</label>
+                    <label><input type="radio" name="mem-layout" value="chrono"> Cronológica</label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <div class="io-buttons">
+                    <button id="save-scene-btn" title="Guardar Escena">&#x1F4BE;</button>
+                    <button id="load-scene-btn" title="Cargar Escena">&#x1F4C2;</button>
+                    <input type="file" id="load-file-input" style="display:none;" accept=".json">
+                </div>
+                <div>
+                    <button id="cancel-creation-btn" class="cancel">Cancelar</button>
+                    <button id="create-panel-btn">Crear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════
+        // CONSTANTES SAGRADAS
+        // ═══════════════════════════════════════════════════════
+        const TAU = Math.PI * 2;
+        const PHI = (1 + Math.sqrt(5)) / 2;
+        const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
+        // ═══════════════════════════════════════════════════════
+        // ESTADO GLOBAL
+        // ═══════════════════════════════════════════════════════
+        let scene, camera, webglRenderer, cssRenderer, clock;
+        let avatarObject;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let moveUp = false, moveDown = false;
+        let rotateLeft = false, rotateRight = false;
+        let hyperJumpActive = false;
+
+        let isCameraDragging = false;
+        let isObjectDragging = false;
+        let draggedObject = null;
+        let dragPlane, offset = new THREE.Vector3();
+        let previousMousePosition = { x: 0, y: 0 };
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        let yawAngle = 0, pitchAngle = 0;
+        const mouseSensitivity = 0.002;
+        const cameraRotationSpeed = 0.02;
+        let initialFov;
+        let zoomDistance = 25;
+
+        let contentPanels = [];
+        let draggableObjects = [];
+        const blocker = document.getElementById('blocker');
+        let lastClickTime = 0;
+        let editingPanel = null;
+        let selectedObject = null;
+        let viewMode = 'lookAtCamera';
+
+        // Focus mode
+        let isFocused = false;
+        let isTransitioning = false;
+        let focusedObject = null;
+        let lastCameraPosition = new THREE.Vector3();
+        let lastCameraQuaternion = new THREE.Quaternion();
+
+        // ═══ TOUCH / JOYPADS ═══
+        let isTouchDevice = false;
+        let lastUserAction = Date.now();
+        const joyLeft = { active: false, x: 0, y: 0, id: null };
+        const joyRight = { active: false, x: 0, y: 0, id: null };
+
+        // ═══ SISTEMA DE RECUERDOS ═══
+        let memoryPulsars = [];          // Array de MemoryPulsar
+        let pendingMemoryFiles = [];     // Acumulador multi-carpeta
+        let isOrbitingMemory = false;
+        let orbitingMemory = null;
+        let orbitAngle = 0;
+        let orbitPitch = 0;
+        let orbitDistance = 8;
+        const MIN_ORBIT_DIST = 2;
+        const MAX_ORBIT_DIST = 40;
+        let playerOrbitSpeed = 0;
+
+        // Glow texture para pulsares de recuerdos
+        let memoryGlowTexture = null;
+
+        // ═══════════════════════════════════════════════════════
+        // CLASE MemoryPulsar — Llama de alma de un recuerdo
+        // Partículas azul calipso + violeta, tamaño proporcional
+        // a duración, posición en Z proporcional a antigüedad
+        // ═══════════════════════════════════════════════════════
+        class MemoryPulsar {
+            // LAZY-LOAD architecture: visual shell created instantly from metadata only.
+            // Audio loaded on proximity, freed on distance.
+            constructor(fileName, fileDate, fileSize, estimatedDuration, position, seed, fileRef) {
+                this.fileName = fileName;
+                this.fileDate = fileDate;
+                this.fileSize = fileSize;
+                this.duration = estimatedDuration; // estimated from fileSize, refined when loaded
+                this.seed = seed;
+                this.fileRef = fileRef;  // File object reference — NOT loaded into RAM
+                this.audioBuffer = null; // null until proximity-loaded
+                this.sourceNode = null;
+                this.gainNode = null;
+                this.isPlaying = false;
+                this.isLoading = false;
+                this.isLoaded = false;
+                this.playbackTime = 0;
+                this.startedAt = 0;
+                this._mutedByOrbit = false;
+
+                // ═══ ADN DETERMINISTA — from metadata only, NO audio decode needed ═══
+                const nameHash = this._hashString(fileName);
+                const dateHash = this._hashFloat(fileDate / 86400000);
+                const sizeHash = this._hashFloat(fileSize / 1024);
+                const durHash  = this._hashFloat(this.duration);
+
+                // Sizing: 30s→R1.5, 5min→R4, 1h+→R8 (compactas, no diluidas)
+                const durNorm = Math.min(1, this.duration / 3600);
+                const durMid  = Math.min(1, this.duration / 300);
+                this.baseSize = 1.5 + durMid * 2.5 + durNorm * 4;
+                this.coreRadius = this.baseSize * 0.25;
+                this.ageNorm = 0; // set by handleMemoryUpload after creation
+
+                this.dna = {
+                    hueBase: 0.52 + (nameHash % 0.20),
+                    hueSpread: 0.06 + (dateHash % 0.12),
+                    saturation: 0.7 + sizeHash * 0.3,
+                    hasGoldCore: this.duration > 120,
+                    rotX: (nameHash - 0.5) * 0.0008,
+                    rotY: (dateHash - 0.5) * 0.0012,
+                    rotZ: (sizeHash - 0.5) * 0.0006,
+                    breathRate: 0.3 + durHash * 0.5,
+                };
+
+                // ═══ PARTICLES — RadioNebula style ═══
+                const PC = Math.floor(150 + durMid * 350 + durNorm * 300);
+                this.PC = PC;
+                const positions = new Float32Array(PC * 3);
+                const colors = new Float32Array(PC * 3);
+                this.colorArray = colors;
+                this.basePositions = new Float32Array(PC * 3);
+
+                const rng = this._seededRng(seed);
+                const coreCount = Math.floor(PC * 0.3);
+
+                for (let i = 0; i < PC; i++) {
+                    const isCore = i < coreCount;
+                    const theta = rng() * TAU;
+                    const phi = Math.acos(2 * rng() - 1);
+                    let radius = isCore
+                        ? rng() * this.coreRadius * (1 + rng() * 0.5)
+                        : this.coreRadius + Math.pow(rng(), 0.6) * (this.baseSize - this.coreRadius);
+                    const distortion = 0.8 + rng() * 0.4 + Math.sin(phi * 3 + seed) * 0.15;
+                    const x = radius * Math.sin(phi) * Math.cos(theta) * distortion;
+                    const y = radius * Math.sin(phi) * Math.sin(theta) * 0.65;
+                    const z = radius * Math.cos(phi) * distortion;
+
+                    positions[i*3] = x; positions[i*3+1] = y; positions[i*3+2] = z;
+                    this.basePositions[i*3] = x; this.basePositions[i*3+1] = y; this.basePositions[i*3+2] = z;
+
+                    // Antigüedad modula oscuridad: ageNorm 0=reciente(brillante) 1=antiguo(oscuro)
+                    const ageFactor = this.ageNorm || 0;
+                    const ageDim = 1 - ageFactor * 0.5; // 1.0→0.5
+                    let hue, sat, lit;
+                    if (isCore && this.dna.hasGoldCore) {
+                        hue = 0.10 + rng() * 0.06; sat = 0.9; lit = (0.28 + rng() * 0.12) * ageDim;
+                    } else if (isCore) {
+                        hue = this.dna.hueBase + rng() * 0.05; sat = this.dna.saturation; lit = (0.32 + rng() * 0.12) * ageDim;
+                    } else {
+                        hue = this.dna.hueBase + (rng() - 0.5) * this.dna.hueSpread * 2;
+                        sat = this.dna.saturation * (0.7 + rng() * 0.3); lit = (0.10 + rng() * 0.16) * ageDim;
+                    }
+                    this._hslToRgb(hue, sat, lit, colors, i * 3);
+                }
+
+                const geo = new THREE.BufferGeometry();
+                geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+                this.material = new THREE.PointsMaterial({
+                    size: 0.35 + durMid * 0.4,
+                    map: memoryGlowTexture,
+                    vertexColors: true, transparent: true, opacity: 0,
+                    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
+                });
+
+                this.group = new THREE.Group();
+                this.group.position.copy(position);
+                this.worldPos = position.clone();
+                this.points = new THREE.Points(geo, this.material);
+                this.group.add(this.points);
+
+                // Heart mesh
+                const heartGeo = new THREE.SphereGeometry(this.coreRadius * 0.3, 10, 6);
+                const heartMat = new THREE.MeshBasicMaterial({
+                    color: this.dna.hasGoldCore ? 0xffd700 : 0x3de8d4,
+                    transparent: true, opacity: 0.12, blending: THREE.AdditiveBlending,
+                });
+                this.heart = new THREE.Mesh(heartGeo, heartMat);
+                this.group.add(this.heart);
+                this.group.rotation.set(rng() * TAU, rng() * TAU, rng() * TAU);
+                this.felmerFrame = 0;
+                this.revealProgress = 0;
+                this.mesh = this.group; // alias
+                scene.add(this.group);
+            }
+
+            // ═══ PROXIMITY-BASED LAZY LOADING ═══
+            update(time, dt, camPos) {
+                this.revealProgress = Math.min(1, this.revealProgress + dt * 0.4);
+                const dx = this.group.position.x - camPos.x;
+                const dy = this.group.position.y - camPos.y;
+                const dz = this.group.position.z - camPos.z;
+                const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+                if (dist > 250) { this.group.visible = false; this._unloadAudio(); return dist; }
+                this.group.visible = true;
+
+                // Opacity
+                const targetOp = Math.min(0.5, 0.5 * this.revealProgress * Math.max(0.15, 1 - dist / 250));
+                this.material.opacity += (targetOp - this.material.opacity) * 0.05;
+
+                // Rotation
+                this.group.rotation.x += this.dna.rotX;
+                this.group.rotation.y += this.dna.rotY;
+                this.group.rotation.z += this.dna.rotZ;
+
+                // Pulse expansion
+                const pv = (Math.sin(time * this.dna.breathRate) + 1) * 0.5;
+                const ef = 0.85 + pv * 0.3;
+                const pos = this.points.geometry.attributes.position.array;
+                const bp = this.basePositions;
+                for (let i = 0; i < this.PC; i++) {
+                    const o = i * 3;
+                    pos[o] = bp[o] * ef; pos[o+1] = bp[o+1] * ef; pos[o+2] = bp[o+2] * ef;
+                }
+                this.points.geometry.attributes.position.needsUpdate = true;
+                this.heart.scale.setScalar(0.8 + pv * 0.5);
+                this.heart.material.opacity = 0.08 + pv * 0.12;
+
+                // Felmer
+                this.felmerFrame++;
+                if (this.felmerFrame % 4 === 0 && dist < 100) this._runFelmer(time);
+
+                // ═══ LAZY AUDIO — load on proximity, unload on distance ═══
+                if (dist < 40 && !this.isLoaded && !this.isLoading && this.fileRef) {
+                    this._loadAudio();
+                } else if (dist > 70 && this.isLoaded && !this.isPlaying) {
+                    this._unloadAudio();
+                }
+
+                // Play/stop based on closer distance
+                if (dist < 30 && this.isLoaded && !this.isPlaying && !this._mutedByOrbit) {
+                    this._startAudio();
+                } else if (dist > 50 && this.isPlaying && !isOrbitingMemory) {
+                    this._stopAudio();
+                }
+
+                // Volume
+                if (this.gainNode && this.isPlaying && !this._mutedByOrbit) {
+                    const vol = Math.pow(Math.max(0, 1 - dist / 50), 2) * 0.8;
+                    this.gainNode.gain.value = vol;
+                }
+
+                return dist;
+            }
+
+            async _loadAudio() {
+                if (!this.fileRef || this.isLoading) return;
+                this.isLoading = true;
+                try {
+                    if (!window._memAudioCtx) {
+                        window._memAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    if (window._memAudioCtx.state === 'suspended') await window._memAudioCtx.resume();
+                    const ab = await this.fileRef.arrayBuffer();
+                    this.audioBuffer = await window._memAudioCtx.decodeAudioData(ab);
+                    this.duration = this.audioBuffer.duration; // refine duration
+                    this.isLoaded = true;
+                } catch (e) {
+                    console.warn('Cannot decode:', this.fileName, e.message);
+                    this.fileRef = null; // don't retry
+                }
+                this.isLoading = false;
+            }
+
+            _unloadAudio() {
+                this._stopAudio();
+                this.audioBuffer = null;
+                this.isLoaded = false;
+            }
+
+            _startAudio() {
+                if (!window._memAudioCtx || !this.audioBuffer || this.isPlaying) return;
+                try {
+                    this.sourceNode = window._memAudioCtx.createBufferSource();
+                    this.sourceNode.buffer = this.audioBuffer;
+                    this.sourceNode.loop = true;
+                    this.gainNode = window._memAudioCtx.createGain();
+                    this.gainNode.gain.value = 0;
+                    this.sourceNode.connect(this.gainNode);
+                    this.gainNode.connect(window._memAudioCtx.destination);
+                    this.sourceNode.start(0, this.playbackTime % this.duration);
+                    this.startedAt = window._memAudioCtx.currentTime - this.playbackTime;
+                    this.isPlaying = true;
+                } catch (e) { console.warn('Play error:', e); }
+            }
+
+            _stopAudio() {
+                if (!this.isPlaying || !this.sourceNode) return;
+                try {
+                    this.playbackTime = (window._memAudioCtx.currentTime - this.startedAt) % this.duration;
+                    this.sourceNode.stop();
+                } catch(e) {}
+                this.sourceNode = null; this.gainNode = null; this.isPlaying = false;
+            }
+
+            seekTo(t) { const was = this.isPlaying; this._stopAudio(); this.playbackTime = Math.max(0, Math.min(this.duration, t)); if (was) this._startAudio(); }
+            getCurrentTime() { return this.isPlaying ? (window._memAudioCtx.currentTime - this.startedAt) % this.duration : this.playbackTime; }
+
+            _runFelmer(time) {
+                const col = this.colorArray; const wave = time * 0.6;
+                const cc = Math.floor(this.PC * 0.3);
+                for (let i = 0; i < this.PC; i += 2) {
+                    const o = i * 3;
+                    if (i < cc && this.dna.hasGoldCore) continue;
+                    const wv = Math.sin(i * 0.05 - wave) * 0.5 + 0.5;
+                    this._hslToRgb(this.dna.hueBase + wv * this.dna.hueSpread, 0.8,
+                        i < cc ? (0.22 + wv * 0.18) : (0.10 + wv * 0.20 * this.revealProgress), col, o);
+                }
+                this.points.geometry.attributes.color.needsUpdate = true;
+            }
+
+            dispose() {
+                this._stopAudio(); this.audioBuffer = null;
+                this.points.geometry.dispose(); this.material.dispose();
+                this.heart.geometry.dispose(); this.heart.material.dispose();
+                scene.remove(this.group);
+            }
+
+            _seededRng(s) { let mw=(123456789+s)>>>0,mz=(987654321-s)>>>0; return()=>{mz=(36969*(mz&65535)+(mz>>>16))>>>0;mw=(18000*(mw&65535)+(mw>>>16))>>>0;return(((mz<<16)+mw)>>>0)/4294967296;}; }
+            _hslToRgb(h,s,l,a,o){if(s===0){a[o]=a[o+1]=a[o+2]=l;return;}const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;const hr=(p,q,t)=>{if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p;};a[o]=hr(p,q,h+1/3);a[o+1]=hr(p,q,h);a[o+2]=hr(p,q,h-1/3);}
+            _hashString(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;return Math.abs(Math.sin(h*127.1)*43758.5453)%1;}
+            _hashFloat(n){return Math.abs(Math.sin(n*127.1+311.7)*43758.5453)%1;}
+            toJSON(){return{type:'memoryPulsar',fileName:this.fileName,fileDate:this.fileDate.getTime(),fileSize:this.fileSize,duration:this.duration,position:this.group.position.toArray(),seed:this.seed};}
+        }
+
+
+
+        // ═══════════════════════════════════════════════════════
+        // GLOW TEXTURE
+        // ═══════════════════════════════════════════════════════
+        function makeGlowTexture() {
+            const cv = document.createElement('canvas');
+            cv.width = cv.height = 64;
+            const cx = cv.getContext('2d');
+            const g = cx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            g.addColorStop(0,   'rgba(255,255,255,1)');
+            g.addColorStop(0.15,'rgba(255,255,255,.85)');
+            g.addColorStop(0.4, 'rgba(255,255,255,.2)');
+            g.addColorStop(0.7, 'rgba(255,255,255,.04)');
+            g.addColorStop(1,   'rgba(0,0,0,0)');
+            cx.fillStyle = g;
+            cx.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(cv);
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // INIT
+        // ═══════════════════════════════════════════════════════
+        init();
+        animate();
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x02040a, 50, 250);
+            clock = new THREE.Clock();
+
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            initialFov = camera.fov;
+            const avatarGeometry = new THREE.SphereGeometry(0.1, 16, 12);
+            const avatarMaterial = new THREE.MeshBasicMaterial({ visible: false });
+            avatarObject = new THREE.Mesh(avatarGeometry, avatarMaterial);
+            avatarObject.position.set(0, 0, 0);
+            scene.add(avatarObject);
+
+            webglRenderer = new THREE.WebGLRenderer({ antialias: true });
+            webglRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+            webglRenderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('webgl-container').appendChild(webglRenderer.domElement);
+
+            cssRenderer = new THREE.CSS3DRenderer();
+            cssRenderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('css-container').appendChild(cssRenderer.domElement);
+
+            dragPlane = new THREE.Plane();
+
+            const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xADD8E6, 0.8);
+            directionalLight.position.set(-1, 1, 1);
+            scene.add(directionalLight);
+
+            // Estrellas
+            const starCount = 5000;
+            const starGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(starCount * 3);
+            for (let i = 0; i < starCount; i++) {
+                positions[i * 3]     = (Math.random() - 0.5) * 500;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 500;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 500;
+            }
+            starGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const starMaterial = new THREE.PointsMaterial({ color: 0xAAAAAA, size: 0.15 });
+            scene.add(new THREE.Points(starGeometry, starMaterial));
+
+            // Glow para recuerdos
+            memoryGlowTexture = makeGlowTexture();
+
+            // Escena inicial — paneles originales + bienvenida
+            const initialSceneData = [
+                { type: 'text', title: 'El Viaje del Héroe', content: 'Cada concepto es una etapa en el viaje. El Chamán nos arraiga en la tierra. La Alquimia nos enseña a navegar las aguas de la emoción y el intelecto. El Misterio nos invita a mirar hacia las estrellas, reconociendo la unidad en la diversidad.', position: [-15, 2, 0], color: '#4DDBFF' },
+                { type: 'image', src: 'https://placehold.co/1024x768/02040a/FF6B4D?text=Conciencia+Salvaje', position: [0, 5, -15], color: '#FF6B4D' },
+                { type: 'video', videoId: '47Korua-WLo', start: 311, position: [15, 0, 0] },
+                { type: 'text', title: 'Mundo Interior', content: 'Bienvenido al espacio de recuerdos. Usa el botón + para cargar tus grabaciones de audio. Navega hacia las profundidades del eje Z para viajar al pasado. Orbita tus recuerdos con la tecla C.', position: [0, -2, -8], color: '#3de8d4' },
+            ];
+            buildSceneFromData(initialSceneData);
+
+            // Touch detection
+            if (('ontouchstart' in window) || navigator.maxTouchPoints > 0) {
+                isTouchDevice = true;
+                initTouchControls();
+            }
+
+            initEventListeners();
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // TOUCH JOYPADS — orientation-safe, auto-hide
+        // ═══════════════════════════════════════════════════════
+        function initTouchControls() {
+            const joyLeftEl = document.getElementById('joy-left');
+            const joyRightEl = document.getElementById('joy-right');
+            const hyperBtn = document.getElementById('btn-hyperjump');
+
+            function startJoy(joy, knobId, touch) {
+                joy.active = true;
+                joy.id = touch.identifier;
+                moveJoy(joy, knobId, touch);
+                lastUserAction = Date.now();
+            }
+            function moveJoy(joy, knobId, touch) {
+                const zone = document.getElementById(knobId).parentElement;
+                const rect = zone.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                let dx = (touch.clientX - cx) / (rect.width / 2);
+                let dy = (touch.clientY - cy) / (rect.height / 2);
+                const len = Math.sqrt(dx * dx + dy * dy);
+                if (len > 1) { dx /= len; dy /= len; }
+                joy.x = dx; joy.y = dy;
+                document.getElementById(knobId).style.transform = `translate(${dx * 28}px,${dy * 28}px)`;
+            }
+            function endJoy(joy, knobId) {
+                joy.active = false; joy.x = 0; joy.y = 0; joy.id = null;
+                document.getElementById(knobId).style.transform = '';
+            }
+
+            // Joypad izquierdo — movimiento
+            joyLeftEl.addEventListener('touchstart', e => {
+                e.preventDefault();
+                startJoy(joyLeft, 'knob-left', e.changedTouches[0]);
+            }, { passive: false });
+            joyLeftEl.addEventListener('touchmove', e => {
+                e.preventDefault();
+                for (const t of e.changedTouches) {
+                    if (t.identifier === joyLeft.id) moveJoy(joyLeft, 'knob-left', t);
+                }
+            }, { passive: false });
+            joyLeftEl.addEventListener('touchend', e => {
+                for (const t of e.changedTouches) {
+                    if (t.identifier === joyLeft.id) endJoy(joyLeft, 'knob-left');
+                }
+            });
+
+            // Joypad derecho — rotación
+            joyRightEl.addEventListener('touchstart', e => {
+                e.preventDefault();
+                startJoy(joyRight, 'knob-right', e.changedTouches[0]);
+            }, { passive: false });
+            joyRightEl.addEventListener('touchmove', e => {
+                e.preventDefault();
+                for (const t of e.changedTouches) {
+                    if (t.identifier === joyRight.id) moveJoy(joyRight, 'knob-right', t);
+                }
+            }, { passive: false });
+            joyRightEl.addEventListener('touchend', e => {
+                for (const t of e.changedTouches) {
+                    if (t.identifier === joyRight.id) endJoy(joyRight, 'knob-right');
+                }
+            });
+
+            // Botón hipersalto
+            hyperBtn.addEventListener('touchstart', e => {
+                e.preventDefault();
+                hyperJumpActive = true;
+                hyperBtn.classList.add('active');
+                lastUserAction = Date.now();
+            }, { passive: false });
+            hyperBtn.addEventListener('touchend', e => {
+                hyperJumpActive = false;
+                hyperBtn.classList.remove('active');
+            });
+            // Mouse fallback para desktop testing
+            hyperBtn.addEventListener('mousedown', () => {
+                hyperJumpActive = true;
+                hyperBtn.classList.add('active');
+            });
+            hyperBtn.addEventListener('mouseup', () => {
+                hyperJumpActive = false;
+                hyperBtn.classList.remove('active');
+            });
+
+            window.addEventListener('touchstart', () => { lastUserAction = Date.now(); }, { passive: true });
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // EVENT LISTENERS
+        // ═══════════════════════════════════════════════════════
+        function initEventListeners() {
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            document.addEventListener('mousedown', onMouseDown);
+            document.addEventListener('mouseup', onMouseUp);
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('wheel', onMouseWheel);
+
+            document.getElementById('add-panel-btn').addEventListener('click', openCreationModal);
+            document.getElementById('save-scene-btn').addEventListener('click', saveScene);
+            document.getElementById('load-scene-btn').addEventListener('click', () => document.getElementById('load-file-input').click());
+            document.getElementById('load-file-input').addEventListener('change', loadScene);
+
+            const modal = document.getElementById('creation-modal');
+            document.getElementById('cancel-creation-btn').addEventListener('click', () => modal.classList.remove('visible'));
+            document.getElementById('create-panel-btn').addEventListener('click', handleCreateOrUpdatePanel);
+
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', (e) => switchTab(e.target.dataset.type));
+            });
+
+            const fileUpload = document.getElementById('file-upload');
+            fileUpload.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    const imagePreview = document.getElementById('image-preview');
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            imagePreview.src = event.target.result;
+                            imagePreview.style.display = 'block';
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        imagePreview.style.display = 'none';
+                    }
+                }
+            });
+
+            // Memory upload — acumulativo multi-fuente
+            function updateMemoryFileList() {
+                const list = document.getElementById('memory-file-list');
+                const fileInput = document.getElementById('memory-upload');
+                const folderInput = document.getElementById('memory-folder');
+                const fromFiles = fileInput.files ? Array.from(fileInput.files) : [];
+                const fromFolder = folderInput.files ? Array.from(folderInput.files).filter(isAudioFile) : [];
+                const all = [...pendingMemoryFiles, ...fromFiles, ...fromFolder];
+                list.innerHTML = '';
+                if (all.length === 0) { list.innerHTML = '<div style="opacity:.3">Sin archivos seleccionados</div>'; return; }
+                all.forEach(f => {
+                    const div = document.createElement('div');
+                    const dateStr = new Date(f.lastModified).toLocaleDateString('es-CL');
+                    div.textContent = `${f.name} — ${dateStr} — ${(f.size/1024/1024).toFixed(1)}MB`;
+                    list.appendChild(div);
+                });
+                list.insertAdjacentHTML('beforeend',
+                    `<div style="color:var(--memory-cyan);margin-top:6px">${all.length} archivos de audio detectados</div>`
+                );
+            }
+            document.getElementById('memory-upload').addEventListener('change', updateMemoryFileList);
+            document.getElementById('memory-folder').addEventListener('change', updateMemoryFileList);
+
+            setTimeout(() => {
+                document.getElementById('instructions').style.opacity = '0';
+            }, 6000);
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // MODAL & TABS
+        // ═══════════════════════════════════════════════════════
+        function openCreationModal() {
+            editingPanel = null;
+            document.getElementById('modal-title').textContent = "Crear Nuevo Panel";
+            document.getElementById('create-panel-btn').textContent = "Crear";
+            document.getElementById('text-title').value = "";
+            document.getElementById('text-content').value = "";
+            document.getElementById('video-url').value = "";
+            document.getElementById('web-url').value = "";
+            document.getElementById('file-upload').value = "";
+            document.getElementById('memory-upload').value = "";
+            document.getElementById('memory-folder').value = "";
+            document.getElementById('memory-file-list').innerHTML = "";
+            document.getElementById('image-preview').style.display = 'none';
+            document.getElementById('text-color-picker').value = "#4DDBFF";
+            switchTab('text');
+            document.getElementById('creation-modal').classList.add('visible');
+        }
+
+        function openEditModal(panel) {
+            editingPanel = panel;
+            document.getElementById('modal-title').textContent = "Editar Panel de Texto";
+            document.getElementById('create-panel-btn').textContent = "Actualizar";
+            document.getElementById('text-title').value = panel.userData.title;
+            document.getElementById('text-content').value = panel.userData.content;
+            document.getElementById('text-color-picker').value = panel.userData.color;
+            switchTab('text');
+            document.getElementById('creation-modal').classList.add('visible');
+        }
+
+        function switchTab(type) {
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.tab-button[data-type="${type}"]`).classList.add('active');
+            document.querySelectorAll('.form-section').forEach(section => section.classList.remove('active'));
+            document.getElementById(`${type}-form`).classList.add('active');
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // CREAR / ACTUALIZAR PANEL
+        // ═══════════════════════════════════════════════════════
+        async function handleCreateOrUpdatePanel() {
+            const createBtn = document.getElementById('create-panel-btn');
+            const originalText = createBtn.textContent;
+            createBtn.textContent = 'Creando...';
+            createBtn.disabled = true;
+
+            try {
+                if (editingPanel) {
+                    editingPanel.userData.title = document.getElementById('text-title').value;
+                    editingPanel.userData.content = document.getElementById('text-content').value;
+                    editingPanel.userData.color = document.getElementById('text-color-picker').value;
+                    updateTextPanel(editingPanel);
+                } else {
+                    const activeTab = document.querySelector('.tab-button.active').dataset.type;
+                    const pos = new THREE.Vector3();
+                    const dir = new THREE.Vector3();
+                    camera.getWorldDirection(dir);
+                    pos.copy(camera.position).add(dir.multiplyScalar(15));
+
+                    switch (activeTab) {
+                        case 'text':
+                            addTextPanelToScene(
+                                document.getElementById('text-title').value || "Sin Título",
+                                document.getElementById('text-content').value || "Sin contenido.",
+                                pos, document.getElementById('text-color-picker').value
+                            );
+                            break;
+                        case 'video':
+                            const videoId = parseYoutubeUrl(document.getElementById('video-url').value);
+                            if (videoId) addVideoPanelToScene(videoId, 0, pos);
+                            else alert("URL de YouTube no válida.");
+                            break;
+                        case 'web':
+                            const webUrl = document.getElementById('web-url').value;
+                            if (webUrl) addWebPanelToScene(webUrl, pos);
+                            else alert("Por favor, introduce una URL.");
+                            break;
+                        case 'file':
+                            await handleFileUpload(pos);
+                            break;
+                        case 'memory':
+                            await handleMemoryUpload();
+                            break;
+                    }
+                }
+            } catch (error) {
+                console.error("Error creating panel:", error);
+                alert("Hubo un error al crear el panel.");
+            } finally {
+                createBtn.textContent = originalText;
+                createBtn.disabled = false;
+                document.getElementById('creation-modal').classList.remove('visible');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // SISTEMA DE RECUERDOS — Carga Multi-Fuente Robusta
+        // ═══════════════════════════════════════════════════════
+        const AUDIO_EXTENSIONS = new Set([
+            'mp3','wav','flac','ogg','m4a','aac','webm','mp4','mov','3gp','opus','wma'
+        ]);
+
+        function isAudioFile(file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            return file.type.startsWith('audio/') || file.type.startsWith('video/') || AUDIO_EXTENSIONS.has(ext);
+        }
+
+        async function handleMemoryUpload() {
+            const fileInput = document.getElementById('memory-upload');
+            const folderInput = document.getElementById('memory-folder');
+            const fromFiles = fileInput.files ? Array.from(fileInput.files) : [];
+            const fromFolder = folderInput.files ? Array.from(folderInput.files).filter(isAudioFile) : [];
+            const allNew = [...fromFiles, ...fromFolder];
+
+            if (allNew.length === 0 && pendingMemoryFiles.length === 0) {
+                alert("Selecciona al menos una grabación o carpeta.");
+                return;
+            }
+
+            pendingMemoryFiles.push(...allNew);
+            const files = [...pendingMemoryFiles];
+            pendingMemoryFiles = [];
+
+            const layout = document.querySelector('input[name="mem-layout"]:checked').value;
+            document.getElementById('creation-modal').classList.remove('visible');
+
+            // ═══ ZERO-DECODE: only read metadata, create shells instantly ═══
+            files.sort((a, b) => b.lastModified - a.lastModified);
+            const newestDate = Math.max(...files.map(f => f.lastModified));
+            const oldestDate = Math.min(...files.map(f => f.lastModified));
+            const timeSpan = Math.max(1, newestDate - oldestDate);
+
+            // Estimate duration from file size (rough: 1MB ≈ 60s for mp3, 10s for wav)
+            function estimateDuration(file) {
+                const ext = file.name.split('.').pop().toLowerCase();
+                const mb = file.size / 1024 / 1024;
+                if (['wav','aiff'].includes(ext)) return mb * 6;      // ~10MB/min uncompressed
+                if (['flac'].includes(ext)) return mb * 12;           // ~5MB/min
+                return mb * 60;                                        // ~1MB/min compressed
+            }
+
+            // Build clusters from dates only
+            const clusterThreshold = timeSpan * 0.05;
+            const pseudoDecoded = files.map(f => ({ file: f }));
+            const clusters = [];
+            let tmpCluster = [pseudoDecoded[0]];
+            for (let i = 1; i < pseudoDecoded.length; i++) {
+                const gap = Math.abs(files[i-1].lastModified - files[i].lastModified);
+                if (gap < clusterThreshold) tmpCluster.push(pseudoDecoded[i]);
+                else { clusters.push(tmpCluster); tmpCluster = [pseudoDecoded[i]]; }
+            }
+            clusters.push(tmpCluster);
+            const positions = calculateMemoryPositions(pseudoDecoded, clusters, layout, timeSpan, newestDate);
+
+            // ═══ CREATE ALL SHELLS INSTANTLY — no decode, no RAM ═══
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const seed = Math.floor(file.lastModified * 0.001 + i * 137);
+                const estDur = estimateDuration(file);
+                const pulsar = new MemoryPulsar(
+                    file.name, new Date(file.lastModified),
+                    file.size, estDur, positions[i], seed, file
+                );
+                memoryPulsars.push(pulsar);
+                pulsar.ageNorm = (newestDate - file.lastModified) / timeSpan;
+            }
+
+            document.getElementById('memory-hud').classList.add('visible');
+            document.getElementById('mem-count').textContent = memoryPulsars.length;
+        }
+
+
+
+        function calculateMemoryPositions(decoded, clusters, layout, timeSpan, newestDate) {
+            const positions = [];
+            const maxZ = 200;
+            // Emanar desde la posición actual del usuario
+            const userPos = avatarObject ? avatarObject.position.clone() : new THREE.Vector3();
+            const userDir = new THREE.Vector3(0, 0, -1);
+            if (camera) camera.getWorldDirection(userDir);
+
+            for (let i = 0; i < decoded.length; i++) {
+                const { file } = decoded[i];
+                const age = newestDate - file.lastModified;
+                const ageNorm = timeSpan > 0 ? age / timeSpan : 0;
+
+                // Z: profundidad temporal en la dirección que mira el usuario
+                const zDepth = -(5 + ageNorm * maxZ);
+
+                let x, y;
+                if (layout === 'fibonacci') {
+                    const theta = i * GOLDEN_ANGLE;
+                    const r = 6 + Math.sqrt(i + 1) * 5;  // MÁS SEPARADAS (antes *2.8)
+                    x = r * Math.cos(theta);
+                    y = r * Math.sin(theta);
+                } else if (layout === 'spiral') {
+                    const theta = i * GOLDEN_ANGLE * 1.5;
+                    const r = 5 + ageNorm * 25 + i * 0.8;
+                    x = r * Math.cos(theta);
+                    y = r * Math.sin(theta);
+                } else {
+                    const jitter = (Math.sin(i * 127.1) * 43758.5) % 1;
+                    x = (jitter - 0.5) * 15;
+                    y = (Math.cos(i * 311.7 + 0.5) % 1 - 0.5) * 12;
+                }
+
+                // Cluster offset
+                let accum = 0;
+                for (let c = 0; c < clusters.length; c++) {
+                    if (i >= accum && i < accum + clusters[c].length) {
+                        const posInCluster = i - accum;
+                        if (clusters[c].length > 1) {
+                            const cAngle = posInCluster * GOLDEN_ANGLE;
+                            const cR = 2 + posInCluster * 1.2;  // más separadas dentro del cluster
+                            x += Math.cos(cAngle) * cR;
+                            y += Math.sin(cAngle) * cR;
+                        }
+                        break;
+                    }
+                    accum += clusters[c].length;
+                }
+
+                // Posición relativa al usuario, en la dirección que mira
+                const worldPos = new THREE.Vector3(
+                    userPos.x + x,
+                    userPos.y + y,
+                    userPos.z + zDepth
+                );
+                positions.push(worldPos);
+            }
+            return positions;
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // FILE UPLOAD (original) — sin cambios funcionales
+        // ═══════════════════════════════════════════════════════
+        async function handleFileUpload(basePosition) {
+            const fileInput = document.getElementById('file-upload');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert("Por favor, selecciona uno o más archivos.");
+                return;
+            }
+            const layout = document.querySelector('input[name="layout"]:checked').value;
+            const positions = calculateLayoutPositions(fileInput.files.length, layout, basePosition);
+
+            for (let i = 0; i < fileInput.files.length; i++) {
+                const file = fileInput.files[i];
+                const pos = positions[i];
+                await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        if (file.type.startsWith('image/')) addImagePanelToScene(event.target.result, pos);
+                        else if (file.type.startsWith('video/')) addLocalVideoPanelToScene(event.target.result, pos);
+                        else if (file.type === 'application/pdf') addPdfPanelToScene(event.target.result, pos);
+                        else if (file.type === 'text/html') addHtmlPanelToScene(event.target.result, pos);
+                        else addTextPanelToScene(file.name, event.target.result, pos);
+                        resolve();
+                    };
+                    reader.onerror = reject;
+                    if (file.type.startsWith('image/') || file.type.startsWith('video/') || file.type === 'application/pdf' || file.type === 'text/html')
+                        reader.readAsDataURL(file);
+                    else reader.readAsText(file);
+                });
+            }
+        }
+
+        function calculateLayoutPositions(count, layout, center) {
+            const positions = [];
+            const radius = 25;
+            switch (layout) {
+                case 'sphere':
+                    for (let i = 0; i < count; i++) {
+                        const y = 1 - (i / (count - 1)) * 2;
+                        const r = Math.sqrt(1 - y * y);
+                        const theta = GOLDEN_ANGLE * i;
+                        positions.push(new THREE.Vector3(Math.cos(theta) * r, y, Math.sin(theta) * r).multiplyScalar(radius).add(center));
+                    }
+                    break;
+                case 'cylinder':
+                    const numRows = Math.ceil(Math.sqrt(count / 2));
+                    const numCols = Math.ceil(count / numRows);
+                    const colAngle = TAU / numCols;
+                    for (let i = 0; i < count; i++) {
+                        const row = Math.floor(i / numCols);
+                        const col = i % numCols;
+                        positions.push(new THREE.Vector3(
+                            Math.cos(col * colAngle) * radius,
+                            (row - (numRows - 1) / 2) * 12,
+                            Math.sin(col * colAngle) * radius
+                        ).add(center));
+                    }
+                    break;
+                case 'fibonacci':
+                    const c = 8;
+                    for (let i = 0; i < count; i++) {
+                        const r = c * Math.sqrt(i + 1);
+                        const theta = i * GOLDEN_ANGLE;
+                        positions.push(new THREE.Vector3(r * Math.cos(theta), r * Math.sin(theta), -i * 8).add(center));
+                    }
+                    break;
+            }
+            return positions;
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // CREADORES DE PANELES — código original preservado
+        // ═══════════════════════════════════════════════════════
+        function parseYoutubeUrl(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function addTextPanelToScene(title, content, position, color = '#4DDBFF') {
+            const { cssObject, proxyObject } = createTextPanel(title, content, color);
+            cssObject.position.copy(position);
+            proxyObject.position.copy(position);
+            scene.add(cssObject, proxyObject);
+            contentPanels.push(cssObject, proxyObject);
+            draggableObjects.push(proxyObject);
+        }
+        function addImagePanelToScene(src, position, color = '#4DDBFF') {
+            const newPanel = createImagePanel(src, color);
+            newPanel.position.copy(position);
+            scene.add(newPanel);
+            contentPanels.push(newPanel);
+            draggableObjects.push(newPanel);
+        }
+        function addVideoPanelToScene(videoId, start, position) {
+            const { videoCSSObject, videoProxyObject } = createVideoPanel(videoId, start);
+            videoCSSObject.position.copy(position);
+            videoProxyObject.position.copy(position);
+            scene.add(videoCSSObject, videoProxyObject);
+            contentPanels.push(videoCSSObject, videoProxyObject);
+            draggableObjects.push(videoProxyObject);
+        }
+        function addWebPanelToScene(url, position) {
+            const { webCSSObject, webProxyObject } = createWebPanel(url);
+            webCSSObject.position.copy(position);
+            webProxyObject.position.copy(position);
+            scene.add(webCSSObject, webProxyObject);
+            contentPanels.push(webCSSObject, webProxyObject);
+            draggableObjects.push(webProxyObject);
+        }
+        function addHtmlPanelToScene(htmlContent, position) {
+            const { htmlCSSObject, htmlProxyObject } = createHtmlPanel(htmlContent);
+            htmlCSSObject.position.copy(position);
+            htmlProxyObject.position.copy(position);
+            scene.add(htmlCSSObject, htmlProxyObject);
+            contentPanels.push(htmlCSSObject, htmlProxyObject);
+            draggableObjects.push(htmlProxyObject);
+        }
+        function addLocalVideoPanelToScene(src, position) {
+            const { videoCSSObject, videoProxyObject } = createLocalVideoPanel(src);
+            videoCSSObject.position.copy(position);
+            videoProxyObject.position.copy(position);
+            scene.add(videoCSSObject, videoProxyObject);
+            contentPanels.push(videoCSSObject, videoProxyObject);
+            draggableObjects.push(videoProxyObject);
+        }
+        function addPdfPanelToScene(src, position) {
+            const { pdfCSSObject, pdfProxyObject } = createPdfPanel(src);
+            pdfCSSObject.position.copy(position);
+            pdfProxyObject.position.copy(position);
+            scene.add(pdfCSSObject, pdfProxyObject);
+            contentPanels.push(pdfCSSObject, pdfProxyObject);
+            draggableObjects.push(pdfProxyObject);
+        }
+
+        // ═══ Panel creators — preservados del original ═══
+        function createTextPanel(title, text, color) {
+            const div = document.createElement('div');
+            div.className = 'content-panel-wrapper text-panel';
+            div.style.width = '1024px'; div.style.height = '768px';
+            const titleEl = document.createElement('div');
+            titleEl.className = 'text-panel-title';
+            const contentEl = document.createElement('div');
+            contentEl.className = 'text-panel-content';
+            div.appendChild(titleEl); div.appendChild(contentEl);
+            const cssObject = new THREE.CSS3DObject(div);
+            const scale = 0.01;
+            cssObject.scale.set(scale, scale, scale);
+            const proxyGeo = new THREE.PlaneGeometry(1024 * scale, 768 * scale);
+            const proxyMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, side: THREE.DoubleSide });
+            const proxyObject = new THREE.Mesh(proxyGeo, proxyMat);
+            proxyObject.userData = { type: 'text', title, content: text, color, velocity: new THREE.Vector3(), cssObject };
+            cssObject.userData.proxyObject = proxyObject;
+            updateTextPanel(proxyObject);
+            return { cssObject, proxyObject };
+        }
+        function updateTextPanel(panel) {
+            const { title, content, color } = panel.userData;
+            const div = panel.userData.cssObject.element;
+            div.style.borderColor = color;
+            div.style.boxShadow = `0 0 30px ${color}`;
+            div.querySelector('.text-panel-title').textContent = title;
+            div.querySelector('.text-panel-title').style.color = color;
+            div.querySelector('.text-panel-content').textContent = content;
+        }
+        function createImagePanel(src, color) {
+            const texture = new THREE.TextureLoader().load(src);
+            const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+            const panel = new THREE.Mesh(new THREE.PlaneGeometry(10.24, 7.68), material);
+            panel.userData = { type: 'image', src, velocity: new THREE.Vector3() };
+            const borderGeo = new THREE.BoxLineGeometry(10.34, 7.78, 0.1, 1, 1, 1);
+            const borderMat = new THREE.LineBasicMaterial({ color: new THREE.Color(color), transparent: true, opacity: 0.8 });
+            panel.add(new THREE.LineSegments(borderGeo, borderMat));
+            return panel;
+        }
+        function createVideoPanel(videoId, start) {
+            const div = document.createElement('div');
+            div.className = 'content-panel-wrapper';
+            const wrap = document.createElement('div'); wrap.className = 'video-panel';
+            const iframe = document.createElement('iframe');
+            iframe.src = `https://www.youtube.com/embed/${videoId}?start=${start}&autoplay=1&mute=1&modestbranding=1&rel=0&controls=1&showinfo=0&loop=1&playlist=${videoId}`;
+            iframe.allow = 'autoplay; encrypted-media';
+            iframe.setAttribute('allowfullscreen', '');
+            iframe.style.pointerEvents = 'none';
+            wrap.appendChild(iframe); div.appendChild(wrap);
+            const cssObject = new THREE.CSS3DObject(div);
+            const scale = 0.015; cssObject.scale.set(scale, scale, scale);
+            cssObject.userData = { type: 'video', videoId, contentElement: iframe };
+            const proxyGeo = new THREE.PlaneGeometry(1280 * scale, 720 * scale);
+            const proxyMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, side: THREE.DoubleSide });
+            const proxyObject = new THREE.Mesh(proxyGeo, proxyMat);
+            proxyObject.userData.cssObject = cssObject; proxyObject.userData.type = 'video';
+            proxyObject.userData.velocity = new THREE.Vector3();
+            return { videoCSSObject: cssObject, videoProxyObject: proxyObject };
+        }
+        function createWebPanel(url) {
+            const div = document.createElement('div'); div.className = 'content-panel-wrapper';
+            const wrap = document.createElement('div'); wrap.className = 'web-panel';
+            wrap.style.width = '1280px'; wrap.style.height = '720px';
+            wrap.style.border = '5px solid var(--primary-glow-color)';
+            const iframe = document.createElement('iframe');
+            iframe.src = url.startsWith('http') ? url : `https://${url}`;
+            iframe.style.pointerEvents = 'none';
+            wrap.appendChild(iframe); div.appendChild(wrap);
+            const cssObject = new THREE.CSS3DObject(div);
+            const scale = 0.015; cssObject.scale.set(scale, scale, scale);
+            cssObject.userData = { type: 'web', url, contentElement: iframe };
+            const proxyGeo = new THREE.PlaneGeometry(1280 * scale, 720 * scale);
+            const proxyMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, side: THREE.DoubleSide });
+            const proxyObject = new THREE.Mesh(proxyGeo, proxyMat);
+            proxyObject.userData.cssObject = cssObject; proxyObject.userData.type = 'web';
+            proxyObject.userData.velocity = new THREE.Vector3();
+            return { webCSSObject: cssObject, webProxyObject: proxyObject };
+        }
+        function createHtmlPanel(htmlContent) {
+            const div = document.createElement('div'); div.className = 'content-panel-wrapper';
+            const wrap = document.createElement('div'); wrap.className = 'web-panel';
+            wrap.style.width = '1280px'; wrap.style.height = '720px';
+            wrap.style.border = '5px solid var(--primary-glow-color)';
+            const iframe = document.createElement('iframe');
+            iframe.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent);
+            iframe.style.pointerEvents = 'none';
+            wrap.appendChild(iframe); div.appendChild(wrap);
+            const cssObject = new THREE.CSS3DObject(div);
+            const scale = 0.015; cssObject.scale.set(scale, scale, scale);
+            cssObject.userData = { type: 'html', content: htmlContent, contentElement: iframe };
+            const proxyGeo = new THREE.PlaneGeometry(1280 * scale, 720 * scale);
+            const proxyMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, side: THREE.DoubleSide });
+            const proxyObject = new THREE.Mesh(proxyGeo, proxyMat);
+            proxyObject.userData.cssObject = cssObject; proxyObject.userData.type = 'html';
+            proxyObject.userData.velocity = new THREE.Vector3();
+            return { htmlCSSObject: cssObject, htmlProxyObject: proxyObject };
+        }
+        function createLocalVideoPanel(src) {
+            const div = document.createElement('div'); div.className = 'content-panel-wrapper';
+            const wrap = document.createElement('div'); wrap.className = 'video-panel';
+            const video = document.createElement('video');
+            video.src = src; video.autoplay = true; video.muted = true;
+            video.loop = true; video.controls = true; video.style.pointerEvents = 'none';
+            wrap.appendChild(video); div.appendChild(wrap);
+            const cssObject = new THREE.CSS3DObject(div);
+            const scale = 0.015; cssObject.scale.set(scale, scale, scale);
+            cssObject.userData = { type: 'localVideo', src, contentElement: video };
+            const proxyGeo = new THREE.PlaneGeometry(1280 * scale, 720 * scale);
+            const proxyMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, side: THREE.DoubleSide });
+            const proxyObject = new THREE.Mesh(proxyGeo, proxyMat);
+            proxyObject.userData.cssObject = cssObject; proxyObject.userData.type = 'localVideo';
+            proxyObject.userData.velocity = new THREE.Vector3();
+            return { videoCSSObject: cssObject, videoProxyObject: proxyObject };
+        }
+        function createPdfPanel(src) {
+            const div = document.createElement('div'); div.className = 'content-panel-wrapper';
+            const wrap = document.createElement('div'); wrap.className = 'pdf-panel';
+            const embed = document.createElement('embed');
+            embed.src = src; embed.type = 'application/pdf'; embed.style.pointerEvents = 'none';
+            wrap.appendChild(embed); div.appendChild(wrap);
+            const cssObject = new THREE.CSS3DObject(div);
+            const scale = 0.01; cssObject.scale.set(scale, scale, scale);
+            cssObject.userData = { type: 'pdf', src, contentElement: embed };
+            const proxyGeo = new THREE.PlaneGeometry(800 * scale, 1131 * scale);
+            const proxyMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, side: THREE.DoubleSide });
+            const proxyObject = new THREE.Mesh(proxyGeo, proxyMat);
+            proxyObject.userData.cssObject = cssObject; proxyObject.userData.type = 'pdf';
+            proxyObject.userData.velocity = new THREE.Vector3();
+            return { pdfCSSObject: cssObject, pdfProxyObject: proxyObject };
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // SAVE / LOAD SCENE
+        // ═══════════════════════════════════════════════════════
+        function saveScene() {
+            const sceneData = [];
+            draggableObjects.forEach(obj => {
+                const data = { type: obj.userData.type, position: obj.position.toArray() };
+                if (obj.userData.type === 'text') {
+                    data.title = obj.userData.title; data.content = obj.userData.content; data.color = obj.userData.color;
+                } else if (obj.userData.type === 'image') {
+                    data.src = obj.userData.src; data.color = new THREE.Color(obj.children[0].material.color).getHexString();
+                } else if (obj.userData.type === 'video') {
+                    data.videoId = obj.userData.cssObject.userData.videoId;
+                } else if (obj.userData.type === 'web') {
+                    data.url = obj.userData.cssObject.userData.url;
+                } else if (obj.userData.type === 'html') {
+                    data.content = obj.userData.cssObject.userData.content;
+                } else if (obj.userData.type === 'localVideo' || obj.userData.type === 'pdf') {
+                    data.src = obj.userData.cssObject.userData.src;
+                }
+                sceneData.push(data);
+            });
+            // ═══ Incluir constelación de pulsares de recuerdos ═══
+            // Solo metadatos — el audio se re-carga al re-seleccionar archivos
+            memoryPulsars.forEach(p => sceneData.push(p.toJSON()));
+
+            const blob = new Blob([JSON.stringify(sceneData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'mundo-interior-scene.json';
+            a.click(); URL.revokeObjectURL(url);
+        }
+        function loadScene(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try { clearScene(); buildSceneFromData(JSON.parse(e.target.result)); }
+                catch (error) { alert("Error al cargar el archivo."); console.error(error); }
+            };
+            reader.readAsText(file);
+        }
+        function clearScene() {
+            [...draggableObjects].forEach(obj => {
+                if (obj.userData.cssObject) scene.remove(obj.userData.cssObject);
+                scene.remove(obj);
+            });
+            draggableObjects = []; contentPanels = [];
+            // Limpiar pulsares de recuerdos
+            memoryPulsars.forEach(p => p.dispose());
+            memoryPulsars = [];
+        }
+        function buildSceneFromData(data) {
+            let memPulsarCount = 0;
+            data.forEach(item => {
+                if (item.type === 'memoryPulsar') {
+                    memPulsarCount++;
+                    const pos = new THREE.Vector3().fromArray(item.position);
+                    const pulsar = new MemoryPulsar(
+                        item.fileName || 'recuerdo',
+                        new Date(item.fileDate || Date.now()),
+                        item.fileSize || 1024,
+                        item.duration || 60,
+                        pos, item.seed || 0, null  // null fileRef — ghost pulsar
+                    );
+                    memoryPulsars.push(pulsar);
+                    return;
+                }
+                const pos = new THREE.Vector3().fromArray(item.position);
+                switch (item.type) {
+                    case 'text': addTextPanelToScene(item.title, item.content, pos, item.color); break;
+                    case 'image': addImagePanelToScene(item.src, pos, item.color); break;
+                    case 'video': addVideoPanelToScene(item.videoId, 0, pos); break;
+                    case 'web': addWebPanelToScene(item.url, pos); break;
+                    case 'html': addHtmlPanelToScene(item.content, pos); break;
+                    case 'localVideo': addLocalVideoPanelToScene(item.src, pos); break;
+                    case 'pdf': addPdfPanelToScene(item.src, pos); break;
+                }
+            });
+            if (memPulsarCount > 0) {
+                document.getElementById('memory-hud').classList.add('visible');
+                document.getElementById('mem-count').textContent = memoryPulsars.length;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // INPUT — KEYBOARD
+        // ═══════════════════════════════════════════════════════
+        function onKeyDown(event) {
+            lastUserAction = Date.now();
+            if (event.key === "Escape" && (isFocused || isTransitioning)) {
+                exitFocusMode();
+            }
+            if ((event.key === 'Delete' || event.key === 'Backspace') && selectedObject) {
+                event.preventDefault();
+                deleteObject(selectedObject);
+            }
+
+            // ═══ MODO ÓRBITA DE RECUERDO ═══
+            if (isOrbitingMemory) {
+                switch (event.code) {
+                    case 'KeyW': orbitDistance *= 0.92; orbitDistance = Math.max(MIN_ORBIT_DIST, orbitDistance); break;
+                    case 'KeyS': orbitDistance *= 1.08; orbitDistance = Math.min(MAX_ORBIT_DIST, orbitDistance); break;
+                    case 'KeyA': playerOrbitSpeed = 0.015; break;
+                    case 'KeyD': playerOrbitSpeed = -0.015; break;
+                    case 'KeyZ': orbitPitch += 0.04; break;
+                    case 'KeyX': orbitPitch -= 0.04; break;
+                    case 'Space': hyperJumpActive = true; event.preventDefault(); break;
+                    case 'ArrowLeft':
+                        if (orbitingMemory) {
+                            const ct = orbitingMemory.getCurrentTime();
+                            orbitingMemory.seekTo(ct - 10);  // retroceder 10s
+                        }
+                        event.preventDefault(); break;
+                    case 'ArrowRight':
+                        if (orbitingMemory) {
+                            const ct = orbitingMemory.getCurrentTime();
+                            orbitingMemory.seekTo(ct + 10);  // avanzar 10s
+                        }
+                        event.preventDefault(); break;
+                    case 'KeyC':
+                        if (event.shiftKey) {
+                            isOrbitingMemory = false;
+                            orbitingMemory = null;
+                            document.getElementById('orbit-indicator').classList.remove('on');
+                            // Restaurar audio de todos los pulsares
+                            memoryPulsars.forEach(p => { if (p._mutedByOrbit) { p._mutedByOrbit = false; } });
+                        }
+                        break;
+                }
+                return;
+            }
+
+            // ═══ MODO VUELO LIBRE ═══
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'KeyZ': moveUp = true; break;
+                case 'KeyX': moveDown = true; break;
+                case 'KeyQ': rotateLeft = true; break;
+                case 'KeyE': rotateRight = true; break;
+                case 'Space':
+                    hyperJumpActive = true;
+                    event.preventDefault();
+                    break;
+                case 'KeyC':
+                    if (!event.shiftKey) {
+                        // Entrar en órbita del recuerdo más cercano
+                        tryOrbitNearestMemory();
+                    }
+                    break;
+            }
+            if (moveForward || moveBackward || moveLeft || moveRight) {
+                exitFocusMode();
+            }
+        }
+
+        function onKeyUp(event) {
+            if (isOrbitingMemory) {
+                switch (event.code) {
+                    case 'KeyA': case 'KeyD': playerOrbitSpeed = 0; break;
+                    case 'Space': hyperJumpActive = false; break;
+                }
+                return;
+            }
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyD': moveRight = false; break;
+                case 'KeyZ': moveUp = false; break;
+                case 'KeyX': moveDown = false; break;
+                case 'KeyQ': rotateLeft = false; break;
+                case 'KeyE': rotateRight = false; break;
+                case 'Space': hyperJumpActive = false; break;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // ÓRBITA DE RECUERDOS — mecánica inspirada en Musicosmos
+        // ═══════════════════════════════════════════════════════
+        function tryOrbitNearestMemory() {
+            const RANGE = 30;
+            let nearest = null;
+            let minDist = Infinity;
+            for (const p of memoryPulsars) {
+                const d = avatarObject.position.distanceTo(p.mesh.position);
+                if (d < RANGE && d < minDist) {
+                    minDist = d;
+                    nearest = p;
+                }
+            }
+            if (nearest) {
+                isOrbitingMemory = true;
+                orbitingMemory = nearest;
+                orbitDistance = Math.min(minDist, MAX_ORBIT_DIST);
+                const dir = new THREE.Vector3().subVectors(avatarObject.position, nearest.mesh.position);
+                orbitAngle = Math.atan2(dir.x, dir.z);
+                orbitPitch = Math.asin(Math.max(-1, Math.min(1, dir.y / orbitDistance)));
+
+                // Silenciar todos los otros pulsares, amplificar el foco
+                memoryPulsars.forEach(p => {
+                    if (p !== nearest) {
+                        p._mutedByOrbit = true;
+                        if (p.gainNode) p.gainNode.gain.value = 0.02; // casi inaudible
+                    }
+                });
+                // Asegurar que el foco esté sonando
+                if (!nearest.isPlaying) nearest._startAudio();
+                if (nearest.gainNode) nearest.gainNode.gain.value = 0.9;
+
+                const orbitInd = document.getElementById('orbit-indicator');
+                const dateStr = nearest.fileDate.toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' });
+                const durStr = nearest.duration > 3600 ? `${Math.floor(nearest.duration/3600)}h${Math.floor((nearest.duration%3600)/60)}m` : nearest.duration > 60 ? `${Math.floor(nearest.duration/60)}m${Math.floor(nearest.duration%60)}s` : `${Math.floor(nearest.duration)}s`;
+                orbitInd.textContent = `${nearest.fileName} — ${dateStr} — ${durStr}`;
+                orbitInd.classList.add('on');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // MOUSE INPUT
+        // ═══════════════════════════════════════════════════════
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            webglRenderer.setSize(window.innerWidth, window.innerHeight);
+            cssRenderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function selectObject(object) {
+            if (selectedObject && selectedObject.userData.cssObject)
+                selectedObject.userData.cssObject.element.classList.remove('selected');
+            selectedObject = object;
+            if (selectedObject && selectedObject.userData.cssObject)
+                selectedObject.userData.cssObject.element.classList.add('selected');
+        }
+
+        function deleteObject(objectToDelete) {
+            scene.remove(objectToDelete);
+            if (objectToDelete.userData.cssObject) scene.remove(objectToDelete.userData.cssObject);
+            draggableObjects = draggableObjects.filter(obj => obj !== objectToDelete);
+            contentPanels = contentPanels.filter(obj => obj !== objectToDelete && (!obj.userData || obj.userData.proxyObject !== objectToDelete));
+            selectObject(null);
+        }
+
+        function onMouseDown(event) {
+            lastUserAction = Date.now();
+            const time = new Date().getTime();
+            const isDoubleClick = time - lastClickTime < 300;
+            lastClickTime = time;
+            if (isDoubleClick) { handleDoubleClick(); return; }
+            previousMousePosition = { x: event.clientX, y: event.clientY };
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(draggableObjects);
+            if (intersects.length > 0 && !isFocused) {
+                isObjectDragging = true;
+                draggedObject = intersects[0].object;
+                selectObject(draggedObject);
+                draggedObject.userData.velocity.set(0, 0, 0);
+                dragPlane.setFromNormalAndCoplanarPoint(camera.getWorldDirection(dragPlane.normal), draggedObject.position);
+                const intersectionPoint = new THREE.Vector3();
+                if (raycaster.ray.intersectPlane(dragPlane, intersectionPoint))
+                    offset.copy(intersectionPoint).sub(draggedObject.position);
+                blocker.style.pointerEvents = 'auto';
+            } else {
+                if (!isFocused) { isCameraDragging = true; blocker.style.pointerEvents = 'auto'; }
+                selectObject(null);
+            }
+        }
+
+        function handleDoubleClick() {
+            if (isTransitioning) return;
+            if (isFocused) { exitFocusMode(); return; }
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(draggableObjects);
+            if (intersects.length > 0) {
+                const clicked = intersects[0].object;
+                if (clicked.userData.type === 'text') {
+                    if (viewMode === 'fixed') openEditModal(clicked);
+                    else enterFocusMode(clicked);
+                } else if (['image', 'video', 'localVideo', 'pdf', 'web', 'html'].includes(clicked.userData.type)) {
+                    enterFocusMode(clicked);
+                }
+            }
+        }
+
+        function enterFocusMode(object) {
+            isTransitioning = true; isFocused = true; focusedObject = object;
+            lastCameraPosition.copy(camera.position);
+            lastCameraQuaternion.copy(camera.quaternion);
+            if (focusedObject.userData.cssObject && focusedObject.userData.cssObject.userData.contentElement)
+                focusedObject.userData.cssObject.userData.contentElement.style.pointerEvents = 'auto';
+            contentPanels.forEach(obj => {
+                const isProxy = !!obj.userData.proxyObject;
+                const currentObj = isProxy ? obj.userData.proxyObject : obj;
+                if (currentObj !== focusedObject) {
+                    if (obj.element) obj.element.style.display = 'none';
+                    else obj.visible = false;
+                }
+            });
+        }
+
+        function exitFocusMode() {
+            if (!isFocused) return;
+            if (focusedObject && focusedObject.userData.cssObject && focusedObject.userData.cssObject.userData.contentElement)
+                focusedObject.userData.cssObject.userData.contentElement.style.pointerEvents = 'none';
+            isTransitioning = true; isFocused = false;
+            contentPanels.forEach(obj => {
+                if (obj.element) obj.element.style.display = 'block';
+                else obj.visible = true;
+            });
+        }
+
+        function onMouseUp() {
+            isCameraDragging = false; isObjectDragging = false; draggedObject = null;
+            blocker.style.pointerEvents = 'none';
+        }
+
+        function onMouseMove(event) {
+            lastUserAction = Date.now();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            if (isObjectDragging && draggedObject) {
+                raycaster.setFromCamera(mouse, camera);
+                const ip = new THREE.Vector3();
+                if (raycaster.ray.intersectPlane(dragPlane, ip)) {
+                    const newPos = ip.sub(offset);
+                    draggedObject.position.copy(newPos);
+                    if (draggedObject.userData.cssObject) draggedObject.userData.cssObject.position.copy(newPos);
+                }
+            } else if (isCameraDragging) {
+                exitFocusMode();
+                yawAngle -= (event.clientX - previousMousePosition.x) * mouseSensitivity;
+                pitchAngle -= (event.clientY - previousMousePosition.y) * mouseSensitivity;
+                pitchAngle = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchAngle));
+            }
+            previousMousePosition = { x: event.clientX, y: event.clientY };
+        }
+
+        function onMouseWheel(event) {
+            if (isOrbitingMemory) {
+                orbitDistance += Math.sign(event.deltaY) * 1.5;
+                orbitDistance = Math.max(MIN_ORBIT_DIST, Math.min(MAX_ORBIT_DIST, orbitDistance));
+                return;
+            }
+            if (!isFocused && !isTransitioning) {
+                zoomDistance -= event.deltaY * 0.02;
+                zoomDistance = Math.max(5, Math.min(100, zoomDistance));
+            }
+        }
+
+        function wrapText(context, text, x, y, maxWidth, lineHeight, measureOnly = false) {
+            const words = (text || '').split(' ');
+            let line = '', lineCount = 1;
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + ' ';
+                if (context.measureText(testLine).width > maxWidth && n > 0) {
+                    if (!measureOnly) context.fillText(line, x, y);
+                    line = words[n] + ' '; y += lineHeight; lineCount++;
+                } else { line = testLine; }
+            }
+            if (!measureOnly) context.fillText(line, x, y);
+            return lineCount;
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // ANIMATE — Loop principal
+        // ═══════════════════════════════════════════════════════
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            // ═══ MODO ÓRBITA DE RECUERDO ═══
+            if (isOrbitingMemory && orbitingMemory) {
+                const center = orbitingMemory.mesh.position;
+                const orbitSpd = playerOrbitSpeed + 0.002;
+                orbitAngle += orbitSpd;
+
+                // Seek proporcional a velocidad de rotación: girar = avanzar/retroceder audio
+                if (Math.abs(playerOrbitSpeed) > 0.001 && orbitingMemory.isPlaying) {
+                    const seekRate = playerOrbitSpeed * 20 * (hyperJumpActive ? 5 : 1);
+                    const ct = orbitingMemory.getCurrentTime();
+                    orbitingMemory.seekTo(ct + seekRate);
+                    // Mostrar HUD de tiempo
+                    const cur = orbitingMemory.getCurrentTime();
+                    const dur = orbitingMemory.duration;
+                    const fmt = (s) => { const m = Math.floor(s/60); return m + ':' + String(Math.floor(s%60)).padStart(2,'0'); };
+                    document.getElementById('orbit-indicator').textContent =
+                        `${orbitingMemory.fileName} — ${fmt(cur)} / ${fmt(dur)}`;
+                }
+
+                // Posicionar cámara con LERP suave (no set directo)
+                const tx = center.x + orbitDistance * Math.cos(orbitPitch) * Math.sin(orbitAngle);
+                const ty = center.y + orbitDistance * Math.sin(orbitPitch);
+                const tz = center.z + orbitDistance * Math.cos(orbitPitch) * Math.cos(orbitAngle);
+                camera.position.lerp(new THREE.Vector3(tx, ty, tz), 0.08);
+                camera.lookAt(center);
+                avatarObject.position.copy(camera.position);
+
+            } else if (!isFocused && !isTransitioning) {
+                // ═══ VUELO LIBRE ═══
+                const speedMult = hyperJumpActive ? 12 : 1;
+                if (rotateLeft)  yawAngle += cameraRotationSpeed * delta * 60;
+                if (rotateRight) yawAngle -= cameraRotationSpeed * delta * 60;
+
+                // Joypad derecho → rotación
+                if (joyRight.active) {
+                    yawAngle -= joyRight.x * 0.04;
+                    pitchAngle -= joyRight.y * 0.03;
+                    pitchAngle = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchAngle));
+                }
+
+                const speed = 10 * speedMult * delta;
+                const direction = new THREE.Vector3();
+                camera.getWorldDirection(direction);
+                const right = new THREE.Vector3().crossVectors(camera.up, direction).normalize();
+
+                // Teclado + Joypad izquierdo
+                const fwd  = (moveForward  ? 1 : 0) - (moveBackward ? 1 : 0) + (joyLeft.active ? -joyLeft.y : 0);
+                const side = (moveRight    ? 1 : 0) - (moveLeft     ? 1 : 0) + (joyLeft.active ?  joyLeft.x : 0);
+                const vert = (moveUp       ? 1 : 0) - (moveDown     ? 1 : 0);
+
+                avatarObject.position.addScaledVector(direction, fwd * speed);
+                avatarObject.position.addScaledVector(right, side * speed);
+                avatarObject.position.y += vert * speed;
+
+                const targetQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitchAngle, yawAngle, 0, 'YXZ'));
+                avatarObject.quaternion.slerp(targetQ, 0.1);
+
+                const camOffset = new THREE.Vector3(0, 0, zoomDistance);
+                camOffset.applyQuaternion(avatarObject.quaternion);
+                camera.position.copy(avatarObject.position).add(camOffset);
+                camera.lookAt(avatarObject.position);
+
+            } else if (isTransitioning) {
+                const targetPos = isFocused ? new THREE.Vector3() : lastCameraPosition;
+                const targetQ   = isFocused ? new THREE.Quaternion() : lastCameraQuaternion;
+                if (isFocused) {
+                    focusedObject.getWorldPosition(targetPos);
+                    const panelSize = focusedObject.geometry.parameters.height || 10;
+                    const focusDist = (panelSize / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+                    const dir = new THREE.Vector3();
+                    focusedObject.getWorldDirection(dir);
+                    targetPos.addScaledVector(dir, focusDist * 1.25);
+                    const tempM = new THREE.Matrix4();
+                    tempM.lookAt(targetPos, focusedObject.position, camera.up);
+                    targetQ.setFromRotationMatrix(tempM);
+                }
+                camera.position.lerp(targetPos, 0.05);
+                camera.quaternion.slerp(targetQ, 0.05);
+                if (camera.position.distanceTo(targetPos) < 0.1) {
+                    isTransitioning = false;
+                    if (!isFocused) focusedObject = null;
+                }
+            }
+
+            camera.updateProjectionMatrix();
+
+            // Paneles — inercia + lookAt
+            draggableObjects.forEach(obj => {
+                if (obj.userData.velocity && obj.userData.velocity.lengthSq() > 0.0001) {
+                    obj.position.add(obj.userData.velocity);
+                    obj.userData.velocity.multiplyScalar(0.95);
+                    if (obj.userData.cssObject) obj.userData.cssObject.position.copy(obj.position);
+                }
+            });
+            if (viewMode === 'lookAtCamera') {
+                draggableObjects.forEach(panel => {
+                    panel.lookAt(camera.position);
+                    if (panel.userData.cssObject) panel.userData.cssObject.quaternion.copy(panel.quaternion);
+                });
+            }
+
+            // ═══ UPDATE MEMORY PULSARS ═══
+            let nearestMemDist = Infinity;
+            let nearestMemName = '—';
+            for (const p of memoryPulsars) {
+                const d = p.update(time, delta, camera.position);
+                if (d < nearestMemDist) {
+                    nearestMemDist = d;
+                    nearestMemName = p.fileName;
+                }
+            }
+            // HUD de recuerdos
+            if (memoryPulsars.length > 0) {
+                const memNearEl = document.getElementById('mem-nearest');
+                if (nearestMemDist < 80) {
+                    memNearEl.textContent = nearestMemName.substring(0, 30);
+                    memNearEl.style.opacity = String(Math.min(1, 1 - nearestMemDist / 80));
+                } else {
+                    memNearEl.style.opacity = '0.2';
+                }
+            }
+
+            // ═══ AUTO-HIDE BOTONES (5 segundos de inactividad) ═══
+            const elapsed = Date.now() - lastUserAction;
+            const shouldFade = elapsed > 5000;
+            document.getElementById('add-panel-btn').classList.toggle('faded', shouldFade);
+            document.getElementById('btn-hyperjump').classList.toggle('faded', shouldFade);
+            if (isTouchDevice) {
+                document.getElementById('joy-left').classList.toggle('visible', !shouldFade);
+                document.getElementById('joy-right').classList.toggle('visible', !shouldFade);
+            }
+
+            webglRenderer.render(scene, camera);
+            cssRenderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>
