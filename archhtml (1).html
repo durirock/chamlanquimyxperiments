@@ -35,7 +35,7 @@
             top: 0; left: 0; width: 100%; height: 100%;
         }
         #css-container { pointer-events: none; }
-        #css-container .content-panel-wrapper { pointer-events: auto; }
+        #css-container > div { pointer-events: auto; }
         #blocker {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0); pointer-events: none; z-index: 10;
@@ -488,12 +488,13 @@
                 };
 
                 // ═══ PARTICLES — RadioNebula style ═══
-                const PC = Math.floor(150 + durMid * 350 + durNorm * 300);
+                // 40 partículas mínimo (audio corto), 200 máximo (audio de 1h+)
+                // Suficiente para verse como nebulosa, no colapsa con 500+ pulsares
+                const PC = Math.floor(40 + durMid * 80 + durNorm * 80);
                 this.PC = PC;
                 const positions = new Float32Array(PC * 3);
                 const colors = new Float32Array(PC * 3);
                 this.colorArray = colors;
-                this.basePositions = new Float32Array(PC * 3);
 
                 const rng = this._seededRng(seed);
                 const coreCount = Math.floor(PC * 0.3);
@@ -511,7 +512,6 @@
                     const z = radius * Math.cos(phi) * distortion;
 
                     positions[i*3] = x; positions[i*3+1] = y; positions[i*3+2] = z;
-                    this.basePositions[i*3] = x; this.basePositions[i*3+1] = y; this.basePositions[i*3+2] = z;
 
                     // Antigüedad modula oscuridad: ageNorm 0=reciente(brillante) 1=antiguo(oscuro)
                     const ageFactor = this.ageNorm || 0;
@@ -532,8 +532,10 @@
                 geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
                 geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
+                // Tamaño como RadioNebula: proporcional a duración
+                // Audio 30s → size 1.5, Audio 5min → 3.5, Audio 1h → 6
                 this.material = new THREE.PointsMaterial({
-                    size: 0.35 + durMid * 0.4,
+                    size: 1.5 + durMid * 2 + durNorm * 2.5,
                     map: memoryGlowTexture,
                     vertexColors: true, transparent: true, opacity: 0,
                     blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true,
@@ -562,59 +564,53 @@
 
             // ═══ PROXIMITY-BASED LAZY LOADING ═══
             update(time, dt, camPos) {
-                this.revealProgress = Math.min(1, this.revealProgress + dt * 0.4);
+                this.revealProgress = Math.min(1, this.revealProgress + dt * 0.3);
                 const dx = this.group.position.x - camPos.x;
                 const dy = this.group.position.y - camPos.y;
                 const dz = this.group.position.z - camPos.z;
                 const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
 
-                if (dist > 250) { this.group.visible = false; this._unloadAudio(); return dist; }
+                // === ULTRA-LEJANO: invisible, liberar audio ===
+                if (dist > 300) { this.group.visible = false; this._unloadAudio(); return dist; }
+
+                // === LEJANO (120-300): solo visible, sin animación ===
                 this.group.visible = true;
+                const targetOp = Math.min(0.45, 0.45 * this.revealProgress * Math.max(0.1, 1 - dist / 300));
+                this.material.opacity += (targetOp - this.material.opacity) * 0.04;
 
-                // Opacity
-                const targetOp = Math.min(0.5, 0.5 * this.revealProgress * Math.max(0.15, 1 - dist / 250));
-                this.material.opacity += (targetOp - this.material.opacity) * 0.05;
+                if (dist > 120) return dist; // NO animar — solo existir como punto de luz
 
-                // Rotation
-                this.group.rotation.x += this.dna.rotX;
+                // === MEDIO (50-120): rotación + pulso simple ===
                 this.group.rotation.y += this.dna.rotY;
+                const pv = (Math.sin(time * this.dna.breathRate) + 1) * 0.5;
+                this.points.scale.setScalar(0.9 + pv * 0.2);
+                this.heart.scale.setScalar(0.8 + pv * 0.4);
+                this.heart.material.opacity = 0.08 + pv * 0.1;
+
+                if (dist > 50) return dist; // NO felmer, NO audio
+
+                // === CERCANO (<50): felmer + audio ===
+                this.group.rotation.x += this.dna.rotX;
                 this.group.rotation.z += this.dna.rotZ;
 
-                // Pulse expansion
-                const pv = (Math.sin(time * this.dna.breathRate) + 1) * 0.5;
-                const ef = 0.85 + pv * 0.3;
-                const pos = this.points.geometry.attributes.position.array;
-                const bp = this.basePositions;
-                for (let i = 0; i < this.PC; i++) {
-                    const o = i * 3;
-                    pos[o] = bp[o] * ef; pos[o+1] = bp[o+1] * ef; pos[o+2] = bp[o+2] * ef;
-                }
-                this.points.geometry.attributes.position.needsUpdate = true;
-                this.heart.scale.setScalar(0.8 + pv * 0.5);
-                this.heart.material.opacity = 0.08 + pv * 0.12;
-
-                // Felmer
                 this.felmerFrame++;
-                if (this.felmerFrame % 4 === 0 && dist < 100) this._runFelmer(time);
+                if (this.felmerFrame % 6 === 0) this._runFelmer(time);
 
-                // ═══ LAZY AUDIO — load on proximity, unload on distance ═══
+                // Lazy audio load
                 if (dist < 40 && !this.isLoaded && !this.isLoading && this.fileRef) {
                     this._loadAudio();
-                } else if (dist > 70 && this.isLoaded && !this.isPlaying) {
+                } else if (dist > 60 && this.isLoaded && !this.isPlaying) {
                     this._unloadAudio();
                 }
 
-                // Play/stop based on closer distance
-                if (dist < 30 && this.isLoaded && !this.isPlaying && !this._mutedByOrbit) {
+                if (dist < 25 && this.isLoaded && !this.isPlaying && !this._mutedByOrbit) {
                     this._startAudio();
-                } else if (dist > 50 && this.isPlaying && !isOrbitingMemory) {
+                } else if (dist > 40 && this.isPlaying && !isOrbitingMemory) {
                     this._stopAudio();
                 }
 
-                // Volume
                 if (this.gainNode && this.isPlaying && !this._mutedByOrbit) {
-                    const vol = Math.pow(Math.max(0, 1 - dist / 50), 2) * 0.8;
-                    this.gainNode.gain.value = vol;
+                    this.gainNode.gain.value = Math.pow(Math.max(0, 1 - dist / 40), 2) * 0.8;
                 }
 
                 return dist;
@@ -777,7 +773,6 @@
                 { type: 'text', title: 'El Viaje del Héroe', content: 'Cada concepto es una etapa en el viaje. El Chamán nos arraiga en la tierra. La Alquimia nos enseña a navegar las aguas de la emoción y el intelecto. El Misterio nos invita a mirar hacia las estrellas, reconociendo la unidad en la diversidad.', position: [-15, 2, 0], color: '#4DDBFF' },
                 { type: 'image', src: 'https://placehold.co/1024x768/02040a/FF6B4D?text=Conciencia+Salvaje', position: [0, 5, -15], color: '#FF6B4D' },
                 { type: 'video', videoId: '47Korua-WLo', start: 311, position: [15, 0, 0] },
-                { type: 'text', title: 'Mundo Interior', content: 'Bienvenido al espacio de recuerdos. Usa el botón + para cargar tus grabaciones de audio. Navega hacia las profundidades del eje Z para viajar al pasado. Orbita tus recuerdos con la tecla C.', position: [0, -2, -8], color: '#3de8d4' },
             ];
             buildSceneFromData(initialSceneData);
 
@@ -1127,45 +1122,44 @@
 
         function calculateMemoryPositions(decoded, clusters, layout, timeSpan, newestDate) {
             const positions = [];
-            const maxZ = 200;
-            // Emanar desde la posición actual del usuario
+            const maxZ = 250;
+            // Emanar desde la posición del usuario hacia Z negativo
             const userPos = avatarObject ? avatarObject.position.clone() : new THREE.Vector3();
-            const userDir = new THREE.Vector3(0, 0, -1);
-            if (camera) camera.getWorldDirection(userDir);
 
             for (let i = 0; i < decoded.length; i++) {
                 const { file } = decoded[i];
                 const age = newestDate - file.lastModified;
                 const ageNorm = timeSpan > 0 ? age / timeSpan : 0;
 
-                // Z: profundidad temporal en la dirección que mira el usuario
-                const zDepth = -(5 + ageNorm * maxZ);
+                // Z: profundidad temporal, empieza 10 unidades delante del usuario
+                const z = userPos.z - 10 - ageNorm * maxZ;
 
                 let x, y;
                 if (layout === 'fibonacci') {
                     const theta = i * GOLDEN_ANGLE;
-                    const r = 6 + Math.sqrt(i + 1) * 5;  // MÁS SEPARADAS (antes *2.8)
-                    x = r * Math.cos(theta);
-                    y = r * Math.sin(theta);
+                    // Radio crece con sqrt — separación mínima de 8 unidades
+                    const r = 8 + Math.sqrt(i + 1) * 6;
+                    x = userPos.x + r * Math.cos(theta);
+                    y = userPos.y + r * Math.sin(theta);
                 } else if (layout === 'spiral') {
                     const theta = i * GOLDEN_ANGLE * 1.5;
-                    const r = 5 + ageNorm * 25 + i * 0.8;
-                    x = r * Math.cos(theta);
-                    y = r * Math.sin(theta);
+                    const r = 8 + ageNorm * 30 + i * 1.2;
+                    x = userPos.x + r * Math.cos(theta);
+                    y = userPos.y + r * Math.sin(theta);
                 } else {
                     const jitter = (Math.sin(i * 127.1) * 43758.5) % 1;
-                    x = (jitter - 0.5) * 15;
-                    y = (Math.cos(i * 311.7 + 0.5) % 1 - 0.5) * 12;
+                    x = userPos.x + (jitter - 0.5) * 20;
+                    y = userPos.y + (Math.cos(i * 311.7 + 0.5) % 1 - 0.5) * 16;
                 }
 
-                // Cluster offset
+                // Clusters: separación DENTRO del cluster (mínimo 4 unidades)
                 let accum = 0;
                 for (let c = 0; c < clusters.length; c++) {
                     if (i >= accum && i < accum + clusters[c].length) {
                         const posInCluster = i - accum;
                         if (clusters[c].length > 1) {
                             const cAngle = posInCluster * GOLDEN_ANGLE;
-                            const cR = 2 + posInCluster * 1.2;  // más separadas dentro del cluster
+                            const cR = 4 + posInCluster * 2;
                             x += Math.cos(cAngle) * cR;
                             y += Math.sin(cAngle) * cR;
                         }
@@ -1174,13 +1168,7 @@
                     accum += clusters[c].length;
                 }
 
-                // Posición relativa al usuario, en la dirección que mira
-                const worldPos = new THREE.Vector3(
-                    userPos.x + x,
-                    userPos.y + y,
-                    userPos.z + zDepth
-                );
-                positions.push(worldPos);
+                positions.push(new THREE.Vector3(x, y, z));
             }
             return positions;
         }
@@ -1552,8 +1540,8 @@
             // ═══ MODO ÓRBITA DE RECUERDO ═══
             if (isOrbitingMemory) {
                 switch (event.code) {
-                    case 'KeyW': orbitDistance *= 0.92; orbitDistance = Math.max(MIN_ORBIT_DIST, orbitDistance); break;
-                    case 'KeyS': orbitDistance *= 1.08; orbitDistance = Math.min(MAX_ORBIT_DIST, orbitDistance); break;
+                    case 'KeyW': orbitDistance *= 0.93; orbitDistance = Math.max(MIN_ORBIT_DIST, orbitDistance); break;
+                    case 'KeyS': orbitDistance *= 1.07; orbitDistance = Math.min(MAX_ORBIT_DIST, orbitDistance); break;
                     case 'KeyA': playerOrbitSpeed = 0.015; break;
                     case 'KeyD': playerOrbitSpeed = -0.015; break;
                     case 'KeyZ': orbitPitch += 0.04; break;
