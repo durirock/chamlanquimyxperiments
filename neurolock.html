@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroLock — ADHD Entrainment Protocol</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #04060f;
+  --bg2: #080d1a;
+  --dmn: #ff5733;
+  --dmn-glow: rgba(255,87,51,0.4);
+  --tpn: #00f5c4;
+  --tpn-glow: rgba(0,245,196,0.4);
+  --gamma: #ffe066;
+  --gamma-glow: rgba(255,224,102,0.5);
+  --mid: #6a7fd4;
+  --text: #c8d8e8;
+  --text-dim: #4a5a6a;
+  --border: rgba(100,140,200,0.15);
+  --phase-bridge: #6a7fd4;
+  --phase-ignition: #f0a500;
+  --phase-tasklock: #00f5c4;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+/* Noise texture overlay */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:1000;
+  opacity:0.6;
+}
+
+header {
+  width:100%;
+  padding: 24px 40px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.logo {
+  font-family: 'Orbitron', monospace;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: var(--tpn);
+  text-shadow: 0 0 20px var(--tpn-glow);
+}
+
+.tagline {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.status-badge {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 4px 12px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+  text-transform: uppercase;
+  transition: all 0.5s;
+}
+.status-badge.idle { color: var(--text-dim); }
+.status-badge.active { color: var(--tpn); box-shadow: 0 0 10px var(--tpn-glow); animation: pulse-badge 2s infinite; }
+
+@keyframes pulse-badge { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  padding: 30px 30px;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: auto auto auto;
+  gap: 20px;
+}
+
+/* === BRAIN DIAGRAM === */
+.brain-container {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.brain-container::after {
+  content:'';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, rgba(0,245,196,0.03) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.brain-label {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.network-legend {
+  display: flex;
+  gap: 20px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.legend-dmn .legend-dot { background: var(--dmn); box-shadow: 0 0 6px var(--dmn); }
+.legend-tpn .legend-dot { background: var(--tpn); box-shadow: 0 0 6px var(--tpn); }
+.legend-dmn { color: var(--dmn); }
+.legend-tpn { color: var(--tpn); }
+
+#brain-svg {
+  width: 100%;
+  max-width: 460px;
+  height: auto;
+}
+
+/* Brain node animations */
+.dmn-node {
+  fill: var(--dmn);
+  opacity: 0.85;
+  transition: opacity 2s, filter 2s;
+  filter: drop-shadow(0 0 8px var(--dmn));
+}
+.tpn-node {
+  fill: var(--tpn);
+  opacity: 0.15;
+  transition: opacity 2s, filter 2s;
+  filter: drop-shadow(0 0 4px rgba(0,245,196,0.2));
+}
+.gamma-node {
+  fill: var(--gamma);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+/* Phase readout under brain */
+.phase-readout {
+  margin-top: 20px;
+  text-align: center;
+  width: 100%;
+}
+.phase-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  margin-bottom: 4px;
+  transition: color 2s;
+}
+.phase-name.bridge { color: var(--phase-bridge); }
+.phase-name.ignition { color: var(--phase-ignition); }
+.phase-name.tasklock { color: var(--phase-tasklock); }
+.phase-name.idle { color: var(--text-dim); }
+
+.phase-description {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  line-height: 1.6;
+  max-width: 400px;
+  margin: 0 auto;
+  transition: all 1s;
+}
+
+/* Freq display */
+.freq-display {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+.freq-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  transition: color 1s;
+  line-height: 1;
+  margin-top: 4px;
+}
+.freq-unit { font-size: 10px; font-weight: 400; }
+
+/* === RIGHT PANEL === */
+.panel-right {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 18px;
+}
+
+.card-title {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Protocol timeline */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline-phase {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 10px;
+  opacity: 0.4;
+  transition: opacity 0.5s;
+  position: relative;
+  padding-left: 4px;
+}
+.timeline-phase.current { opacity: 1; }
+.timeline-phase.done { opacity: 0.6; }
+
+.tl-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  flex-shrink: 0;
+  position: relative;
+}
+.timeline-phase.current .tl-dot::after {
+  content:'';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  animation: ring-pulse 1.5s infinite;
+  opacity: 0.5;
+}
+@keyframes ring-pulse { 0%{transform:scale(1);opacity:0.5} 100%{transform:scale(2);opacity:0} }
+
+.tl-bridge { color: var(--phase-bridge); }
+.tl-ignition { color: var(--phase-ignition); }
+.tl-tasklock { color: var(--phase-tasklock); }
+
+.tl-info { flex: 1; }
+.tl-name { font-family: 'Orbitron', monospace; font-size: 10px; margin-bottom: 2px; }
+.tl-detail { font-size: 9px; color: var(--text-dim); }
+.tl-timer { font-family: 'Orbitron', monospace; font-size: 11px; }
+
+/* Phase progress bar */
+.phase-bar-container {
+  height: 4px;
+  background: rgba(100,140,200,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+.phase-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s linear, background 2s;
+  width: 0%;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.control-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.control-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+}
+.control-value { color: var(--tpn); }
+
+input[type=range] {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 3px;
+  background: rgba(100,140,200,0.15);
+  border-radius: 2px;
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--tpn);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--tpn-glow);
+}
+
+/* Buttons */
+.btn-group { display: flex; gap: 10px; margin-top: 4px; }
+
+.btn {
+  flex: 1;
+  padding: 12px 8px;
+  border: 1px solid currentColor;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+.btn-start { color: var(--tpn); }
+.btn-start:hover, .btn-start.active { background: rgba(0,245,196,0.1); box-shadow: 0 0 12px var(--tpn-glow); }
+.btn-gamma { color: var(--gamma); }
+.btn-gamma:hover { background: rgba(255,224,102,0.1); box-shadow: 0 0 12px var(--gamma-glow); }
+.btn-stop { color: var(--dmn); }
+.btn-stop:hover { background: rgba(255,87,51,0.1); }
+
+/* DMN/TPN meters */
+.network-meters {
+  display: flex;
+  gap: 12px;
+}
+.meter {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.meter-label { text-transform: uppercase; }
+.meter-label.dmn { color: var(--dmn); }
+.meter-label.tpn { color: var(--tpn); }
+
+.meter-bar {
+  height: 80px;
+  background: rgba(100,140,200,0.08);
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  position: relative;
+}
+.meter-fill {
+  width: 100%;
+  border-radius: 2px;
+  transition: height 2s ease-out;
+}
+.meter-fill.dmn { background: linear-gradient(to top, var(--dmn), rgba(255,87,51,0.3)); height: 85%; }
+.meter-fill.tpn { background: linear-gradient(to top, var(--tpn), rgba(0,245,196,0.2)); height: 15%; }
+
+.meter-pct {
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  text-align: center;
+}
+.meter-pct.dmn { color: var(--dmn); }
+.meter-pct.tpn { color: var(--tpn); }
+
+/* === WAVEFORM === */
+.waveform-section {
+  grid-column: 1 / 3;
+  grid-row: 3;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px 18px;
+}
+
+.waveform-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+#waveform {
+  width: 100%;
+  height: 70px;
+  display: block;
+}
+
+/* Science info card */
+.info-panels {
+  grid-column: 2;
+  grid-row: 2;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px;
+}
+
+.science-row {
+  display: flex;
+  gap: 8px;
+  font-size: 9px;
+  margin-bottom: 10px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.science-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.sci-tag {
+  font-family: 'Orbitron', monospace;
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  white-space: nowrap;
+  align-self: flex-start;
+  margin-top: 1px;
+}
+.sci-tag.alpha { background: rgba(106,127,212,0.2); color: var(--phase-bridge); border: 1px solid rgba(106,127,212,0.4); }
+.sci-tag.beta { background: rgba(240,165,0,0.15); color: var(--phase-ignition); border: 1px solid rgba(240,165,0,0.4); }
+.sci-tag.gamma { background: rgba(255,224,102,0.1); color: var(--gamma); border: 1px solid rgba(255,224,102,0.3); }
+
+/* Mode selector */
+.mode-selector {
+  display: flex;
+  gap: 6px;
+}
+.mode-btn {
+  flex: 1;
+  padding: 7px 4px;
+  border: 1px solid rgba(100,140,200,0.25);
+  background: transparent;
+  cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  border-radius: 2px;
+  color: var(--text-dim);
+  transition: all 0.3s;
+}
+.mode-btn:hover { color: var(--text); border-color: rgba(100,140,200,0.5); }
+.mode-btn.active { color: var(--tpn); border-color: var(--tpn); background: rgba(0,245,196,0.06); box-shadow: 0 0 8px var(--tpn-glow); }
+
+/* Visual entrainment overlay — full screen flicker canvas */
+#visual-entrainment {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 998;
+  opacity: 0;
+  transition: opacity 0.5s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#visual-entrainment.active { opacity: 1; }
+
+#flicker-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 997;
+  display: none;
+}
+
+/* Visual-only mode: dim the rest and show a central focus point */
+body.visual-mode #visual-entrainment { opacity: 1; }
+
+/* Photonic dot — center fixation point that pulses at entrainment freq */
+#photon-dot {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 998;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+#photon-dot.active { display: flex; }
+#photon-dot-inner {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, rgba(0,245,196,0.8) 40%, transparent 70%);
+  box-shadow: 0 0 30px rgba(0,245,196,0.6);
+  transition: background 2s;
+}
+#photon-dot-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+  white-space: nowrap;
+}
+/* Ambient flicker rings */
+#photon-rings {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 997;
+  display: none;
+}
+#photon-rings.active { display: block; }
+#photon-rings circle {
+  fill: none;
+  opacity: 0;
+}
+
+/* Gamma flash overlay */
+#gamma-flash {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,224,102,0.04);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 999;
+}
+
+/* Total timer */
+.total-timer {
+  font-family: 'Orbitron', monospace;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-align: center;
+  margin: 10px 0 4px;
+  transition: color 2s;
+}
+
+@media (max-width: 800px) {
+  main { grid-template-columns: 1fr; grid-template-rows: auto; }
+  .brain-container { grid-column: 1; grid-row: 1; }
+  .panel-right { grid-column: 1; grid-row: 2; }
+  .info-panels { grid-column: 1; grid-row: 3; }
+  .waveform-section { grid-column: 1; grid-row: 4; }
+}
+</style>
+</head>
+<body>
+
+<div id="gamma-flash"></div>
+
+<!-- Visual entrainment system -->
+<canvas id="flicker-canvas"></canvas>
+<div id="photon-dot">
+  <div id="photon-dot-inner"></div>
+  <div id="photon-dot-label">FIJA LA MIRADA</div>
+</div>
+<svg id="photon-rings" width="600" height="600" viewBox="-300 -300 600 600">
+  <circle id="ring1" r="80" stroke="rgba(0,245,196,0.3)" stroke-width="1"/>
+  <circle id="ring2" r="140" stroke="rgba(0,245,196,0.2)" stroke-width="1"/>
+  <circle id="ring3" r="220" stroke="rgba(0,245,196,0.1)" stroke-width="1"/>
+</svg>
+
+<header>
+  <div>
+    <div class="logo">NEUROLOCK</div>
+    <div class="tagline">DMN → TPN Entrainment Protocol · ADHD Edition</div>
+  </div>
+  <div class="status-badge idle" id="status-badge">STANDBY</div>
+</header>
+
+<main>
+
+  <!-- LEFT: Brain + phase info -->
+  <div class="brain-container">
+    <div class="brain-label">
+      <span>MAPA DE REDES NEURALES</span>
+      <span id="session-label" style="color:var(--text-dim)">sin sesión activa</span>
+    </div>
+    <div class="network-legend">
+      <span class="legend-dmn"><span class="legend-dot"></span>Default Mode Network</span>
+      <span class="legend-tpn"><span class="legend-dot"></span>Task Positive Network</span>
+    </div>
+
+    <!-- SVG Brain Diagram -->
+    <svg id="brain-svg" viewBox="0 0 480 320" xmlns="http://www.w3.org/2000/svg">
+      <!-- Brain outline -->
+      <defs>
+        <filter id="glow-dmn" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="6" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-tpn" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="8" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-gamma">
+          <feGaussianBlur stdDeviation="12" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <radialGradient id="brain-grad" cx="50%" cy="45%" r="50%">
+          <stop offset="0%" stop-color="rgba(100,140,200,0.08)"/>
+          <stop offset="100%" stop-color="rgba(100,140,200,0.02)"/>
+        </radialGradient>
+      </defs>
+      
+      <!-- Brain silhouette (left hemisphere view) -->
+      <path d="M100,220 Q60,200 55,160 Q50,120 70,90 Q90,55 130,40 Q170,25 210,28 Q260,30 300,50 Q340,70 365,100 Q390,135 395,170 Q400,210 380,240 Q360,270 330,280 Q290,295 240,295 Q180,300 140,285 Q110,270 100,220 Z" 
+            fill="url(#brain-grad)" stroke="rgba(100,140,200,0.2)" stroke-width="1.5"/>
+      
+      <!-- Brain internal folds (decorative) -->
+      <path d="M120,140 Q150,120 180,135 Q210,150 200,175" fill="none" stroke="rgba(100,140,200,0.1)" stroke-width="1"/>
+      <path d="M200,80 Q230,70 260,90 Q280,110 275,140" fill="none" stroke="rgba(100,140,200,0.1)" stroke-width="1"/>
+      <path d="M280,180 Q310,165 340,180 Q360,195 355,220" fill="none" stroke="rgba(100,140,200,0.1)" stroke-width="1"/>
+      <path d="M140,200 Q170,190 200,210 Q220,225 215,250" fill="none" stroke="rgba(100,140,200,0.1)" stroke-width="1"/>
+      
+      <!-- Connection lines between nodes -->
+      <g id="connections" opacity="0.15">
+        <!-- DMN connections -->
+        <line x1="240" y1="65" x2="160" y2="160" stroke="var(--dmn)" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="240" y1="65" x2="320" y2="180" stroke="var(--dmn)" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="160" y1="160" x2="320" y2="180" stroke="var(--dmn)" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="320" y1="180" x2="290" y2="260" stroke="var(--dmn)" stroke-width="1" stroke-dasharray="4,4"/>
+        <!-- TPN connections -->
+        <line x1="140" y1="100" x2="350" y2="120" stroke="var(--tpn)" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="140" y1="100" x2="220" y2="200" stroke="var(--tpn)" stroke-width="1" stroke-dasharray="4,4"/>
+        <line x1="350" y1="120" x2="220" y2="200" stroke="var(--tpn)" stroke-width="1" stroke-dasharray="4,4"/>
+      </g>
+      
+      <!-- === DMN NODES === -->
+      <!-- mPFC - medial prefrontal cortex -->
+      <g id="node-mpfc" class="dmn-node" filter="url(#glow-dmn)">
+        <circle cx="240" cy="65" r="22" fill="var(--dmn)" opacity="0.15"/>
+        <circle cx="240" cy="65" r="12" fill="var(--dmn)" opacity="0.85"/>
+        <text x="240" y="48" text-anchor="middle" font-family="Space Mono" font-size="8" fill="var(--dmn)" opacity="0.8">mPFC</text>
+        <text x="240" y="57" text-anchor="middle" font-family="Space Mono" font-size="7" fill="var(--text-dim)">DMN</text>
+      </g>
+      
+      <!-- PCC - posterior cingulate cortex -->
+      <g id="node-pcc" class="dmn-node" filter="url(#glow-dmn)">
+        <circle cx="320" cy="180" r="20" fill="var(--dmn)" opacity="0.15"/>
+        <circle cx="320" cy="180" r="11" fill="var(--dmn)" opacity="0.85"/>
+        <text x="345" y="178" text-anchor="start" font-family="Space Mono" font-size="8" fill="var(--dmn)" opacity="0.8">PCC</text>
+        <text x="345" y="188" text-anchor="start" font-family="Space Mono" font-size="7" fill="var(--text-dim)">DMN</text>
+      </g>
+      
+      <!-- AG - Angular gyrus -->
+      <g id="node-ag" class="dmn-node" filter="url(#glow-dmn)">
+        <circle cx="160" cy="160" r="16" fill="var(--dmn)" opacity="0.15"/>
+        <circle cx="160" cy="160" r="9" fill="var(--dmn)" opacity="0.85"/>
+        <text x="135" y="158" text-anchor="end" font-family="Space Mono" font-size="8" fill="var(--dmn)" opacity="0.8">AG</text>
+        <text x="135" y="168" text-anchor="end" font-family="Space Mono" font-size="7" fill="var(--text-dim)">DMN</text>
+      </g>
+      
+      <!-- Hippocampus -->
+      <g id="node-hipp" class="dmn-node" filter="url(#glow-dmn)">
+        <circle cx="290" cy="260" r="14" fill="var(--dmn)" opacity="0.15"/>
+        <circle cx="290" cy="260" r="8" fill="var(--dmn)" opacity="0.85"/>
+        <text x="290" y="280" text-anchor="middle" font-family="Space Mono" font-size="7" fill="var(--dmn)" opacity="0.8">HIPP</text>
+      </g>
+      
+      <!-- === TPN NODES === -->
+      <!-- DLPFC - dorsolateral prefrontal cortex -->
+      <g id="node-dlpfc" class="tpn-node" filter="url(#glow-tpn)">
+        <circle cx="140" cy="100" r="20" fill="var(--tpn)" opacity="0.1"/>
+        <circle cx="140" cy="100" r="11" fill="var(--tpn)" opacity="0.2"/>
+        <text x="115" y="96" text-anchor="end" font-family="Space Mono" font-size="8" fill="var(--tpn)" opacity="0.4">DLPFC</text>
+        <text x="115" y="106" text-anchor="end" font-family="Space Mono" font-size="7" fill="var(--text-dim)" opacity="0.4">TPN</text>
+      </g>
+      
+      <!-- IPS - intraparietal sulcus -->
+      <g id="node-ips" class="tpn-node" filter="url(#glow-tpn)">
+        <circle cx="350" cy="120" r="18" fill="var(--tpn)" opacity="0.1"/>
+        <circle cx="350" cy="120" r="10" fill="var(--tpn)" opacity="0.2"/>
+        <text x="372" y="118" text-anchor="start" font-family="Space Mono" font-size="8" fill="var(--tpn)" opacity="0.4">IPS</text>
+        <text x="372" y="128" text-anchor="start" font-family="Space Mono" font-size="7" fill="var(--text-dim)" opacity="0.4">TPN</text>
+      </g>
+      
+      <!-- ACC - anterior cingulate cortex -->
+      <g id="node-acc" class="tpn-node" filter="url(#glow-tpn)">
+        <circle cx="220" cy="200" r="18" fill="var(--tpn)" opacity="0.1"/>
+        <circle cx="220" cy="200" r="10" fill="var(--tpn)" opacity="0.2"/>
+        <text x="220" y="223" text-anchor="middle" font-family="Space Mono" font-size="8" fill="var(--tpn)" opacity="0.4">ACC</text>
+        <text x="220" y="213" text-anchor="middle" font-family="Space Mono" font-size="7" fill="var(--text-dim)" opacity="0.4">TPN</text>
+      </g>
+      
+      <!-- GAMMA overlay nodes (flash on gamma bursts) -->
+      <g id="gamma-overlay" filter="url(#glow-gamma)">
+        <circle class="gamma-node" id="gn1" cx="140" cy="100" r="20"/>
+        <circle class="gamma-node" id="gn2" cx="350" cy="120" r="18"/>
+        <circle class="gamma-node" id="gn3" cx="220" cy="200" r="18"/>
+      </g>
+    </svg>
+
+    <!-- Phase readout -->
+    <div class="phase-readout">
+      <div class="phase-name idle" id="phase-name">STANDBY</div>
+      <div class="phase-description" id="phase-desc">
+        Protocolo de entrainment neuronal para transición DMN → TPN.<br>Calibrado para cerebros ADHD.
+      </div>
+      <div class="freq-display">
+        <div>
+          <div>AM Frequency</div>
+          <div class="freq-val" id="freq-display" style="color:var(--text-dim)">—</div>
+        </div>
+        <div>
+          <div>Tiempo total</div>
+          <div class="total-timer" id="total-timer" style="color:var(--text-dim)">00:00</div>
+        </div>
+        <div>
+          <div>Fase</div>
+          <div class="freq-val" id="phase-num" style="color:var(--text-dim)">0/3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT TOP: Protocol + controls -->
+  <div class="panel-right">
+    <div class="card">
+      <div class="card-title">Protocolo de 3 Fases</div>
+      <div class="timeline">
+        <div class="timeline-phase tl-bridge" id="tl-bridge">
+          <div class="tl-dot"></div>
+          <div class="tl-info">
+            <div class="tl-name">PUENTE · Alpha</div>
+            <div class="tl-detail">10 Hz · sincronización inicial · 3 min</div>
+          </div>
+          <div class="tl-timer" id="tl-bridge-timer">3:00</div>
+        </div>
+        <div class="timeline-phase tl-ignition" id="tl-ignition">
+          <div class="tl-dot"></div>
+          <div class="tl-info">
+            <div class="tl-name">IGNICIÓN · Alpha→Beta</div>
+            <div class="tl-detail">10→18 Hz · ramp gradual · 4 min</div>
+          </div>
+          <div class="tl-timer" id="tl-ignition-timer">4:00</div>
+        </div>
+        <div class="timeline-phase tl-tasklock" id="tl-tasklock">
+          <div class="tl-dot"></div>
+          <div class="tl-info">
+            <div class="tl-name">TASK LOCK · Beta+Gamma</div>
+            <div class="tl-detail">18 Hz + γ40 Hz · anti-habituation · ∞</div>
+          </div>
+          <div class="tl-timer" id="tl-tasklock-timer">∞</div>
+        </div>
+      </div>
+      <div class="phase-bar-container" style="margin-top:16px">
+        <div class="phase-bar-fill" id="phase-bar" style="background:var(--phase-bridge)"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Control de Sesión</div>
+      <div class="controls">
+        <div class="control-row">
+          <div class="control-label">
+            <span>Intensidad ADHD</span>
+            <span class="control-value" id="intensity-val">5</span>
+          </div>
+          <input type="range" id="intensity" min="1" max="10" value="5">
+          <div style="font-size:9px;color:var(--text-dim);margin-top:4px">
+            ADHD severo → mayor estimulación basal
+          </div>
+        </div>
+        <div class="control-row">
+          <div class="control-label">
+            <span>Volumen</span>
+            <span class="control-value" id="vol-val">65%</span>
+          </div>
+          <input type="range" id="volume" min="0" max="100" value="65">
+        </div>
+        <!-- Mode selector -->
+        <div class="control-row">
+          <div class="control-label"><span>Modo de Entrainment</span></div>
+          <div class="mode-selector" id="mode-selector">
+            <button class="mode-btn active" data-mode="audio" onclick="setMode('audio')">🎧 Audio</button>
+            <button class="mode-btn" data-mode="visual" onclick="setMode('visual')">👁 Visual</button>
+            <button class="mode-btn" data-mode="both" onclick="setMode('both')">⚡ Dual</button>
+          </div>
+          <div style="font-size:9px;color:var(--text-dim);margin-top:4px" id="mode-hint">
+            Auriculares recomendados para audio
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-start" id="btn-start" onclick="startSession()">INICIAR</button>
+          <button class="btn btn-stop" id="btn-stop" onclick="stopSession()" style="display:none">DETENER</button>
+        </div>
+        <button class="btn btn-gamma" id="btn-gamma" onclick="triggerGamma()" style="display:none;width:100%">
+          ⚡ GAMMA RESCUE — re-anclar foco
+        </button>
+      </div>
+    </div>
+    
+    <!-- Network meters -->
+    <div class="card">
+      <div class="card-title">Activación de Red</div>
+      <div class="network-meters">
+        <div class="meter">
+          <div class="meter-label dmn">DMN</div>
+          <div class="meter-bar">
+            <div class="meter-fill dmn" id="dmn-meter"></div>
+          </div>
+          <div class="meter-pct dmn" id="dmn-pct">85%</div>
+        </div>
+        <div class="meter">
+          <div class="meter-label tpn">TPN</div>
+          <div class="meter-bar">
+            <div class="meter-fill tpn" id="tpn-meter"></div>
+          </div>
+          <div class="meter-pct tpn" id="tpn-pct">15%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT BOTTOM: Science info -->
+  <div class="info-panels">
+    <div class="card-title">Mecanismo Activo</div>
+    <div class="science-row">
+      <span class="sci-tag alpha">α 10Hz</span>
+      <span>Entrainment alfa superior: sincronización inicial con el estado ADHD. Reduce la hiperactividad del DMN sin suprimir. Crea coherencia inter-hemisférica.</span>
+    </div>
+    <div class="science-row">
+      <span class="sci-tag beta">β 18Hz</span>
+      <span>Frecuencia beta de control cognitivo. Activa DLPFC y ACC suprimiendo la red DMN. Modulación ±2Hz anti-habituación para mantener la novedad.</span>
+    </div>
+    <div class="science-row">
+      <span class="sci-tag gamma">γ 40Hz</span>
+      <span>Gamma burst: activa la red de saliencia. Re-ancla el foco cuando el DMN intenta ganar terreno. Estimula corteza prefrontal lateral.</span>
+    </div>
+  </div>
+
+  <!-- WAVEFORM BOTTOM -->
+  <div class="waveform-section">
+    <div class="waveform-header">
+      <span>Modulación de Amplitud — Output en tiempo real</span>
+      <span id="waveform-label" style="color:var(--text-dim)">sin señal</span>
+    </div>
+    <canvas id="waveform"></canvas>
+  </div>
+
+</main>
+
+<script>
+// ===================================================================
+// NEUROLOCK — Neural Entrainment Engine
+// Andrés build — ADHD DMN→TPN Protocol
+// ===================================================================
+
+let audioCtx = null;
+let masterGain = null;
+let pinkNoiseSource = null;
+let amOscillator = null;
+let amGain = null;
+let analyser = null;
+let gammaOsc = null;
+let gammaEnv = null;
+let binauralOscL = null;
+let binauralOscR = null;
+
+// Session state
+let sessionRunning = false;
+let sessionStart = null;
+let totalSeconds = 0;
+let currentPhase = 0; // 0=idle, 1=bridge, 2=ignition, 3=tasklock
+let phaseStart = null;
+let phaseTimer = null;
+let totalTimer = null;
+let animFrame = null;
+let gammaScheduler = null;
+let antiHabituationInterval = null;
+
+// Phase durations (seconds)
+const BRIDGE_DUR = 180;   // 3 min
+const IGNITION_DUR = 240; // 4 min
+
+// Frequency targets
+const FREQ_BRIDGE = 10;    // Hz - upper alpha
+const FREQ_TASKLOCK = 18;  // Hz - beta cognitive control  
+const FREQ_GAMMA = 40;     // Hz - gamma burst
+
+// Controls
+document.getElementById('intensity').addEventListener('input', function() {
+  document.getElementById('intensity-val').textContent = this.value;
+  if (sessionRunning) adjustIntensity(parseInt(this.value));
+});
+document.getElementById('volume').addEventListener('input', function() {
+  document.getElementById('vol-val').textContent = this.value + '%';
+  if (masterGain) masterGain.gain.setTargetAtTime(this.value / 200, audioCtx.currentTime, 0.1);
+});
+
+// ===================================================================
+// MODE MANAGEMENT
+// ===================================================================
+let currentMode = 'audio'; // 'audio' | 'visual' | 'both'
+
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  const hints = {
+    audio: 'Auriculares recomendados para audio',
+    visual: 'Sin auriculares — fija la mirada en el punto central',
+    both: 'Máxima eficacia — audio + entrainment visual sincronizados'
+  };
+  document.getElementById('mode-hint').textContent = hints[mode];
+}
+
+// ===================================================================
+// VISUAL ENTRAINMENT ENGINE
+// Photic driving: luz pulsante a la misma frecuencia que el AM de audio
+// Validado por el estudio MIT GENUS (40Hz) para activación gamma
+// Funciona a través de la corteza visual primaria → V5/MT → redes de atención
+// ===================================================================
+let visualAnimFrame = null;
+let visualRunning = false;
+let currentVisualFreq = FREQ_BRIDGE;
+let targetVisualFreq = FREQ_BRIDGE;
+let visualPhase = 0; // phase accumulator (0..2π)
+let lastVisualTime = null;
+
+// Colors per phase for visual entrainment
+const visualColors = {
+  bridge:   { r:106, g:127, b:212 }, // alpha — azul/índigo suave
+  ignition: { r:240, g:165, b:0   }, // beta ramp — ámbar
+  tasklock: { r:0,   g:245, b:196 }  // beta+gamma — turquesa
+};
+let activeVisualColor = visualColors.bridge;
+
+function startVisualEntrainment() {
+  visualRunning = true;
+
+  const canvas = document.getElementById('flicker-canvas');
+  canvas.style.display = 'block';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  document.getElementById('photon-dot').classList.add('active');
+  document.getElementById('photon-rings').classList.add('active');
+
+  lastVisualTime = performance.now();
+  visualLoop();
+}
+
+function stopVisualEntrainment() {
+  visualRunning = false;
+  if (visualAnimFrame) cancelAnimationFrame(visualAnimFrame);
+
+  const canvas = document.getElementById('flicker-canvas');
+  canvas.style.display = 'none';
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  document.getElementById('photon-dot').classList.remove('active');
+  document.getElementById('photon-rings').classList.remove('active');
+}
+
+function visualLoop() {
+  if (!visualRunning) return;
+  visualAnimFrame = requestAnimationFrame(visualLoop);
+
+  const now = performance.now();
+  const dt = (now - lastVisualTime) / 1000; // seconds
+  lastVisualTime = now;
+
+  // Smooth freq interpolation (for ignition ramp)
+  currentVisualFreq += (targetVisualFreq - currentVisualFreq) * Math.min(dt * 0.05, 1);
+
+  // Phase accumulator — ensures continuity during freq changes
+  visualPhase += 2 * Math.PI * currentVisualFreq * dt;
+  if (visualPhase > 2 * Math.PI) visualPhase -= 2 * Math.PI;
+
+  // Sinusoidal luminance — not square wave
+  // Square wave causes discomfort; sine is smoother and still entrains
+  // Raised to power 2 to sharpen the peak without hard edges
+  const rawSine = Math.sin(visualPhase);
+  const brightness = Math.max(0, rawSine); // half-wave rectified
+  const intensity = Math.pow(brightness, 1.5); // gentle sharpening
+
+  const canvas = document.getElementById('flicker-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const c = activeVisualColor;
+  // Peripheral flicker (broad, low intensity) — peripheral retina is more sensitive to flicker
+  const alpha = intensity * 0.06; // max 6% opacity — subtle but effective
+  ctx.fillStyle = `rgba(${c.r},${c.g},${c.b},${alpha})`;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Central fixation pulse — stronger at center
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const maxR = Math.min(canvas.width, canvas.height) * 0.35;
+
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+  grad.addColorStop(0, `rgba(${c.r},${c.g},${c.b},${intensity * 0.25})`);
+  grad.addColorStop(0.3, `rgba(${c.r},${c.g},${c.b},${intensity * 0.12})`);
+  grad.addColorStop(1, `rgba(${c.r},${c.g},${c.b},0)`);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, maxR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Photon dot pulsing
+  const dotEl = document.getElementById('photon-dot-inner');
+  const scale = 0.7 + intensity * 0.6;
+  const glowR = Math.round(intensity * 40);
+  dotEl.style.transform = `scale(${scale})`;
+  dotEl.style.boxShadow = `0 0 ${glowR}px rgba(${c.r},${c.g},${c.b},0.8), 0 0 ${glowR*2}px rgba(${c.r},${c.g},${c.b},0.3)`;
+  dotEl.style.background = `radial-gradient(circle, #fff 0%, rgba(${c.r},${c.g},${c.b},0.9) 40%, transparent 70%)`;
+
+  // Rings pulse with phase offset
+  const ring1 = document.getElementById('ring1');
+  const ring2 = document.getElementById('ring2');
+  const ring3 = document.getElementById('ring3');
+  const r1a = Math.max(0, Math.sin(visualPhase) * 0.4);
+  const r2a = Math.max(0, Math.sin(visualPhase - 0.5) * 0.25);
+  const r3a = Math.max(0, Math.sin(visualPhase - 1.0) * 0.15);
+  ring1.style.opacity = r1a;
+  ring2.style.opacity = r2a;
+  ring3.style.opacity = r3a;
+}
+
+function setVisualFreq(freq, color) {
+  targetVisualFreq = freq;
+  if (color) activeVisualColor = visualColors[color];
+}
+
+// Override/extend phase controllers to include visual entrainment
+// We'll patch into the existing phase setters:
+const _origSetPhaseUI = window.setPhaseUI; // may not exist yet at parse time
+function syncVisualToPhase(phase) {
+  if (!visualRunning) return;
+  const map = {
+    1: { freq: FREQ_BRIDGE, color: 'bridge' },
+    2: { freq: null, color: 'ignition' }, // freq set dynamically during ramp
+    3: { freq: FREQ_TASKLOCK, color: 'tasklock' }
+  };
+  const d = map[phase];
+  if (d) {
+    if (d.freq) targetVisualFreq = d.freq;
+    activeVisualColor = visualColors[d.color];
+    // Update dot color label
+    const dotEl = document.getElementById('photon-dot-inner');
+    if (dotEl) dotEl.style.transition = 'all 2s';
+  }
+}
+
+// Visual gamma burst — rapid 40Hz flicker for 3 seconds
+function visualGammaBurst(duration = 3) {
+  if (!visualRunning) return;
+  const prevFreq = targetVisualFreq;
+  const prevColor = activeVisualColor;
+  targetVisualFreq = FREQ_GAMMA;
+  currentVisualFreq = FREQ_GAMMA; // instant switch for gamma
+  activeVisualColor = { r:255, g:224, b:102 };
+
+  document.getElementById('photon-dot-label').textContent = 'GAMMA · 40 Hz';
+
+  setTimeout(() => {
+    targetVisualFreq = prevFreq;
+    activeVisualColor = prevColor;
+    document.getElementById('photon-dot-label').textContent = 'FIJA LA MIRADA';
+  }, duration * 1000);
+}
+
+window.addEventListener('resize', () => {
+  const canvas = document.getElementById('flicker-canvas');
+  if (canvas && visualRunning) {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+});
+
+// ===================================================================
+// PINK NOISE GENERATION
+// Uses Paul Kellet's algorithm — approximates 1/f noise spectrum
+// Best carrier for neural entrainment (matches neural noise floor)
+// ===================================================================
+function createPinkNoiseBuffer(ctx) {
+  const sampleRate = ctx.sampleRate;
+  const duration = 3; // 3 seconds, looped
+  const numSamples = Math.floor(sampleRate * duration);
+  const buffer = ctx.createBuffer(2, numSamples, sampleRate); // stereo
+
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buffer.getChannelData(ch);
+    let b0=0, b1=0, b2=0, b3=0, b4=0, b5=0, b6=0;
+    // Slightly different seeds per channel for stereo width
+    const offset = ch * 0.001;
+    for (let i = 0; i < numSamples; i++) {
+      const white = (Math.random() * 2 - 1) + offset;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      b3 = 0.86650 * b3 + white * 0.3104856;
+      b4 = 0.55000 * b4 + white * 0.5329522;
+      b5 = -0.7616 * b5 - white * 0.0168980;
+      data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+      b6 = white * 0.115926;
+    }
+  }
+  return buffer;
+}
+
+// ===================================================================
+// AMPLITUDE MODULATION ENGINE
+// Creates the neural phase-locking stimulus
+// Carrier (pink noise) × Modulator (oscillator at target Hz)
+// ===================================================================
+function buildAudioGraph(ctx) {
+  // Master gain
+  masterGain = ctx.createGain();
+  masterGain.gain.value = document.getElementById('volume').value / 200;
+  masterGain.connect(ctx.destination);
+
+  // Analyser for waveform visualization
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 2048;
+  analyser.connect(masterGain);
+
+  // Pink noise source (looped buffer)
+  const pinkBuffer = createPinkNoiseBuffer(ctx);
+  pinkNoiseSource = ctx.createBufferSource();
+  pinkNoiseSource.buffer = pinkBuffer;
+  pinkNoiseSource.loop = true;
+
+  // High-pass filter to clean low rumble
+  const hpf = ctx.createBiquadFilter();
+  hpf.type = 'highpass';
+  hpf.frequency.value = 80;
+
+  // Low-pass filter for focus (reduces harsh highs that grab attention)
+  const lpf = ctx.createBiquadFilter();
+  lpf.type = 'lowpass';
+  lpf.frequency.value = 8000;
+
+  pinkNoiseSource.connect(hpf);
+  hpf.connect(lpf);
+
+  // AM Modulator - this is the entrainment signal
+  amOscillator = ctx.createOscillator();
+  amOscillator.type = 'sine';
+  amOscillator.frequency.value = FREQ_BRIDGE;
+
+  // Transform oscillator to control range [0.1, 1.0] for AM
+  // oscGain: scales -1..1 to 0..1 range
+  const oscDC = ctx.createConstantSource();
+  oscDC.offset.value = 0.5;
+  const oscScale = ctx.createGain();
+  oscScale.gain.value = 0.4; // depth of modulation (40%)
+
+  amGain = ctx.createGain();
+  amGain.gain.value = 0;
+
+  oscDC.connect(amGain.gain);
+  amOscillator.connect(oscScale);
+  oscScale.connect(amGain.gain);
+
+  lpf.connect(amGain);
+  amGain.connect(analyser);
+
+  // Gamma burst channel
+  gammaOsc = ctx.createOscillator();
+  gammaOsc.type = 'sine';
+  gammaOsc.frequency.value = FREQ_GAMMA;
+
+  gammaEnv = ctx.createGain();
+  gammaEnv.gain.value = 0;
+
+  // Very subtle gamma - mostly felt as texture, not tone
+  const gammaFilter = ctx.createBiquadFilter();
+  gammaFilter.type = 'bandpass';
+  gammaFilter.frequency.value = 200;
+  gammaFilter.Q.value = 0.5;
+
+  gammaOsc.connect(gammaFilter);
+  gammaFilter.connect(gammaEnv);
+  gammaEnv.connect(analyser);
+
+  // Start sources
+  pinkNoiseSource.start();
+  amOscillator.start();
+  oscDC.start();
+  gammaOsc.start();
+}
+
+// ===================================================================
+// PHASE CONTROLLERS
+// ===================================================================
+
+function startBridge() {
+  currentPhase = 1;
+  phaseStart = Date.now();
+
+  // Set AM to 10 Hz (bridge alpha)
+  const intensity = parseInt(document.getElementById('intensity').value);
+  const depth = 0.25 + (intensity / 10) * 0.2; // 0.25-0.45 depending on ADHD intensity
+
+  amOscillator.frequency.cancelScheduledValues(audioCtx.currentTime);
+  amOscillator.frequency.setTargetAtTime(FREQ_BRIDGE, audioCtx.currentTime, 0.5);
+  amGain.gain.cancelScheduledValues(audioCtx.currentTime);
+  amGain.gain.setTargetAtTime(depth, audioCtx.currentTime, 1.0);
+
+  // Update UI
+  setPhaseUI(1);
+  document.getElementById('tl-bridge').classList.add('current');
+  syncVisualToPhase(1);
+
+  phaseTimer = setInterval(() => {
+    const elapsed = (Date.now() - phaseStart) / 1000;
+    const remaining = Math.max(0, BRIDGE_DUR - elapsed);
+    document.getElementById('tl-bridge-timer').textContent = formatTime(remaining);
+
+    const progress = elapsed / BRIDGE_DUR;
+    if (progress >= 1) {
+      clearInterval(phaseTimer);
+      startIgnition();
+    }
+    updatePhaseBar(progress);
+
+    // Update frequency display
+    document.getElementById('freq-display').textContent = FREQ_BRIDGE.toFixed(1) + ' Hz';
+    updateNetworkMeters(progress * 0.4, 0.85 - progress * 0.3);
+  }, 500);
+}
+
+function startIgnition() {
+  currentPhase = 2;
+  phaseStart = Date.now();
+
+  // Ramp AM from 10 to 18 Hz over 4 minutes
+  amOscillator.frequency.cancelScheduledValues(audioCtx.currentTime);
+  amOscillator.frequency.linearRampToValueAtTime(FREQ_TASKLOCK, audioCtx.currentTime + IGNITION_DUR);
+
+  // Increase modulation depth
+  amGain.gain.cancelScheduledValues(audioCtx.currentTime);
+  amGain.gain.linearRampToValueAtTime(0.6, audioCtx.currentTime + IGNITION_DUR);
+
+  document.getElementById('tl-bridge').classList.remove('current');
+  document.getElementById('tl-bridge').classList.add('done');
+  document.getElementById('tl-ignition').classList.add('current');
+  setPhaseUI(2);
+
+  phaseTimer = setInterval(() => {
+    const elapsed = (Date.now() - phaseStart) / 1000;
+    const remaining = Math.max(0, IGNITION_DUR - elapsed);
+    const progress = elapsed / IGNITION_DUR;
+    document.getElementById('tl-ignition-timer').textContent = formatTime(remaining);
+
+    const currentFreq = FREQ_BRIDGE + (FREQ_TASKLOCK - FREQ_BRIDGE) * progress;
+    document.getElementById('freq-display').textContent = currentFreq.toFixed(1) + ' Hz';
+    // Visual freq tracks the ramp in real time
+    if (visualRunning) targetVisualFreq = currentFreq;
+    updatePhaseBar(progress);
+
+    const tpnLevel = 0.4 + progress * 0.4;
+    const dmnLevel = 0.55 - progress * 0.35;
+    updateNetworkMeters(tpnLevel, dmnLevel);
+
+    if (progress >= 1) {
+      clearInterval(phaseTimer);
+      startTaskLock();
+    }
+  }, 500);
+}
+
+function startTaskLock() {
+  currentPhase = 3;
+  phaseStart = Date.now();
+
+  document.getElementById('tl-ignition').classList.remove('current');
+  document.getElementById('tl-ignition').classList.add('done');
+  document.getElementById('tl-tasklock').classList.add('current');
+  document.getElementById('btn-gamma').style.display = 'block';
+  setPhaseUI(3);
+  syncVisualToPhase(3);
+
+  // Anti-habituation: random walk ±2 Hz around 18 Hz
+  // Critical for ADHD — prevents adaptation/tuning-out
+  antiHabituationInterval = setInterval(() => {
+    if (!sessionRunning) return;
+    const variation = (Math.random() - 0.5) * 3; // ±1.5 Hz
+    const newFreq = FREQ_TASKLOCK + variation;
+    amOscillator.frequency.setTargetAtTime(newFreq, audioCtx.currentTime, 4.0);
+    document.getElementById('freq-display').textContent = newFreq.toFixed(1) + ' Hz';
+  }, 8000); // every 8 seconds
+
+  // Schedule automatic gamma bursts (every 60-90 seconds)
+  scheduleNextGamma();
+
+  // Continuous task lock display
+  let tlElapsed = 0;
+  phaseTimer = setInterval(() => {
+    if (!sessionRunning) return;
+    tlElapsed += 0.5;
+    document.getElementById('tl-tasklock-timer').textContent = formatTime(tlElapsed);
+    updatePhaseBar(1.0); // stays at 100%
+    updateNetworkMeters(0.85, 0.1);
+  }, 500);
+}
+
+// ===================================================================
+// GAMMA BURST SYSTEM
+// 40 Hz gamma — activates salience network, re-anchors focus
+// Occurs automatically + on-demand via Gamma Rescue button
+// ===================================================================
+function scheduleNextGamma() {
+  if (!sessionRunning || currentPhase !== 3) return;
+  const delay = 60000 + Math.random() * 30000; // 60-90 seconds
+  gammaScheduler = setTimeout(() => {
+    if (sessionRunning) {
+      triggerGamma(true); // auto burst (quieter)
+      scheduleNextGamma();
+    }
+  }, delay);
+}
+
+function triggerGamma(auto = false) {
+  if (!sessionRunning) return;
+
+  // Audio gamma
+  if (audioCtx && (currentMode === 'audio' || currentMode === 'both')) {
+    const intensity = parseInt(document.getElementById('intensity').value);
+    const vol = auto ? 0.08 + (intensity / 10) * 0.06 : 0.12 + (intensity / 10) * 0.08;
+    const duration = auto ? 3 : 5;
+
+    gammaEnv.gain.cancelScheduledValues(audioCtx.currentTime);
+    gammaEnv.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.1);
+    gammaEnv.gain.setTargetAtTime(0, audioCtx.currentTime + duration, 0.5);
+  }
+
+  // Visual gamma burst (always, even without audio)
+  if (visualRunning) {
+    visualGammaBurst(auto ? 3 : 5);
+  }
+
+  // Brain SVG flash
+  flashGammaNodes();
+  if (!auto) {
+    document.getElementById('gamma-flash').style.opacity = '1';
+    setTimeout(() => document.getElementById('gamma-flash').style.opacity = '0', 300);
+  }
+}
+
+function flashGammaNodes() {
+  const nodes = document.querySelectorAll('.gamma-node');
+  const tpnNodes = document.querySelectorAll('.tpn-node');
+  nodes.forEach(n => n.style.opacity = '0.7');
+  tpnNodes.forEach(n => {
+    n.style.filter = 'drop-shadow(0 0 16px var(--tpn)) drop-shadow(0 0 30px var(--tpn))';
+  });
+  setTimeout(() => {
+    nodes.forEach(n => n.style.opacity = '0');
+    tpnNodes.forEach(n => { n.style.filter = ''; });
+  }, 2000);
+}
+
+// ===================================================================
+// UI UPDATES
+// ===================================================================
+const phaseData = {
+  0: {
+    name: 'STANDBY', cls: 'idle', num: '0/3',
+    desc: 'Protocolo de entrainment neuronal para transición DMN → TPN.<br>Calibrado para cerebros ADHD.'
+  },
+  1: {
+    name: 'PUENTE', cls: 'bridge', num: '1/3',
+    desc: 'Sincronizando con tu ritmo neuronal base...<br>Alpha 10 Hz — el DMN comienza a ceder terreno.'
+  },
+  2: {
+    name: 'IGNICIÓN', cls: 'ignition', num: '2/3',
+    desc: 'Rampa Alpha → Beta en curso...<br>El TPN está despertando. DMN suprimido progresivamente.'
+  },
+  3: {
+    name: 'TASK LOCK', cls: 'tasklock', num: '3/3',
+    desc: 'Red TPN activa. Beta sostenido + Gamma anti-DMN.<br>El modo tarea está online. La mente errante: contenida.'
+  }
+};
+
+function setPhaseUI(phase) {
+  const d = phaseData[phase];
+  const el = document.getElementById('phase-name');
+  el.textContent = d.name;
+  el.className = 'phase-name ' + d.cls;
+  document.getElementById('phase-desc').innerHTML = d.desc;
+  document.getElementById('phase-num').textContent = d.num;
+
+  const barColors = { 1: 'var(--phase-bridge)', 2: 'var(--phase-ignition)', 3: 'var(--phase-tasklock)' };
+  document.getElementById('phase-bar').style.background = barColors[phase] || 'var(--phase-bridge)';
+
+  const freqColors = { 1: 'var(--phase-bridge)', 2: 'var(--phase-ignition)', 3: 'var(--phase-tasklock)' };
+  document.getElementById('freq-display').style.color = freqColors[phase] || 'var(--text)';
+}
+
+function updatePhaseBar(progress) {
+  document.getElementById('phase-bar').style.width = Math.min(100, progress * 100) + '%';
+}
+
+function updateNetworkMeters(tpnLevel, dmnLevel) {
+  const tpnPct = Math.round(tpnLevel * 100);
+  const dmnPct = Math.round(dmnLevel * 100);
+  document.getElementById('tpn-meter').style.height = tpnPct + '%';
+  document.getElementById('dmn-meter').style.height = dmnPct + '%';
+  document.getElementById('tpn-pct').textContent = tpnPct + '%';
+  document.getElementById('dmn-pct').textContent = dmnPct + '%';
+
+  // Update SVG node opacity
+  const dmnOpacity = dmnLevel;
+  const tpnOpacity = tpnLevel;
+
+  document.querySelectorAll('.dmn-node').forEach(n => {
+    n.style.opacity = dmnOpacity;
+    if (dmnOpacity < 0.3) {
+      n.style.filter = `drop-shadow(0 0 ${dmnOpacity * 20}px var(--dmn))`;
+    }
+  });
+  document.querySelectorAll('.tpn-node').forEach(n => {
+    n.style.opacity = tpnOpacity;
+    n.style.filter = `drop-shadow(0 0 ${tpnOpacity * 16}px var(--tpn))`;
+    // Update the text opacity too
+    n.querySelectorAll('text').forEach(t => t.style.opacity = tpnOpacity);
+    n.querySelectorAll('circle').forEach((c, i) => {
+      if (i === 0) c.style.opacity = tpnOpacity * 0.15;
+      if (i === 1) c.style.opacity = tpnOpacity;
+    });
+  });
+}
+
+function adjustIntensity(val) {
+  if (currentPhase === 1) {
+    const depth = 0.25 + (val / 10) * 0.2;
+    amGain.gain.setTargetAtTime(depth, audioCtx.currentTime, 1.0);
+  } else if (currentPhase >= 3) {
+    const depth = 0.5 + (val / 10) * 0.2;
+    amGain.gain.setTargetAtTime(depth, audioCtx.currentTime, 2.0);
+  }
+}
+
+// ===================================================================
+// SESSION CONTROL
+// ===================================================================
+function startSession() {
+  if (sessionRunning) return;
+
+  // Start audio only if mode requires it
+  if (currentMode === 'audio' || currentMode === 'both') {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    buildAudioGraph(audioCtx);
+  }
+
+  // Start visual if mode requires it
+  if (currentMode === 'visual' || currentMode === 'both') {
+    startVisualEntrainment();
+  }
+
+  sessionRunning = true;
+  sessionStart = Date.now();
+
+  document.getElementById('btn-start').style.display = 'none';
+  document.getElementById('btn-stop').style.display = 'block';
+  document.getElementById('status-badge').textContent = 'ACTIVO';
+  document.getElementById('status-badge').className = 'status-badge active';
+  document.getElementById('session-label').textContent = 'sesión iniciada';
+  document.getElementById('session-label').style.color = 'var(--tpn)';
+  document.getElementById('waveform-label').textContent = 'señal activa';
+  document.getElementById('total-timer').style.color = 'var(--tpn)';
+  document.getElementById('phase-num').style.color = 'var(--text)';
+
+  // Total timer
+  totalTimer = setInterval(() => {
+    totalSeconds = Math.floor((Date.now() - sessionStart) / 1000);
+    document.getElementById('total-timer').textContent = formatTime(totalSeconds);
+  }, 1000);
+
+  startBridge();
+  drawWaveform();
+}
+
+function stopSession() {
+  if (!sessionRunning) return;
+  sessionRunning = false;
+
+  if (phaseTimer) clearInterval(phaseTimer);
+  if (totalTimer) clearInterval(totalTimer);
+  if (gammaScheduler) clearTimeout(gammaScheduler);
+  if (antiHabituationInterval) clearInterval(antiHabituationInterval);
+  if (animFrame) cancelAnimationFrame(animFrame);
+
+  if (audioCtx) {
+    masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+    setTimeout(() => { audioCtx.close(); audioCtx = null; }, 1000);
+  }
+
+  // Stop visual entrainment
+  stopVisualEntrainment();
+
+  currentPhase = 0;
+
+  document.getElementById('btn-start').style.display = 'block';
+  document.getElementById('btn-stop').style.display = 'none';
+  document.getElementById('btn-gamma').style.display = 'none';
+  document.getElementById('status-badge').textContent = 'STANDBY';
+  document.getElementById('status-badge').className = 'status-badge idle';
+  document.getElementById('session-label').textContent = 'sin sesión activa';
+  document.getElementById('session-label').style.color = 'var(--text-dim)';
+  document.getElementById('waveform-label').textContent = 'sin señal';
+  document.getElementById('total-timer').style.color = 'var(--text-dim)';
+  document.getElementById('freq-display').style.color = 'var(--text-dim)';
+  document.getElementById('freq-display').textContent = '—';
+  document.getElementById('phase-num').style.color = 'var(--text-dim)';
+
+  ['tl-bridge','tl-ignition','tl-tasklock'].forEach(id => {
+    document.getElementById(id).classList.remove('current','done');
+  });
+  document.getElementById('tl-bridge-timer').textContent = '3:00';
+  document.getElementById('tl-ignition-timer').textContent = '4:00';
+  document.getElementById('tl-tasklock-timer').textContent = '∞';
+
+  setPhaseUI(0);
+  updateNetworkMeters(0.15, 0.85);
+  updatePhaseBar(0);
+
+  // Clear waveform
+  const canvas = document.getElementById('waveform');
+  const ctx2 = canvas.getContext('2d');
+  ctx2.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// ===================================================================
+// WAVEFORM VISUALIZER
+// ===================================================================
+function drawWaveform() {
+  if (!sessionRunning || !analyser) return;
+
+  const canvas = document.getElementById('waveform');
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth;
+  canvas.height = 70;
+
+  const bufferLen = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLen);
+
+  const phaseColors = { 1: '#6a7fd4', 2: '#f0a500', 3: '#00f5c4' };
+
+  function render() {
+    if (!sessionRunning) return;
+    animFrame = requestAnimationFrame(render);
+
+    analyser.getByteTimeDomainData(dataArray);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const color = phaseColors[currentPhase] || '#4a5a6a';
+
+    // Draw gradient background line
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+
+    const sliceWidth = canvas.width / bufferLen;
+    let x = 0;
+    for (let i = 0; i < bufferLen; i++) {
+      const v = dataArray[i] / 128.0;
+      const y = (v * canvas.height) / 2;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+      x += sliceWidth;
+    }
+    ctx.stroke();
+
+    // Center line
+    ctx.strokeStyle = 'rgba(100,140,200,0.15)';
+    ctx.lineWidth = 1;
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height / 2);
+    ctx.lineTo(canvas.width, canvas.height / 2);
+    ctx.stroke();
+  }
+  render();
+}
+
+// ===================================================================
+// UTILITIES
+// ===================================================================
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+// Resize canvas on window resize
+window.addEventListener('resize', () => {
+  const canvas = document.getElementById('waveform');
+  if (canvas) canvas.width = canvas.offsetWidth;
+});
+</script>
+</body>
+</html>
