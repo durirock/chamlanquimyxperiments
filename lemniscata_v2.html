@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Lemniscata Viva — Musicosmos</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#000; overflow:hidden; font-family:'Courier New', monospace; }
+canvas { display:block; cursor:none; }
+
+#loading {
+  position:fixed; inset:0; background:#000010;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:100; color:#40ffb0;
+  transition: opacity 1.5s ease;
+}
+.lemniscata-symbol {
+  font-size:5rem; line-height:1;
+  animation: breathe 3s ease-in-out infinite;
+  color:#40ffb0; text-shadow:0 0 40px #40ffb0, 0 0 80px #40ffb040;
+}
+@keyframes breathe { 0%,100%{transform:scale(1);opacity:0.7} 50%{transform:scale(1.15);opacity:1} }
+.load-title { font-size:0.8rem; letter-spacing:0.5em; text-transform:uppercase; margin:16px 0 8px; opacity:0.8; }
+.load-sub { font-size:0.55rem; letter-spacing:0.3em; opacity:0.4; }
+.load-bar { width:200px; height:1px; background:rgba(64,255,176,0.2); margin-top:20px; }
+.load-fill { height:100%; width:0; background:#40ffb0; box-shadow:0 0 8px #40ffb0; transition:width 0.1s; }
+
+/* Warp overlay — el portal del nodo */
+#warp-overlay {
+  position:fixed; inset:0; pointer-events:none; z-index:50;
+  opacity:0; transition:opacity 0.1s;
+  background:radial-gradient(ellipse at center,
+    rgba(255,200,60,0.9) 0%,
+    rgba(255,120,20,0.6) 25%,
+    rgba(100,20,200,0.4) 55%,
+    rgba(0,0,30,0) 75%
+  );
+}
+#warp-tunnel {
+  position:fixed; inset:0; pointer-events:none; z-index:49;
+  opacity:0;
+  background:conic-gradient(from 0deg at 50% 50%,
+    rgba(255,200,60,0.3) 0deg,
+    rgba(0,255,120,0.2) 60deg,
+    rgba(100,0,255,0.3) 120deg,
+    rgba(255,60,0,0.2) 180deg,
+    rgba(0,200,255,0.3) 240deg,
+    rgba(255,200,60,0.3) 360deg
+  );
+  animation: spin-tunnel 2s linear infinite;
+}
+@keyframes spin-tunnel { to { transform:rotate(360deg); } }
+
+#hud {
+  position:fixed; top:0; left:0; right:0; bottom:0;
+  pointer-events:none; z-index:10;
+}
+#panel-tl {
+  position:absolute; top:24px; left:24px;
+  color:#40ffb0; font-size:0.65rem; letter-spacing:0.18em; line-height:2.2;
+  text-transform:uppercase; text-shadow:0 0 12px #40ffb060;
+}
+#panel-tl h1 { font-size:0.9rem; letter-spacing:0.4em; color:#fff; margin-bottom:4px; text-shadow:0 0 20px #40ffb0; }
+
+#panel-tr {
+  position:absolute; top:24px; right:24px; text-align:right;
+  color:rgba(64,255,176,0.55); font-size:0.6rem; letter-spacing:0.12em; line-height:2.2;
+}
+
+#lobe-bar {
+  position:absolute; bottom:32px; left:50%; transform:translateX(-50%);
+  display:flex; align-items:center; gap:14px;
+}
+.lobe-pip { width:8px; height:8px; border-radius:50%; border:1px solid rgba(64,255,176,0.3); transition:all 0.6s; }
+.lobe-pip.on { background:#40ffb0; box-shadow:0 0 12px #40ffb0, 0 0 24px #40ffb040; border-color:#40ffb0; }
+.lobe-sep { color:rgba(255,200,60,0.6); font-size:0.65rem; letter-spacing:0.2em; transition:all 0.4s; }
+.lobe-sep.glow { color:#ffcc3c; text-shadow:0 0 15px #ffcc3c; }
+
+/* Crosshair sutil */
+#crosshair {
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:16px; height:16px; pointer-events:none;
+}
+.ch-h { position:absolute; top:50%; left:0; right:0; height:1px; margin-top:-0.5px; background:rgba(64,255,176,0.5); }
+.ch-v { position:absolute; left:50%; top:0; bottom:0; width:1px; margin-left:-0.5px; background:rgba(64,255,176,0.5); }
+.ch-dot { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:3px; height:3px; border-radius:50%; background:#40ffb0; box-shadow:0 0 6px #40ffb0; }
+
+#audio-btn {
+  position:absolute; bottom:24px; right:24px;
+  pointer-events:all; cursor:pointer;
+  background:rgba(0,0,0,0.5); border:1px solid rgba(64,255,176,0.25);
+  color:rgba(64,255,176,0.7); padding:7px 14px;
+  font-size:0.6rem; letter-spacing:0.2em; font-family:inherit;
+  transition:all 0.3s;
+}
+#audio-btn:hover { border-color:rgba(64,255,176,0.6); color:#40ffb0; }
+
+.scanline {
+  position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.015) 3px,rgba(0,0,0,0.015) 4px);
+}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="lemniscata-symbol">∞</div>
+  <div class="load-title">Lemniscata Viva</div>
+  <div class="load-sub">Musicosmos — Chamalnquimyst Labs</div>
+  <div class="load-bar"><div class="load-fill" id="load-fill"></div></div>
+</div>
+
+<div id="warp-overlay"></div>
+<div id="warp-tunnel"></div>
+
+<div id="hud">
+  <div id="panel-tl">
+    <h1>∞ LEMNISCATA</h1>
+    <div id="hud-t">Trayecto: 0%</div>
+    <div id="hud-lobe">Lóbulo: Derecho</div>
+    <div id="hud-phi">Órbita: 0°</div>
+    <div id="hud-node" style="color:rgba(255,200,60,0); transition:color 0.4s">⬡ Nodo singular</div>
+  </div>
+  <div id="panel-tr">
+    <div>W·S — avanzar</div>
+    <div>A·D — órbita</div>
+    <div>SHIFT — warp</div>
+    <div>Arrastra — mirar</div>
+    <div>R — resetear</div>
+  </div>
+
+  <div id="crosshair">
+    <div class="ch-h"></div><div class="ch-v"></div><div class="ch-dot"></div>
+  </div>
+
+  <div id="lobe-bar">
+    <div class="lobe-pip on" id="pip-r"></div>
+    <div class="lobe-sep" id="sep-node">◈ nodo</div>
+    <div class="lobe-pip" id="pip-l"></div>
+  </div>
+
+  <button id="audio-btn" onclick="toggleAudio()">♪ silencio</button>
+  <div class="scanline"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// LEMNISCATA VIVA v2 — smooth frames, no seam, warp portal
+// ═══════════════════════════════════════════════════════════
+
+const LEMN_A    = 170;   // escala horizontal
+const LEMN_ELEV = 40;    // elevación vertical de los lóbulos
+const TUBE_R    = 16;    // radio del tubo
+const T_SEGS    = 512;   // segmentos de curva (más = más suave)
+const R_SEGS    = 52;    // segmentos radiales
+const HOVER     = 2.8;   // altura sobre superficie
+const N_SAMPLES = 2048;  // muestras para Bishop frames
+
+let scene, camera, renderer, clock;
+let tube, innerTube, atmoPulse;
+let tubeMat;
+let starsMesh, starsMat;
+let portalRings = [];
+let organisms = [];
+let audioCtx, masterGain, droneOscs = [], audioReady = false, audioOn = false;
+
+// ── Bishop frames (parallel transport — SIN flips) ──
+let bishopPositions = [];
+let bishopTangents  = [];
+let bishopNormals   = [];
+let bishopBinormals = [];
+
+// ── Player ──
+const P = {
+  t: 0.0,       // posición en curva [0,1]
+  phi: 0.0,     // ángulo orbital
+  vt: 0.0,      // velocidad tangencial
+  vphi: 0.0,    // velocidad orbital
+  yaw: 0.0,     // look yaw
+  pitch: 0.08,  // look pitch
+  nodeProx: 0,  // proximidad al nodo [0,1]
+  warpState: 0, // 0=normal, 1=entering, 2=peak, 3=exiting
+  prevLobe: 'right',
+};
+
+const keys = {};
+let isDragging = false, lastX = 0, lastY = 0;
+
+// ─── LEMNISCATA PARAM ────────────────────────────────────
+function lemnPoint(u) {
+  const theta = u * Math.PI * 2;
+  const s = Math.sin(theta), c = Math.cos(theta);
+  const d = 1 + s * s;
+  return new THREE.Vector3(
+    LEMN_A * c / d,
+    LEMN_ELEV * Math.sin(2 * theta),
+    LEMN_A * s * c / d
+  );
+}
+
+function lemnTangent(u) {
+  // Numerical tangent with central difference
+  const eps = 0.0001;
+  const a = lemnPoint(((u - eps) + 1) % 1);
+  const b = lemnPoint((u + eps) % 1);
+  return b.sub(a).normalize();
+}
+
+// ── Construir Bishop Frames (parallel transport) ──────────
+function buildBishopFrames() {
+  bishopPositions = [];
+  bishopTangents  = [];
+  bishopNormals   = [];
+  bishopBinormals = [];
+
+  for (let i = 0; i <= N_SAMPLES; i++) {
+    const u = i / N_SAMPLES;
+    bishopPositions.push(lemnPoint(u));
+    bishopTangents.push(lemnTangent(u));
+  }
+
+  // Seed inicial: buscar normal no colineal con primera tangente
+  const t0 = bishopTangents[0];
+  let initNorm = new THREE.Vector3(0, 1, 0);
+  if (Math.abs(t0.dot(initNorm)) > 0.9) initNorm.set(1, 0, 0);
+  initNorm.sub(t0.clone().multiplyScalar(t0.dot(initNorm))).normalize();
+
+  bishopNormals.push(initNorm.clone());
+  bishopBinormals.push(t0.clone().cross(initNorm).normalize());
+
+  // Transportar paralelamente
+  for (let i = 1; i <= N_SAMPLES; i++) {
+    const tPrev = bishopTangents[i - 1];
+    const tCurr = bishopTangents[i];
+
+    // Rodrigues rotation: rotar el frame para alinear tPrev → tCurr
+    const axis  = tPrev.clone().cross(tCurr);
+    const sinA  = axis.length();
+    const cosA  = tPrev.dot(tCurr);
+
+    let newNorm;
+    if (sinA < 1e-8) {
+      newNorm = bishopNormals[i - 1].clone();
+    } else {
+      const axNorm = axis.clone().divideScalar(sinA);
+      const angle  = Math.atan2(sinA, cosA);
+      const q = new THREE.Quaternion().setFromAxisAngle(axNorm, angle);
+      newNorm = bishopNormals[i - 1].clone().applyQuaternion(q);
+    }
+
+    bishopNormals.push(newNorm.normalize());
+    bishopBinormals.push(tCurr.clone().cross(newNorm).normalize());
+  }
+}
+
+function getBishopFrame(u) {
+  const raw = u * N_SAMPLES;
+  const i0  = Math.floor(raw) % N_SAMPLES;
+  const i1  = (i0 + 1) % N_SAMPLES;
+  const frac = raw - Math.floor(raw);
+
+  const pos  = bishopPositions[i0].clone().lerp(bishopPositions[i1], frac);
+  const tang = bishopTangents[i0].clone().lerp(bishopTangents[i1], frac).normalize();
+  const norm = bishopNormals[i0].clone().lerp(bishopNormals[i1], frac).normalize();
+  const bino = bishopBinormals[i0].clone().lerp(bishopBinormals[i1], frac).normalize();
+  return { pos, tang, norm, bino };
+}
+
+// ─── THREE.Curve wrapper para TubeGeometry ────────────────
+class LemnCurve extends THREE.Curve {
+  getPoint(u, target) {
+    const p = lemnPoint(u);
+    return (target || new THREE.Vector3()).set(p.x, p.y, p.z);
+  }
+}
+
+// ─── SHADERS ─────────────────────────────────────────────
+
+const TUBE_VERT = `
+varying vec2 vUv;
+varying vec3 vNormal;
+varying vec3 vWorldPos;
+varying float vDepth;
+uniform float uTime;
+
+float h(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5); }
+float n2(vec2 p){
+  vec2 i=floor(p); vec2 f=fract(p);
+  f=f*f*(3.-2.*f);
+  return mix(mix(h(i),h(i+vec2(1,0)),f.x),
+             mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);
+}
+
+void main(){
+  vUv = uv;
+  vNormal = normalize(normalMatrix * normal);
+  // Desplazamiento suave del terreno (sin discontinuidades)
+  float t0 = n2(uv*5.0)*0.5 + n2(uv*12.0)*0.25 + n2(uv*28.0)*0.125 + n2(uv*60.0)*0.06;
+  vec3 disp = position + normal * (t0 * 3.2 - 0.5);
+  vec4 wp = modelMatrix * vec4(disp, 1.0);
+  vWorldPos = wp.xyz;
+  vec4 mv = viewMatrix * wp;
+  vDepth = -mv.z;
+  gl_Position = projectionMatrix * mv;
+}`;
+
+const TUBE_FRAG = `
+uniform float uTime;
+uniform vec3  uCamPos;
+uniform float uNodeProx;
+uniform float uWarp;
+varying vec2  vUv;
+varying vec3  vNormal;
+varying vec3  vWorldPos;
+varying float vDepth;
+
+float h(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5); }
+float n2(vec2 p){
+  vec2 i=floor(p); vec2 f=fract(p);
+  f=f*f*(3.-2.*f);
+  return mix(mix(h(i),h(i+vec2(1,0)),f.x),
+             mix(mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y),f.y);
+}
+float fbm(vec2 p){ float v=0.;float a=.5;for(int i=0;i<6;i++){v+=a*n2(p);p*=2.1;a*=.5;}return v; }
+
+vec3 palette(float t){
+  vec3 a=vec3(.5,.5,.5), b=vec3(.5,.5,.5), c=vec3(1.,1.,1.);
+  vec3 d=vec3(0.00,0.33,0.67);
+  return a+b*cos(6.283*(c*t+d));
+}
+
+void main(){
+  // Terrain
+  float base = fbm(vUv*4.5 + vec2(uTime*0.015,0.0));
+  float detail = fbm(vUv*14.0);
+  float micro = n2(vUv*40.0);
+
+  // Color terrain layers
+  vec3 cDeep    = vec3(0.01, 0.04, 0.18);
+  vec3 cOcean   = vec3(0.02, 0.12, 0.30);
+  vec3 cCoast   = vec3(0.08, 0.35, 0.30);
+  vec3 cForest  = vec3(0.04, 0.30, 0.10);
+  vec3 cSavanna = vec3(0.38, 0.32, 0.08);
+  vec3 cHighland= vec3(0.55, 0.42, 0.18);
+  vec3 cSnow    = vec3(0.85, 0.92, 1.00);
+
+  vec3 col = cDeep;
+  col = mix(col, cOcean,   smoothstep(0.25, 0.35, base));
+  col = mix(col, cCoast,   smoothstep(0.35, 0.42, base));
+  col = mix(col, cForest,  smoothstep(0.42, 0.56, base));
+  col = mix(col, cSavanna, smoothstep(0.62, 0.72, base));
+  col = mix(col, cHighland,smoothstep(0.72, 0.80, base));
+  col = mix(col, cSnow,    smoothstep(0.82, 0.90, base));
+
+  // Bioluminiscencia
+  float bioMask = smoothstep(0.75, 0.9, micro) * smoothstep(0.38, 0.56, base);
+  float bioTime = sin(uTime*2.8 + vUv.x*35.0 + vUv.y*18.0)*0.5+0.5;
+  col += vec3(0.05, 1.0, 0.6) * bioMask * bioTime * 0.8;
+
+  // Ríos bioluminiscentes
+  float river = smoothstep(0.48, 0.50, abs(fract(vUv.x*8.0 + fbm(vUv*3.0)*0.5) - 0.5));
+  float riverMask = step(0.40, base) * step(base, 0.65);
+  col += vec3(0.0, 0.8, 1.0) * river * riverMask * 0.25 * (sin(uTime*1.5)*0.3+0.7);
+
+  // Iluminación difusa
+  vec3 sunDir = normalize(vec3(0.5, 1.0, 0.3));
+  float diff = max(dot(vNormal, sunDir), 0.0);
+  col *= 0.20 + 0.80 * diff;
+
+  // Rim glow (atmósfera en borde)
+  vec3 vd = normalize(uCamPos - vWorldPos);
+  float rim = pow(1.0 - max(dot(vd, vNormal), 0.0), 2.8);
+  col += vec3(0.1, 1.0, 0.6) * rim * 0.40;
+
+  // Efecto warp / nodo — espectro arcoíris
+  float nodeGlow = uNodeProx * uWarp;
+  vec3 nodeCol = palette(uTime*0.3 + vUv.x + vUv.y);
+  col = mix(col, nodeCol, nodeGlow * 0.5);
+  col += nodeCol * rim * nodeGlow * 0.8;
+
+  // Niebla espacial suave
+  float fog = 1.0 - exp(-max(vDepth - 80.0, 0.0) * 0.0012);
+  col = mix(col, vec3(0.0, 0.002, 0.015), fog * 0.65);
+
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+const STAR_VERT = `
+attribute float aSize;
+attribute vec3  aColor;
+varying vec3 vColor;
+uniform float uTime;
+void main(){
+  vColor = aColor;
+  vec4 mv = modelViewMatrix * vec4(position,1.0);
+  float twinkle = 0.85 + 0.15 * sin(uTime*2.0 + position.x*0.5 + position.z*0.3);
+  gl_PointSize = aSize * twinkle * (350.0 / -mv.z);
+  gl_Position = projectionMatrix * mv;
+}`;
+
+const STAR_FRAG = `
+varying vec3 vColor;
+void main(){
+  float d = length(gl_PointCoord - 0.5)*2.0;
+  float a = 1.0-smoothstep(0.0,1.0,d);
+  a = pow(a,1.8);
+  if(a<0.01) discard;
+  gl_FragColor = vec4(vColor,a);
+}`;
+
+// ─── INIT ────────────────────────────────────────────────
+function init(){
+  // Build smooth frames first
+  buildBishopFrames();
+
+  scene    = new THREE.Scene();
+  camera   = new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.05, 10000);
+  renderer = new THREE.WebGLRenderer({ antialias:true, logarithmicDepthBuffer:true });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setClearColor(0x000206);
+  document.body.appendChild(renderer.domElement);
+  clock = new THREE.Clock();
+
+  progressLoad(10);
+  buildTube();
+  progressLoad(40);
+  buildStars();
+  progressLoad(55);
+  buildNebulae();
+  progressLoad(65);
+  buildPortal();
+  progressLoad(75);
+  buildOrganisms();
+  progressLoad(90);
+  setupInput();
+  progressLoad(100);
+
+  setTimeout(() => {
+    const el = document.getElementById('loading');
+    el.style.opacity='0';
+    setTimeout(()=>el.style.display='none',1500);
+  }, 800);
+
+  animate();
+}
+
+function progressLoad(pct){
+  document.getElementById('load-fill').style.width = pct+'%';
+}
+
+// ─── TUBE ────────────────────────────────────────────────
+function buildTube(){
+  const curve = new LemnCurve();
+
+  tubeMat = new THREE.ShaderMaterial({
+    vertexShader: TUBE_VERT,
+    fragmentShader: TUBE_FRAG,
+    uniforms:{
+      uTime:     {value:0},
+      uCamPos:   {value:new THREE.Vector3()},
+      uNodeProx: {value:0},
+      uWarp:     {value:0},
+    },
+    side: THREE.FrontSide,
+  });
+
+  tube = new THREE.Mesh(
+    new THREE.TubeGeometry(curve, T_SEGS, TUBE_R, R_SEGS, true),
+    tubeMat
+  );
+  scene.add(tube);
+
+  // Inner face — evita que se vea el "hueco" en la intersección
+  innerTube = new THREE.Mesh(
+    new THREE.TubeGeometry(curve, Math.floor(T_SEGS*0.6), TUBE_R*0.96, 24, true),
+    new THREE.MeshBasicMaterial({
+      color:0x001a0d, side:THREE.BackSide, transparent:true, opacity:0.6
+    })
+  );
+  scene.add(innerTube);
+
+  // Atmósfera exterior — halo verde
+  scene.add(new THREE.Mesh(
+    new THREE.TubeGeometry(curve, 180, TUBE_R*1.32, 18, true),
+    new THREE.MeshBasicMaterial({
+      color:0x00ff80, transparent:true, opacity:0.028,
+      side:THREE.BackSide, blending:THREE.AdditiveBlending, depthWrite:false
+    })
+  ));
+  scene.add(new THREE.Mesh(
+    new THREE.TubeGeometry(curve, 100, TUBE_R*2.0, 12, true),
+    new THREE.MeshBasicMaterial({
+      color:0x002240, transparent:true, opacity:0.018,
+      side:THREE.BackSide, blending:THREE.AdditiveBlending, depthWrite:false
+    })
+  ));
+}
+
+// ─── STARS ───────────────────────────────────────────────
+function buildStars(){
+  const N = 9000;
+  const pos = new Float32Array(N*3);
+  const sz  = new Float32Array(N);
+  const col = new Float32Array(N*3);
+  const palettes = [
+    [1.0,0.95,0.85],[0.7,0.85,1.0],[1.0,0.7,0.5],
+    [0.5,0.8,1.0],[1.0,0.9,0.6],[0.8,0.7,1.0],[0.6,1.0,0.8]
+  ];
+  for(let i=0;i<N;i++){
+    const phi=Math.acos(2*Math.random()-1), theta=Math.random()*Math.PI*2;
+    const r=1800+Math.random()*4000;
+    pos[i*3]=r*Math.sin(phi)*Math.cos(theta);
+    pos[i*3+1]=r*Math.cos(phi);
+    pos[i*3+2]=r*Math.sin(phi)*Math.sin(theta);
+    sz[i]=0.4+Math.random()*2.8;
+    const p=palettes[Math.floor(Math.random()*palettes.length)];
+    const b=0.4+Math.random()*0.6;
+    col[i*3]=p[0]*b; col[i*3+1]=p[1]*b; col[i*3+2]=p[2]*b;
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setAttribute('aSize',   new THREE.BufferAttribute(sz,1));
+  g.setAttribute('aColor',  new THREE.BufferAttribute(col,3));
+  starsMat = new THREE.ShaderMaterial({
+    vertexShader:STAR_VERT, fragmentShader:STAR_FRAG,
+    uniforms:{uTime:{value:0}},
+    transparent:true, depthWrite:false, blending:THREE.AdditiveBlending
+  });
+  starsMesh = new THREE.Points(g, starsMat);
+  scene.add(starsMesh);
+}
+
+// ─── NEBULAE ─────────────────────────────────────────────
+function buildNebulae(){
+  [
+    {p:[700,250,-1400],c:0x4010cc,s:900},
+    {p:[-900,-300,950],c:0xcc2010,s:700},
+    {p:[0,800,-700],   c:0x0060cc,s:600},
+    {p:[-1100,100,-600],c:0x10aa50,s:800},
+    {p:[600,-700,900], c:0xcc6000,s:500},
+  ].forEach(({p,c,s})=>{
+    [1.0,0.65].forEach((scale,i)=>{
+      const m=new THREE.Mesh(
+        new THREE.PlaneGeometry(s*scale,s*scale),
+        new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.05-i*0.015,
+          blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})
+      );
+      m.position.set(...p);
+      m.lookAt(0,0,0);
+      if(i===1) m.rotation.z=Math.PI*0.35;
+      scene.add(m);
+    });
+  });
+
+  // Galaxia lejana
+  [{p:[1100,500,-2000],r:60,c:0xffee88},{p:[-1500,-200,1200],r:40,c:0x88aaff}].forEach(({p,r,c})=>{
+    const m=new THREE.Mesh(new THREE.SphereGeometry(r,10,6),new THREE.MeshBasicMaterial({color:c}));
+    m.position.set(...p); scene.add(m);
+    const glow=new THREE.Mesh(new THREE.SphereGeometry(r*4,6,4),
+      new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.04,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.BackSide}));
+    glow.position.set(...p); scene.add(glow);
+  });
+}
+
+// ─── PORTAL DEL NODO ────────────────────────────────────
+function buildPortal(){
+  // Los nodos de cruce son en u≈0.25 y u≈0.75
+  [0.25, 0.75].forEach(u=>{
+    const f = getBishopFrame(u);
+
+    // Anillo exterior dorado
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(TUBE_R*1.55, 0.7, 10, 48),
+      new THREE.MeshBasicMaterial({
+        color:0xffcc30, transparent:true, opacity:0.5,
+        blending:THREE.AdditiveBlending, depthWrite:false
+      })
+    );
+    ring.position.copy(f.pos);
+    ring.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), f.tang);
+    scene.add(ring);
+    ring.userData.isPortal = true;
+    portalRings.push(ring);
+
+    // Anillo interior
+    const ring2 = new THREE.Mesh(
+      new THREE.TorusGeometry(TUBE_R*0.9, 0.35, 8, 36),
+      new THREE.MeshBasicMaterial({
+        color:0xffffff, transparent:true, opacity:0.3,
+        blending:THREE.AdditiveBlending, depthWrite:false
+      })
+    );
+    ring2.position.copy(f.pos);
+    ring2.quaternion.copy(ring.quaternion);
+    scene.add(ring2);
+    ring2.userData.isPortal = true;
+    portalRings.push(ring2);
+
+    // Disco de energía
+    const disc = new THREE.Mesh(
+      new THREE.CircleGeometry(TUBE_R*1.5, 40),
+      new THREE.MeshBasicMaterial({
+        color:0xff8800, transparent:true, opacity:0.06,
+        blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide
+      })
+    );
+    disc.position.copy(f.pos);
+    disc.quaternion.copy(ring.quaternion);
+    scene.add(disc);
+    disc.userData.isPortal = true;
+    portalRings.push(disc);
+  });
+}
+
+// ─── ORGANISMOS ─────────────────────────────────────────
+function buildOrganisms(){
+  // Organismos instanciados como esferas brillantes en superficie
+  const N = 800;
+  const geo = new THREE.SphereGeometry(0.35, 5, 4);
+  const mat = new THREE.MeshBasicMaterial({
+    color:0x40ffaa, blending:THREE.AdditiveBlending, depthWrite:false
+  });
+  const mesh = new THREE.InstancedMesh(geo, mat, N);
+  const dummy = new THREE.Object3D();
+  const tc = new THREE.Color();
+
+  for(let i=0;i<N;i++){
+    const u = Math.random();
+    const phi = Math.random()*Math.PI*2;
+    const f = getBishopFrame(u);
+    const surfPos = f.pos.clone()
+      .addScaledVector(f.norm, Math.cos(phi)*TUBE_R)
+      .addScaledVector(f.bino, Math.sin(phi)*TUBE_R);
+    // Añadir pequeño offset exterior
+    surfPos.addScaledVector(
+      f.norm.clone().multiplyScalar(Math.cos(phi)).addScaledVector(f.bino, Math.sin(phi)).normalize(),
+      0.6
+    );
+    dummy.position.copy(surfPos);
+    dummy.scale.setScalar(0.4+Math.random()*2.2);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+    const h = Math.random();
+    tc.setHSL(h < 0.5 ? 0.35+h*0.3 : h*0.15, 0.9, 0.5+Math.random()*0.35);
+    mesh.setColorAt(i, tc);
+    organisms.push({u, phi, phase:Math.random()*Math.PI*2, amp:0.5+Math.random()*2});
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.instanceColor.needsUpdate  = true;
+  scene.add(mesh);
+}
+
+// ─── AUDIO ───────────────────────────────────────────────
+function initAudio(){
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  masterGain = audioCtx.createGain(); masterGain.gain.value=0;
+  masterGain.connect(audioCtx.destination);
+
+  // Capas de drone armónico
+  [55,110,165,220,275,330].forEach((freq,i)=>{
+    const osc = audioCtx.createOscillator();
+    osc.type = ['sine','sine','triangle','sine','triangle','sine'][i];
+    osc.frequency.value = freq;
+
+    const lfo = audioCtx.createOscillator();
+    lfo.frequency.value = 0.05+i*0.02;
+    const lfoG = audioCtx.createGain(); lfoG.gain.value=freq*0.003;
+    lfo.connect(lfoG); lfoG.connect(osc.frequency); lfo.start();
+
+    const g = audioCtx.createGain(); g.gain.value=0.025/(i*0.5+1);
+    osc.connect(g); g.connect(masterGain); osc.start();
+    droneOscs.push({osc,gain:g});
+  });
+
+  audioReady=true;
+}
+
+function toggleAudio(){
+  if(!audioReady) initAudio();
+  audioOn = !audioOn;
+  if(audioReady){
+    masterGain.gain.setTargetAtTime(audioOn?0.18:0, audioCtx.currentTime, 0.8);
+  }
+  document.getElementById('audio-btn').textContent = audioOn ? '♪ sonando' : '♪ silencio';
+}
+
+function triggerNodeAudio(){
+  if(!audioReady||!audioOn) return;
+  const now=audioCtx.currentTime;
+  [440,550,660,880].forEach((freq,i)=>{
+    const o=audioCtx.createOscillator();
+    const g=audioCtx.createGain();
+    o.type='sine'; o.frequency.value=freq;
+    g.gain.setValueAtTime(0,now+i*0.08);
+    g.gain.linearRampToValueAtTime(0.15,now+i*0.08+0.1);
+    g.gain.exponentialRampToValueAtTime(0.001,now+i*0.08+1.5);
+    o.connect(g); g.connect(masterGain);
+    o.start(now+i*0.08); o.stop(now+i*0.08+2);
+  });
+  // Pitch modulate drones
+  if(droneOscs.length>0){
+    const now2=audioCtx.currentTime;
+    droneOscs.forEach((d,i)=>{
+      d.osc.frequency.setTargetAtTime(d.osc.frequency.value*1.5,now2,0.2);
+      d.osc.frequency.setTargetAtTime(d.osc.frequency.value,now2+1.0,0.4);
+    });
+  }
+}
+
+// ─── INPUT ───────────────────────────────────────────────
+function setupInput(){
+  addEventListener('keydown',e=>{ keys[e.key.toLowerCase()]=true; });
+  addEventListener('keyup',  e=>{ keys[e.key.toLowerCase()]=false; });
+
+  const el=renderer.domElement;
+  el.addEventListener('mousedown',e=>{isDragging=true;lastX=e.clientX;lastY=e.clientY;});
+  addEventListener('mousemove',e=>{
+    if(!isDragging)return;
+    P.yaw   -= (e.clientX-lastX)/innerWidth * 2.8;
+    P.pitch = Math.max(-0.55,Math.min(0.55,P.pitch-(e.clientY-lastY)/innerHeight*1.8));
+    lastX=e.clientX; lastY=e.clientY;
+  });
+  addEventListener('mouseup',()=>isDragging=false);
+
+  let tx=0,ty=0;
+  el.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;});
+  el.addEventListener('touchmove',e=>{
+    e.preventDefault();
+    P.yaw   -= (e.touches[0].clientX-tx)/innerWidth*2.5;
+    P.pitch = Math.max(-0.55,Math.min(0.55,P.pitch-(e.touches[0].clientY-ty)/innerHeight*1.5));
+    tx=e.touches[0].clientX; ty=e.touches[0].clientY;
+  },{passive:false});
+
+  addEventListener('resize',()=>{
+    camera.aspect=innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+  });
+}
+
+// ─── WARP STATE MACHINE ──────────────────────────────────
+let warpPhase=0; // 0-3 (idle,ramp,peak,decay)
+let warpIntensity=0;
+let prevNodeProx=0;
+let nodeCooldown=0;
+
+function updateWarp(dt, nodeProx){
+  nodeCooldown=Math.max(0,nodeCooldown-dt);
+
+  // Detectar entrada al nodo
+  if(nodeProx>0.6 && prevNodeProx<=0.6 && nodeCooldown<=0){
+    warpPhase=1;
+    nodeCooldown=2.0;
+    triggerNodeAudio();
+  }
+  prevNodeProx=nodeProx;
+
+  // State machine de intensidad
+  if(warpPhase===1){ warpIntensity+=dt*2.5; if(warpIntensity>=1){warpIntensity=1;warpPhase=2;} }
+  else if(warpPhase===2){ warpIntensity-=dt*1.2; if(warpIntensity<=0){warpIntensity=0;warpPhase=0;} }
+  else { warpIntensity=Math.max(0,warpIntensity-dt*3); }
+
+  // Overlay HTML suave
+  const warpOverlay=document.getElementById('warp-overlay');
+  const warpTunnel =document.getElementById('warp-tunnel');
+  warpOverlay.style.opacity=warpIntensity*0.75;
+  warpTunnel.style.opacity =warpIntensity*0.4;
+
+  // Shader
+  tubeMat.uniforms.uWarp.value = warpIntensity;
+  tubeMat.uniforms.uNodeProx.value = nodeProx;
+}
+
+// ─── UPDATE PLAYER ───────────────────────────────────────
+const camTarget = new THREE.Vector3();
+const camPos    = new THREE.Vector3();
+const smoothQuat = new THREE.Quaternion();
+
+function updatePlayer(dt){
+  const fast = keys['shift']||keys['control'];
+  const baseSpeed = fast ? 0.0020 : 0.00065;
+
+  // Acceleración suave (no jerk)
+  const targetVt   = (keys['w']||keys['arrowup'])   ? baseSpeed :
+                     (keys['s']||keys['arrowdown'])  ? -baseSpeed : 0;
+  const targetVphi = (keys['d']) ? 0.7 : (keys['a']) ? -0.7 : 0;
+
+  P.vt   += (targetVt   - P.vt)   * Math.min(dt*5,1);
+  P.vphi += (targetVphi - P.vphi) * Math.min(dt*6,1);
+
+  P.t   = ((P.t   + P.vt * 1) % 1 + 1) % 1;
+  P.phi = (P.phi  + P.vphi * dt + Math.PI*2) % (Math.PI*2);
+
+  if(keys['arrowleft'])  P.yaw += dt*1.5;
+  if(keys['arrowright']) P.yaw -= dt*1.5;
+  if(keys['r']){ P.yaw=0; P.pitch=0.08; }
+
+  // Bishop frame en posición actual
+  const f = getBishopFrame(P.t);
+
+  // Eje de superficie según phi
+  const cosP=Math.cos(P.phi), sinP=Math.sin(P.phi);
+  const surfNorm = f.norm.clone().multiplyScalar(cosP)
+    .addScaledVector(f.bino, sinP).normalize();
+
+  // Posición en superficie + hover
+  const surfPos = f.pos.clone()
+    .addScaledVector(f.norm, cosP*TUBE_R)
+    .addScaledVector(f.bino, sinP*TUBE_R)
+    .addScaledVector(surfNorm, HOVER);
+
+  // Suavizado de cámara — LERP fuerte para movimiento fluido
+  camPos.lerp(surfPos, 0.10);
+  camera.position.copy(camPos);
+
+  // Calcular up y forward
+  const up  = surfNorm.clone();
+  const fwd = f.tang.clone();
+  const right = fwd.clone().cross(up).normalize();
+
+  // Aplicar yaw/pitch del look
+  const qYaw   = new THREE.Quaternion().setFromAxisAngle(up,    P.yaw);
+  const qPitch = new THREE.Quaternion().setFromAxisAngle(right, P.pitch);
+  const lookDir= fwd.clone().applyQuaternion(qYaw).applyQuaternion(qPitch).normalize();
+
+  camera.up.lerp(up, 0.08).normalize();
+  camTarget.copy(camPos).add(lookDir);
+  camera.lookAt(camTarget);
+
+  // Devolver mirada al centro lentamente
+  P.yaw   *= 0.982;
+  P.pitch  = P.pitch*0.985 + 0.08*0.015;
+
+  // Proximidad al nodo (u≈0.25 ó u≈0.75)
+  const d0 = Math.min(Math.abs(P.t-0.25), Math.abs(P.t-0.75));
+  const d1 = Math.min(d0, Math.abs(P.t-0.25+1), Math.abs(P.t-0.75+1));
+  P.nodeProx = Math.max(0, 1 - d0/0.10);
+
+  updateWarp(dt, P.nodeProx);
+
+  // Shader uniforms
+  tubeMat.uniforms.uCamPos.value.copy(camera.position);
+
+  // HUD
+  const pct = Math.round(P.t*100);
+  const inRight = P.t<0.25||P.t>0.75;
+  document.getElementById('hud-t').textContent    = `Trayecto: ${pct}%`;
+  document.getElementById('hud-lobe').textContent = `Lóbulo: ${inRight?'Derecho ◉':'Izquierdo ◉'}`;
+  document.getElementById('hud-phi').textContent  = `Órbita: ${Math.round(P.phi*180/Math.PI)}°`;
+  document.getElementById('hud-node').style.color = P.nodeProx>0.3
+    ? `rgba(255,200,60,${P.nodeProx.toFixed(2)})` : 'rgba(255,200,60,0)';
+
+  document.getElementById('pip-r').classList.toggle('on', inRight);
+  document.getElementById('pip-l').classList.toggle('on', !inRight && P.nodeProx<0.5);
+  document.getElementById('sep-node').classList.toggle('glow', P.nodeProx>0.3);
+}
+
+// ─── ANIMATE ─────────────────────────────────────────────
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t  = clock.getElapsedTime();
+
+  updatePlayer(dt);
+
+  tubeMat.uniforms.uTime.value  = t;
+  starsMat.uniforms.uTime.value = t;
+
+  // Portales — pulso y rotación
+  portalRings.forEach((r,i)=>{
+    r.rotation.z += dt*(0.3+i*0.1);
+    const pulse=Math.sin(t*2.5+i)*0.35+0.65;
+    const nodeBoost = 1+P.nodeProx*1.5;
+    if(r.material.opacity!==undefined){
+      r.material.opacity = (r.userData.baseOp||0.45) * pulse * nodeBoost;
+    }
+    if(i===0) r.userData.baseOp=0.45;
+    if(i===1) r.userData.baseOp=0.25;
+    if(i===2) r.userData.baseOp=0.05;
+  });
+
+  renderer.render(scene, camera);
+}
+
+// ─── GO ──────────────────────────────────────────────────
+camPos.copy(lemnPoint(0).addScaledVector(new THREE.Vector3(0,1,0), TUBE_R+HOVER));
+init();
+</script>
+</body>
+</html>
