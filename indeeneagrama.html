@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Eneagrama como Proceso Dinámico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0a;
+            --color-text: #e0e0e0;
+            --color-primary: #3b82f6; /* Blue 500 */
+            --color-secondary: #ec4899; /* Pink 500 */
+            --color-accent: #14b8a6; /* Teal 500 */
+            --color-glow-primary: rgba(59, 130, 246, 0.6);
+            --color-glow-secondary: rgba(236, 72, 153, 0.6);
+            --color-glow-accent: rgba(20, 184, 166, 0.6);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            overscroll-behavior: none;
+        }
+        .enneagram-container svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+        .point {
+            cursor: pointer;
+            transition: transform 0.3s ease-in-out;
+            transform-origin: center;
+            transform-box: fill-box;
+        }
+        .point circle {
+            transition: all 0.3s ease-in-out;
+            stroke-width: 2px;
+            stroke: var(--color-primary);
+            fill: var(--color-bg);
+        }
+        .point text {
+            fill: var(--color-text);
+            font-size: 24px;
+            font-weight: 500;
+            text-anchor: middle;
+            alignment-baseline: central;
+            pointer-events: none;
+            transition: fill 0.3s ease-in-out;
+        }
+        
+        .point:hover, .point.active {
+            transform: scale(1.1);
+        }
+        .point:hover circle, .point.active circle {
+            fill: var(--color-primary);
+            filter: drop-shadow(0 0 10px var(--color-glow-primary));
+        }
+        .point:hover text, .point.active text {
+            fill: white;
+        }
+
+        .line {
+            stroke-width: 1.5;
+            fill: none;
+            stroke-linecap: round;
+            transition: all 0.3s ease-in-out;
+        }
+        .line.circle-path { stroke: #444; }
+        .line.triangle-path { stroke: var(--color-secondary); }
+        .line.hexad-path { stroke: var(--color-accent); }
+
+        .line.active.triangle-path {
+            stroke-width: 4;
+            filter: drop-shadow(0 0 8px var(--color-glow-secondary));
+        }
+        .line.active.hexad-path {
+            stroke-width: 4;
+            filter: drop-shadow(0 0 8px var(--color-glow-accent));
+        }
+        .line.active.circle-path {
+            stroke: #999;
+            stroke-width: 3;
+        }
+        
+        #path-hexad.is-drawing {
+            transition: stroke-dashoffset 4s ease-in-out;
+        }
+        
+        .content-box {
+            background-color: rgba(26, 26, 26, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .control-btn {
+            transition: all 0.2s ease-in-out;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .control-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .control-btn.active {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 lg:p-8">
+
+    <div class="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        
+        <!-- Columna del Eneagrama Interactivo -->
+        <div class="flex flex-col items-center justify-center">
+            <h1 class="text-3xl lg:text-4xl font-bold text-center mb-2 text-white">El Eneagrama como Proceso Dinámico</h1>
+            <p class="text-center text-gray-400 mb-6">Interactúa con el símbolo para explorar sus leyes.</p>
+            <div id="enneagram-container" class="w-full max-w-lg aspect-square">
+                <!-- SVG will be generated here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Columna de Contenido y Controles -->
+        <div class="flex flex-col justify-center">
+            <div id="controls" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <button data-view="intro" class="control-btn p-3 rounded-lg text-white font-semibold">Inicio</button>
+                <button data-view="ley3" class="control-btn p-3 rounded-lg text-white font-semibold">Ley del Tres</button>
+                <button data-view="ley7" class="control-btn p-3 rounded-lg text-white font-semibold">Ley del Siete</button>
+                <button data-view="recorridos" class="control-btn p-3 rounded-lg text-white font-semibold">Recorridos</button>
+            </div>
+            <div id="content-container" class="content-box p-6 rounded-xl h-[500px] overflow-y-auto">
+                <h2 id="content-title" class="text-2xl font-bold mb-3 text-white"></h2>
+                <div id="content-body" class="text-gray-300 space-y-4 leading-relaxed"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const contentData = {
+                intro: {
+                    title: "El Símbolo del Movimiento Perpetuo",
+                    body: `<p>Presentado por G.I. Gurdjieff, el eneagrama es un modelo de cualquier proceso completo en el tiempo. Desde la creación de una idea hasta la evolución de una galaxia, todo sigue las leyes contenidas en este símbolo.</p><p>Representa la unión de la <strong>Ley del Tres</strong> (las fuerzas que inician todo) y la <strong>Ley del Siete</strong> (los pasos que sigue un proceso). Explora estas leyes para entender su funcionamiento.</p>`
+                },
+                ley3: {
+                    title: "La Ley del Tres: El Impulso Creador",
+                    body: `<p>El triángulo interior (9-3-6) representa la Ley del Tres. Sostiene que todo fenómeno es el resultado de tres fuerzas:</p>
+                        <ul class="list-disc list-inside space-y-2 mt-2">
+                            <li><strong style="color:var(--color-primary)">Fuerza Activa (+):</strong> El impulso inicial, la afirmación.</li>
+                            <li><strong style="color:var(--color-secondary)">Fuerza Pasiva (-):</strong> La resistencia, la recepción, el 'no'.</li>
+                            <li><strong style="color:var(--color-accent)">Fuerza Neutralizante (=):</strong> El catalizador, el contexto que permite la interacción.</li>
+                        </ul>
+                        <p class="mt-4">Sin estas tres fuerzas en juego, nada nuevo puede ser creado. El triángulo es la "voluntad" o la "conciencia" que impulsa el proceso.</p>`
+                },
+                ley7: {
+                    title: "La Ley del Siete: El Flujo del Proceso",
+                    body: `<p>El círculo y la héxada (1-4-2-8-5-7) ilustran la Ley del Siete o Ley de las Octavas. Afirma que los procesos no se desarrollan de forma lineal, sino que siguen una progresión similar a una octava musical.</p>
+                        <p>Esta progresión tiene dos "intervalos" donde la energía tiende a desviarse: en los puntos <strong>3</strong> y <strong>6</strong>. Para que el proceso continúe con éxito, se necesita un "choque" o una ayuda externa en estos puntos, conectando así con la Ley del Tres.</p>
+                        <p class="mt-4">La secuencia <strong>1-4-2-8-5-7</strong>, derivada de la división matemática de 1/7, muestra las conexiones internas y las consecuencias ocultas del proceso.</p>`
+                },
+                recorridos: {
+                    title: "Los Recorridos: La Danza de la Energía",
+                    body: `<p>El eneagrama no es estático; se recorre. Existen diferentes flujos de energía que revelan su dinámica:</p>
+                        <ul class="list-disc list-inside space-y-2 mt-2">
+                            <li><strong>Recorrido Secuencial (Círculo):</strong> 1-2-3...9. Representa el paso del tiempo, la secuencia lógica y externa de los eventos.</li>
+                            <li><strong>Recorrido Interno (Héxada):</strong> 1-4-2-8-5-7... Muestra la maquinaria interna del proceso, cómo las etapas se influyen mutuamente de forma no lineal. Lo que ocurre en '1' tiene un eco directo en '4'.</li>
+                            <li><strong>Intervenciones (Triángulo):</strong> Los saltos a través del triángulo (p.ej. de 4 a 6) no son pasos, sino cambios de nivel, intervenciones conscientes que alteran el curso.</li>
+                        </ul>`
+                },
+                points: {
+                    '9': { title: "Punto 9: El Contexto", body: "En la Ley del Tres, es la Fuerza Neutralizante. El entorno, el catalizador, el estado de quietud inicial desde donde todo parte. En el círculo, es el fin y el principio, la resolución que se convierte en el inicio de un nuevo ciclo." },
+                    '1': { title: "Punto 1: El Inicio", body: "El primer paso del proceso, la idea inicial. En la héxada, está conectado directamente al 4, indicando que la planificación inicial (1) impacta directamente en la estructuración (4)." },
+                    '2': { title: "Punto 2: El Desarrollo", body: "La elaboración de la idea inicial. Se encuentra entre el 1 y el 3, mostrando un desarrollo natural antes del primer punto de prueba." },
+                    '3': { title: "Punto 3: El Primer Choque", body: "En la Ley del Tres, es la Fuerza Activa. En la Ley del Siete, es el primer 'intervalo'. Aquí el proceso necesita una nueva energía o una decisión consciente para no desviarse. Es un punto de crisis y oportunidad." },
+                    '4': { title: "Punto 4: La Estructura", body: "Después del primer choque, el proceso toma forma, se materializa. La conexión 1-4 muestra cómo la idea original se convierte en un plan tangible." },
+                    '5': { title: "Punto 5: La Expansión", body: "El proceso se expande, se investiga, se profundiza. La conexión 8-5 muestra cómo los resultados (8) llevan a una nueva comprensión (5)." },
+                    '6': { title: "Punto 6: El Segundo Choque", body: "En la Ley del Tres, es la Fuerza Pasiva. En la Ley del Siete, el segundo 'intervalo'. Aquí surgen las dificultades prácticas y la resistencia. Se necesita otro impulso consciente para llevar el proceso a su fin." },
+                    '7': { title: "Punto 7: La Aceptación", body: "Después de superar el segundo obstáculo, se acepta el resultado posible. La conexión 5-7 muestra cómo la profundización (5) lleva a una nueva visión (7)." },
+                    '8': { title: "Punto 8: El Resultado", body: "El proceso da su fruto, el resultado se manifiesta. La conexión 2-8 muestra cómo el desarrollo inicial (2) culmina en un resultado concreto (8)." },
+                }
+            };
+
+            const container = document.getElementById('enneagram-container');
+            const contentTitle = document.getElementById('content-title');
+            const contentBody = document.getElementById('content-body');
+            const controlBtns = document.querySelectorAll('.control-btn');
+
+            let points = [];
+
+            function drawEnneagram() {
+                const svgNS = "http://www.w3.org/2000/svg";
+                const svg = document.createElementNS(svgNS, "svg");
+                svg.setAttribute("viewBox", "0 0 600 600");
+
+                const center = { x: 300, y: 300 };
+                const radius = 260;
+                const pointRadius = 25;
+
+                for (let i = 1; i <= 9; i++) {
+                    const angleDeg = -90 + (i === 9 ? 0 : i * 40);
+                    const angleRad = angleDeg * Math.PI / 180;
+                    points[i] = {
+                        x: center.x + radius * Math.cos(angleRad),
+                        y: center.y + radius * Math.sin(angleRad)
+                    };
+                }
+                
+                const circlePath = document.createElementNS(svgNS, 'circle');
+                circlePath.setAttribute('cx', center.x);
+                circlePath.setAttribute('cy', center.y);
+                circlePath.setAttribute('r', radius);
+                circlePath.setAttribute('class', 'line circle-path');
+                circlePath.id = 'path-circle';
+                svg.appendChild(circlePath);
+
+                const trianglePath = document.createElementNS(svgNS, 'path');
+                trianglePath.setAttribute('d', `M ${points[9].x} ${points[9].y} L ${points[3].x} ${points[3].y} L ${points[6].x} ${points[6].y} Z`);
+                trianglePath.setAttribute('class', 'line triangle-path');
+                trianglePath.id = 'path-triangle';
+                svg.appendChild(trianglePath);
+
+                const hexadOrder = [1, 4, 2, 8, 5, 7, 1];
+                const hexadPath = document.createElementNS(svgNS, 'path');
+                let d = `M ${points[hexadOrder[0]].x} ${points[hexadOrder[0]].y}`;
+                for(let i=1; i < hexadOrder.length; i++) {
+                    d += ` L ${points[hexadOrder[i]].x} ${points[hexadOrder[i]].y}`;
+                }
+                hexadPath.setAttribute('d', d);
+                hexadPath.setAttribute('class', 'line hexad-path');
+                hexadPath.id = 'path-hexad';
+                svg.appendChild(hexadPath);
+
+                for (let i = 1; i <= 9; i++) {
+                    const g = document.createElementNS(svgNS, 'g');
+                    g.id = `point-${i}`;
+                    g.classList.add('point');
+                    g.dataset.id = i;
+
+                    const circle = document.createElementNS(svgNS, 'circle');
+                    circle.setAttribute('cx', points[i].x);
+                    circle.setAttribute('cy', points[i].y);
+                    circle.setAttribute('r', pointRadius);
+
+                    const text = document.createElementNS(svgNS, 'text');
+                    text.setAttribute('x', points[i].x);
+                    text.setAttribute('y', points[i].y);
+                    text.textContent = i;
+
+                    g.appendChild(circle);
+                    g.appendChild(text);
+                    svg.appendChild(g);
+                }
+
+                container.innerHTML = '';
+                container.appendChild(svg);
+                addEventListeners();
+            }
+
+            function updateContent(view) {
+                const data = contentData[view];
+                if (data) {
+                    contentTitle.textContent = data.title;
+                    contentBody.innerHTML = data.body;
+                }
+            }
+
+            function updatePointContent(pointId) {
+                const data = contentData.points[pointId];
+                if (data) {
+                    contentTitle.textContent = data.title;
+                    contentBody.innerHTML = `<p>${data.body}</p>`;
+                }
+            }
+
+            function resetStyles() {
+                document.querySelectorAll('.point').forEach(p => p.classList.remove('active'));
+                document.querySelectorAll('.line').forEach(l => l.classList.remove('active'));
+                
+                const hexadPath = document.getElementById('path-hexad');
+                if (hexadPath) {
+                    hexadPath.classList.remove('is-drawing');
+                    hexadPath.style.removeProperty('stroke-dasharray');
+                    hexadPath.style.removeProperty('stroke-dashoffset');
+                }
+            }
+            
+            function addEventListeners() {
+                controlBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        controlBtns.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        
+                        const view = btn.dataset.view;
+                        updateContent(view);
+                        resetStyles();
+
+                        if (view === 'ley3') {
+                            document.getElementById('path-triangle').classList.add('active');
+                            ['9', '3', '6'].forEach(id => document.getElementById(`point-${id}`).classList.add('active'));
+                        } else if (view === 'ley7') {
+                            document.getElementById('path-circle').classList.add('active');
+                            document.getElementById('path-hexad').classList.add('active');
+                            ['1','4','2','8','5','7'].forEach(id => document.getElementById(`point-${id}`).classList.add('active'));
+                        } else if (view === 'recorridos') {
+                            const hexadPath = document.getElementById('path-hexad');
+                            hexadPath.classList.add('active');
+                            
+                            const length = hexadPath.getTotalLength();
+                            hexadPath.style.strokeDasharray = length;
+                            hexadPath.style.strokeDashoffset = length;
+                            
+                            // Force reflow to apply the starting state of the animation
+                            hexadPath.getBoundingClientRect();
+                            
+                            hexadPath.classList.add('is-drawing');
+                            hexadPath.style.strokeDashoffset = 0;
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.point').forEach(point => {
+                    point.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const pointId = point.dataset.id;
+                        
+                        controlBtns.forEach(b => b.classList.remove('active'));
+                        resetStyles();
+                        point.classList.add('active');
+                        
+                        updatePointContent(pointId);
+                    });
+                });
+            }
+
+            drawEnneagram();
+            document.querySelector('[data-view="intro"]').click();
+        });
+    </script>
+</body>
+</html>
