@@ -111,7 +111,7 @@ canvas#c { position: fixed; inset: 0; z-index: 1; }
 .cfg-slider { width: 100%; -webkit-appearance: none; background: rgba(255,255,255,.1); height: 2px; border-radius: 2px; outline: none; margin-top: 8px; }
 .cfg-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--cyan); cursor: pointer; box-shadow: 0 0 10px var(--cyan); }
 
-/* ── TAG NOMBRE FLOTANTE (Reemplaza cuadros negros) ── */
+/* ── TAG NOMBRE FLOTANTE ── */
 #planet-name-tag {
   position: fixed; z-index: 130; pointer-events: none;
   font-family: 'Italiana', serif; font-size: 1.4rem; letter-spacing: .25em; text-transform: uppercase;
@@ -121,7 +121,7 @@ canvas#c { position: fixed; inset: 0; z-index: 1; }
 #planet-name-tag.vis { color: rgba(255,255,255,1); }
 #planet-name-tag.hide { color: rgba(255,255,255,0); }
 
-/* ── DATA PANEL DETALLADO (El cristal central principal) ── */
+/* ── DATA PANEL DETALLADO ── */
 #data-panel {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95);
   width: 92%; max-width: 1100px; max-height: 85vh;
@@ -197,6 +197,41 @@ canvas#c { position: fixed; inset: 0; z-index: 1; }
 .priority-tag.a { background: rgba(255,45,85,0.15); color: #ff2d55; border: 1px solid rgba(255,45,85,0.3); }
 .priority-tag.b { background: rgba(255,149,0,0.15); color: #ff9500; border: 1px solid rgba(255,149,0,0.3); }
 .priority-tag.c { background: rgba(48,209,88,0.15); color: #30d158; border: 1px solid rgba(48,209,88,0.3); }
+
+/* ── PANEL PLANETAS EXTERNOS ── */
+#planet-panel {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.95);
+  width: min(900px, 92vw); height: min(680px, 86vh); z-index: 320;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+#planet-panel.open { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); pointer-events: all; }
+
+#pp-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.5rem 2rem; border-bottom: 1px solid rgba(255,255,255,.05);
+}
+#pp-name { font-family: 'Italiana', serif; font-size: 1.8rem; letter-spacing: .15em; text-shadow: 0 0 15px currentColor; }
+#pp-subtitle { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: rgba(255,255,255,0.6); margin-top:0.4rem; letter-spacing: 0.15em; text-transform: uppercase; }
+#pp-close {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,.1); border-radius: 50%;
+  color: rgba(255,255,255,.6); width: 36px; height: 36px; display:flex; align-items:center; justify-content:center;
+  cursor: pointer; font-size: .8rem; transition: all .3s;
+}
+#pp-close:hover { border-color: var(--fuchsia); color: var(--fuchsia); background: rgba(255,45,149,0.2); transform: rotate(90deg); }
+#pp-body { flex: 1; overflow-y: auto; padding: 0; scrollbar-width: thin; scrollbar-color: rgba(0,240,255,.2) transparent; }
+
+.pp-section { padding: 20px 30px; border-bottom: 1px solid rgba(255,255,255,.05); }
+.pp-enter-btn {
+  display: block; width: 100%; padding: 12px 18px; margin: 10px 0;
+  border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.03); border-radius: 8px;
+  color: rgba(255,255,255,.9); font-family: 'Space Mono', monospace;
+  font-size: .7rem; letter-spacing: .12em; cursor: pointer; text-align: center; text-transform: uppercase;
+  transition: all .3s ease; text-decoration: none;
+}
+.pp-enter-btn:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.4); color: #fff; box-shadow: 0 0 20px rgba(255,255,255,.15); }
+.pp-universe-frame { width: 100%; height: min(420px, 50vh); border: none; display: block; border-radius: 8px; background: #000; }
 
 /* ── PANEL ASPECTO RÁPIDO (Hover) ── */
 #aspect-panel {
@@ -313,15 +348,14 @@ canvas#c { position: fixed; inset: 0; z-index: 1; }
   </div>
 </div>
 
-<!-- Nombre Flotante Elegante en el Espacio -->
 <div id="planet-name-tag"></div>
 
 <div id="planet-panel" class="glass-panel">
   <div id="pp-hdr">
     <div id="pp-name">—</div>
-    <div id="pp-subtitle" style="font-size:.5rem;color:rgba(255,255,255,.5);letter-spacing:.2em; font-family:'Space Mono', monospace; text-transform:uppercase;"></div>
     <button id="pp-close" onclick="closePP()">✕</button>
   </div>
+  <div id="pp-subtitle" style="padding: 0 2rem; font-family:'Space Mono', monospace; font-size:0.65rem; color:var(--gold); margin-top:-0.5rem; letter-spacing:0.2em; text-transform:uppercase;"></div>
   <div id="pp-body"></div>
 </div>
 
@@ -402,12 +436,9 @@ renderer.setClearColor(0x020006, 1);
 
 const scene  = new THREE.Scene();
 
-/* ── 1. GRUPOS ESPACIALES SEPARADOS (Corrección de Física) ── */
-// Planetas del sistema solar y Aspectos (Viajan con el motor de voluntad)
 const universeGroup = new THREE.Group(); 
 scene.add(universeGroup);
 
-// Estrella de Mu (A lo lejos, independiente del motor de voluntad)
 const muGroup = new THREE.Group(); 
 scene.add(muGroup);
 
@@ -434,7 +465,6 @@ function onResize() {
 window.addEventListener('resize', onResize);
 onResize();
 
-/* ── ESTRELLAS FONDO ── */
 {
   const N = 4000; const pos = new Float32Array(N * 3); const col = new Float32Array(N * 3); const sz  = new Float32Array(N);
   for (let i = 0; i < N; i++) {
@@ -453,14 +483,13 @@ onResize();
   scene.add(new THREE.Points(geo, starMat));
 }
 
-/* ── SOL DE VOLUNTAD (Centro del Sistema) ── */
 const coreGeo = new THREE.IcosahedronGeometry(3.2, 10);
 const coreMat = new THREE.MeshStandardMaterial({
     color: 0x040008, emissive: new THREE.Color(0.02, 0.0, 0.05), roughness: 0.1, metalness: 0.8, emissiveIntensity: 0.05, 
 });
 const coreMesh = new THREE.Mesh(coreGeo, coreMat);
 coreMesh.userData = { type: 'sun', name: 'Sol de Voluntad' };
-universeGroup.add(coreMesh); // El Sol viaja CON los planetas
+universeGroup.add(coreMesh); 
 window._coreMat = coreMat;
 
 const L1 = new THREE.PointLight(0xffffff, 0.1, 200);
@@ -472,9 +501,8 @@ const haloGeo = new THREE.SphereGeometry(5.5, 24, 24);
 const haloMat = new THREE.MeshBasicMaterial({ color: 0x8844ff, transparent: true, opacity: 0.015, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide });
 universeGroup.add(new THREE.Mesh(haloGeo, haloMat));
 
-/* ── CORONA DE VOLUNTAD (Pixeles Ultra Nítidos) ── */
 let coronaPoints = null; let coronaGeo = null; let filamentos = []; let shadowRings = []; let starPower = 0;
-window._coronaOpacity = 0.03; // Brillo reducido y elegante
+window._coronaOpacity = 0.03; 
 
 function buildCorona(totalXP) {
   if (coronaPoints) { scene.remove(coronaPoints); coronaGeo.dispose(); }
@@ -485,7 +513,7 @@ function buildCorona(totalXP) {
     pos[i*3] = r * Math.sin(phi) * Math.cos(theta); pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta); pos[i*3+2] = r * Math.cos(phi);
     const hues = [0.78, 0.82, 0.87, 0.93, 0.97, 0.02, 0.08]; const h = hues[i % hues.length] + (Math.random() - 0.5) * 0.03;
     const c = new THREE.Color().setHSL(h, 0.9, 0.6 + Math.random() * 0.3);
-    col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b; sz[i] = 1.0 + Math.random() * 2.5; // Puntos más precisos
+    col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b; sz[i] = 1.0 + Math.random() * 2.5;
   }
   coronaGeo = new THREE.BufferGeometry();
   coronaGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); coronaGeo.setAttribute('color', new THREE.BufferAttribute(col, 3)); coronaGeo.setAttribute('aSize', new THREE.BufferAttribute(sz, 1));
@@ -494,7 +522,6 @@ function buildCorona(totalXP) {
   const mat = new THREE.ShaderMaterial({
     uniforms: { uOpacity: { value: 0.0 } },
     vertexShader: `attribute float aSize; varying vec3 vC; void main() { vC = color; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = aSize * (350.0 / -mv.z); gl_Position = projectionMatrix * mv; }`,
-    // smoothstep(1.0, 0.95) genera bordes afiladísimos, círculos perfectos
     fragmentShader: `uniform float uOpacity; varying vec3 vC; void main() { float d = length(gl_PointCoord - vec2(0.5)) * 2.0; if (d > 1.0) discard; float a = smoothstep(1.0, 0.95, d) * uOpacity; gl_FragColor = vec4(vC, a); }`,
     transparent: true, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false,
   });
@@ -529,7 +556,6 @@ function buildShadowRings(totalDistr) {
   }
 }
 
-/* ── ASPECTOS (Arquetipos Orbitan el Sol Central) ── */
 let aspectInner = []; const arqMeshMap = new Map(); 
 
 function buildAspectInner(arqs) {
@@ -555,7 +581,6 @@ function buildAspectInner(arqs) {
   });
 }
 
-/* ── ESTRELLA DE MU (El Banco Cósmico) - INDEPENDIENTE, LEJOS ── */
 let muMesh = null;
 function buildMuStar(totalMu) {
   if (muMesh) { muGroup.remove(muMesh); }
@@ -565,10 +590,9 @@ function buildMuStar(totalMu) {
   const muMat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffaa00, emissiveIntensity: 0.6, wireframe: true, transparent: true, opacity: 0.85 });
   muMesh = new THREE.Mesh(muGeo, muMat);
   
-  // Ubicación ultra-profunda, independiente del movimiento de "universeGroup"
   muMesh.position.set(150, 40, -350); 
   muMesh.userData = { type: 'mu_star', name: 'Estrella de Mu', sz: sz, mu: totalMu };
-  muGroup.add(muMesh); // ← Grupo INDEPENDIENTE
+  muGroup.add(muMesh); 
 
   const muGlow = new THREE.Mesh(
     new THREE.SphereGeometry(sz * 1.8, 24, 24),
@@ -590,7 +614,6 @@ function buildMuStar(totalMu) {
   const muCloud = new THREE.Points(pGeo, pMat); muMesh.add(muCloud); muMesh.userData.cloud = muCloud;
 }
 
-/* ── PLANETAS EXTERNOS ── */
 const PLANETS = [
   { id: 'musicosmos', name: 'Musicosmos', url: 'https://www.musicosmosonline.com', col: 0xa87fff, orbitR: 30, spd: 0.0055, sz: 4.5, detail: 5, incl: 0.12, desc: 'Espacio tridimensional donde la música cobra vida.' },
   { id: 'kalpa', name: 'Kalpa', url: 'https://durirock.github.io/chamlanquimyxperiments/kalpa6.0.html', col: 0xff6a5a, orbitR: 43, spd: 0.004, sz: 2.2, detail: 2, incl: -0.18, desc: 'Experiencia contemplativa de túnel infinito con shaders de coseno.' },
@@ -665,31 +688,56 @@ try {
 /* ── OVERLAY ORBITAL (iFrames) ── */
 const orbitOverlay = document.createElement('div');
 orbitOverlay.id = 'orbit-overlay';
-orbitOverlay.style.cssText = `position:fixed; z-index:10; pointer-events:none; display:none; border-radius:50%; overflow:hidden; background:rgba(4,2,16,0.15); box-shadow: 0 0 60px rgba(0,0,0,0.5); -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,.92) 0%, rgba(0,0,0,.5) 70%, transparent 100%); mask-image: radial-gradient(circle, rgba(0,0,0,.92) 0%, rgba(0,0,0,.5) 70%, transparent 100%);`;
+orbitOverlay.style.cssText = `position:fixed; z-index:10; pointer-events:auto; display:none; border-radius:50%; overflow:hidden; background:rgba(4,2,16,0.15); box-shadow: 0 0 60px rgba(0,0,0,0.8); -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 55%, transparent 95%); mask-image: radial-gradient(circle, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 55%, transparent 95%); transition: box-shadow 0.3s ease;`;
+
 const orbitIframe = document.createElement('iframe');
 orbitIframe.id = 'orbit-iframe';
-orbitIframe.style.cssText = `width:140%; height:140%; position:absolute; left:-20%; top:-20%; border:none; pointer-events:none; opacity:0.92;`;
+orbitIframe.style.cssText = `width:105%; height:105%; position:absolute; left:-2.5%; top:-2.5%; border:none; pointer-events:none; opacity:0.95;`;
 orbitIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
-orbitOverlay.appendChild(orbitIframe); document.body.appendChild(orbitOverlay);
+
+const orbitGlass = document.createElement('div');
+orbitGlass.id = 'orbit-glass';
+orbitGlass.style.cssText = `position:absolute; inset:0; z-index:2; cursor:pointer; background:rgba(0,0,0,0.01);`;
+
+orbitOverlay.appendChild(orbitIframe);
+orbitOverlay.appendChild(orbitGlass);
+document.body.appendChild(orbitOverlay);
+
+let overlayClickTimeout = null;
+orbitGlass.addEventListener('click', (e) => {
+  if (overlayClickTimeout) {
+    clearTimeout(overlayClickTimeout);
+    overlayClickTimeout = null;
+    if (_flyTarget && _flyTarget.userData) navigateToUniverse(_flyTarget.userData);
+  } else {
+    overlayClickTimeout = setTimeout(() => {
+      overlayClickTimeout = null;
+      activateOrbitIframe();
+    }, 250);
+  }
+});
 
 function showOrbitOverlay(pd) {
   orbitIframe.src = pd.url; orbitOverlay.style.display = 'block';
-  const sz = Math.min(innerWidth, innerHeight) * 0.7;
-  orbitOverlay.style.width = sz + 'px'; orbitOverlay.style.height = sz + 'px';
+  deactivateOrbitIframe();
   const cr = new THREE.Color(pd.col);
-  orbitOverlay.style.borderColor = `rgba(${cr.r*255|0},${cr.g*255|0},${cr.b*255|0}, 0.3)`;
-  orbitOverlay.style.border = `1px solid rgba(${cr.r*255|0},${cr.g*255|0},${cr.b*255|0}, 0.3)`;
+  orbitOverlay.style.border = `2px solid rgba(${cr.r*255|0},${cr.g*255|0},${cr.b*255|0}, 0.4)`;
 }
-function hideOrbitOverlay() { orbitOverlay.style.display = 'none'; orbitIframe.style.pointerEvents = 'none'; orbitIframe.src = 'about:blank'; }
-function activateOrbitIframe() { orbitIframe.style.pointerEvents = 'auto'; orbitOverlay.style.pointerEvents = 'auto'; }
-function deactivateOrbitIframe() { orbitIframe.style.pointerEvents = 'none'; orbitOverlay.style.pointerEvents = 'none'; }
+function hideOrbitOverlay() { orbitOverlay.style.display = 'none'; orbitIframe.src = 'about:blank'; }
+function activateOrbitIframe() { orbitIframe.style.pointerEvents = 'auto'; orbitGlass.style.display = 'none'; orbitOverlay.style.boxShadow = '0 0 80px rgba(0, 240, 255, 0.4)'; }
+function deactivateOrbitIframe() { orbitIframe.style.pointerEvents = 'none'; orbitGlass.style.display = 'block'; orbitOverlay.style.boxShadow = '0 0 60px rgba(0, 0, 0, 0.8)'; }
+
 function updateOrbitOverlayPosition() {
   if (orbitOverlay.style.display === 'none' || !_flyTarget || _flyTarget.userData.type !== 'planet') return;
   const pd = _flyTarget.userData; const planetPos = new THREE.Vector3(); _flyTarget.getWorldPosition(planetPos); 
   const v = planetPos.clone().project(camera);
   const cx = ( v.x * 0.5 + 0.5) * innerWidth; const cy = (-v.y * 0.5 + 0.5) * innerHeight;
   const dist = camera.position.distanceTo(planetPos); const fov = camera.fov * Math.PI / 180; const screenH = innerHeight;
-  const projRadius = (pd.sz / dist) * (screenH / (2 * Math.tan(fov / 2))); const finalSz = projRadius * 2 * 1.05;
+  const projRadius = (pd.sz / dist) * (screenH / (2 * Math.tan(fov / 2))); 
+  
+  // Aura es sz * 2.0. Con 1.85 es levemente más pequeño, creando un anillo tipo eclipse.
+  const finalSz = projRadius * 2 * 1.85; 
+  
   orbitOverlay.style.width = finalSz + 'px'; orbitOverlay.style.height = finalSz + 'px';
   orbitOverlay.style.left = (cx - finalSz / 2) + 'px'; orbitOverlay.style.top = (cy - finalSz / 2) + 'px';
 }
@@ -710,7 +758,6 @@ function activateUniverse(data) {
     const mu = p.datos_cuantitativos?.nivel_y_xp?.mu_disponibles || 0;
     totalMu += mu;
     
-    // Leemos el historico de tareas rico en datos
     const historico = p.datos_cualitativos?.historico_tareas || [];
     
     return {
@@ -722,7 +769,7 @@ function activateUniverse(data) {
       distr: p.datos_cuantitativos?.informacion_mara_egosombra?.total_distracciones || 0,
       bitac: p.datos_cualitativos?.bitacora_personal || [],
       tareas:p.datos_cualitativos?.tareas_detalladas || [],
-      historico_tareas: historico // Historial completo para el panel
+      historico_tareas: historico
     };
   }).sort((a, b) => b.xp - a.xp);
 
@@ -743,7 +790,7 @@ function activateUniverse(data) {
 
   setTimeout(() => {
     const slB = document.getElementById('sl-bright'); if (slB) { slB.value = 8; setSolBright(8); }
-    const slC = document.getElementById('sl-corona'); if (slC) { slC.value = 3; setCoronaBright(3); } // Muy tenue
+    const slC = document.getElementById('sl-corona'); if (slC) { slC.value = 3; setCoronaBright(3); }
     const slD = document.getElementById('sl-disc'); if (slD) { slD.value = 28; setDiscTransparency(28); }
   }, 50);
 
@@ -830,20 +877,19 @@ window.addEventListener('mousemove', e => {
       
       nameTag.style.color = colHex;
       nameTag.style.left = sc.x + 'px'; 
-      nameTag.style.top = (sc.y + (obj.userData.sz || 4.5) * 18 + 15) + 'px'; // Ligeramente más abajo
+      nameTag.style.top = (sc.y + (obj.userData.sz || 4.5) * 18 + 15) + 'px';
       
       nameTag.classList.add('vis'); nameTag.classList.remove('hide'); clearTimeout(nameTagTimer);
       document.getElementById('aspect-panel').classList.remove('vis');
     }
     else if (obj.userData.type === 'aspect') {
-      // Hover Micro Panel
       const arq = obj.userData.arq;
       document.getElementById('asp-name').textContent = arq.nombre;
       document.getElementById('asp-name').style.color = '#' + new THREE.Color().setHSL(obj.userData.hue || 0, 1, 0.65).getHexString();
       document.getElementById('asp-xp').textContent   = formatNumber(arq.xp);
       document.getElementById('asp-mu').textContent   = arq.mu;
       document.getElementById('asp-pend').textContent = arq.pend;
-      const tasks = (arq.tareas || []).filter(t => !t.completed).slice(0, 2); // Top 2
+      const tasks = (arq.tareas || []).filter(t => !t.completed).slice(0, 2);
       document.getElementById('asp-tasks').innerHTML  = tasks.map(t => `<div class="asp-task">${t.name || t}</div>`).join('');
       const aspPanel = document.getElementById('aspect-panel');
       aspPanel.style.left = (e.clientX + 20) + 'px'; aspPanel.style.top = (e.clientY - 20) + 'px';
@@ -866,12 +912,11 @@ window.addEventListener('mousemove', e => {
     nameTag.style.left = sc.x + 'px'; nameTag.style.top = (sc.y + (hoveredPlanet.userData.sz || 4.5) * 18 + 15) + 'px';
   }
 
-  // ── HYSTERESIS MEJORADO (Seguridad de expansión) ──
   const d2 = mpos.x * mpos.x + mpos.y * mpos.y;
   const isHovAsp = hoveredPlanet && hoveredPlanet.userData.type === 'aspect';
   
-  if (d2 < 0.05) window._aspectsExp = true; // Si está muy cerca al centro, expandir.
-  else if (d2 > 0.6 && !isHovAsp) window._aspectsExp = false; // Solo contraer si salimos muy lejos de los arquetipos.
+  if (d2 < 0.05) window._aspectsExp = true;
+  else if (d2 > 0.6 && !isHovAsp) window._aspectsExp = false;
 
   aspectInner.forEach(a => { a.mesh.userData.emerging = (window._aspectsExp || isHovAsp) && starPower > 0; });
 });
@@ -889,40 +934,44 @@ window.addEventListener('click', e => {
   const hits = ray.intersectObjects(targets, false);
   const now  = Date.now();
 
+  if (_isOrbiting) {
+    const orbitGlass = document.getElementById('orbit-glass');
+    if (orbitGlass && orbitGlass.style.display === 'none') {
+        deactivateOrbitIframe();
+    } else {
+        exitOrbit();
+    }
+    _lastClickTime = now;
+    return;
+  }
+
   if (hits.length) {
     const obj = hits[0].object;
     const isDbl = (now - _lastClickTime < DBLCLICK_THRESHOLD) && _lastClickObj === obj;
     _lastClickTime = now; _lastClickObj  = obj;
 
     if (isDbl) {
-      if (obj.userData.type === 'planet') {
-        if (_isOrbiting && _flyTarget === obj) navigateToUniverse(obj.userData);
-        else { closePP(); document.getElementById('data-panel').classList.remove('visible'); enterOrbit(obj); }
+      if (obj.userData.type === 'planet' || obj.userData.type === 'aspect' || obj.userData.type === 'mu_star') {
+         window.closePP(); document.getElementById('data-panel').classList.remove('visible'); enterOrbit(obj); 
       } else if (obj === coreMesh && !window._CEGG) {
         document.getElementById('cegg-file').click();
-      } else {
+      } else if (obj === coreMesh && window._CEGG) {
         enterOrbit(obj);
       }
     } else {
       setTimeout(() => {
         if (Date.now() - _lastClickTime >= DBLCLICK_THRESHOLD) {
-          if (_isOrbiting && _flyTarget === obj && obj.userData.type === 'planet') activateOrbitIframe();
-          else if (!_isOrbiting) {
-            if (obj === coreMesh && window._CEGG) showSelfPanel();
+          if (!_isOrbiting) {
+            if (obj === coreMesh && window._CEGG) window.showSelfPanel();
             else if (obj.userData.type === 'planet') window.openPP(obj.userData);
-            else if (obj.userData.type === 'aspect') showAspectPanel(obj.userData.arq.nombre);
-            else if (obj === muMesh) showMuPanel();
+            else if (obj.userData.type === 'aspect') window.showAspectPanel(obj.userData.arq.nombre);
+            else if (obj.userData.type === 'mu_star') window.showMuPanel();
           }
         }
       }, DBLCLICK_THRESHOLD + 20);
     }
   } else {
-    if (_isOrbiting) {
-      deactivateOrbitIframe();
-      const isDblVoid = (now - _lastClickTime < DBLCLICK_THRESHOLD) && _lastClickObj === null;
-      _lastClickTime = now; _lastClickObj = null;
-      if (isDblVoid) exitOrbit();
-    } else { _lastClickTime = now; _lastClickObj = null; }
+    _lastClickTime = now; _lastClickObj = null; 
   }
 });
 
@@ -999,7 +1048,7 @@ document.addEventListener('keydown', ke => {
   }
   if (ke.key === 'Escape' || ke.key === 'Backspace') {
     if (_isOrbiting) { exitOrbit(); ke.preventDefault(); }
-    closePP(); document.getElementById('data-panel').classList.remove('visible'); document.getElementById('stat-popup').classList.remove('visible');
+    window.closePP(); document.getElementById('data-panel').classList.remove('visible'); document.getElementById('stat-popup').classList.remove('visible');
   }
   if (ke.key === 'Enter') {
     if (_isOrbiting && _flyTarget?.userData.type === 'planet') navigateToUniverse(_flyTarget.userData);
@@ -1042,7 +1091,6 @@ function updateCamera(dt) {
     if (KEYS.a) moveVec.addScaledVector(right, -sp); if (KEYS.d) moveVec.addScaledVector(right, sp);
     if (KEYS.z) moveVec.addScaledVector(up, sp); if (KEYS.x) moveVec.addScaledVector(up, -sp);
     
-    // El Modo Motor mueve la cámara y al Grupo Universo. MU NO SE MUEVE (se queda atrás).
     if (window._moveUniverseMode) { 
         camera.position.add(moveVec); 
         universeGroup.position.add(moveVec); 
@@ -1101,7 +1149,6 @@ const clock = new THREE.Clock(); window._orbitAuto = true; let _orbSpeedMult = 0
     const curLen = a.mesh.position.length() || targetR;
     const newR = curLen + (targetR - curLen) * 0.045;
 
-    // Frenado Magnético al hacer Hover
     const isHovered = hoveredPlanet === a.mesh;
     const baseSpd = 0.1 + (i % 3) * 0.02;
     const targetSpd = isHovered ? 0.003 : baseSpd; 
@@ -1179,7 +1226,7 @@ window.addEventListener('blur', () => { for (let k in KEYS) KEYS[k] = 0; isDrag 
 
 <script>
 /* ════════════════════════════════════
-   LÓGICA DE PANELES DETALLADOS (Glassmorphism + Históricos)
+   LÓGICA DE PANELES DETALLADOS Y UTILIDADES GLOBALES
 ════════════════════════════════════ */
 function formatNumber(num) {
   if (!num) return '0';
@@ -1243,6 +1290,8 @@ function setupNavTabs(nav, content) {
   });
 }
 
+// ── EXPUESTAS GLOBALMENTE PARA EL CLICK DEL MOUSE Y EL HTML ──
+
 window.showStatPopup = function(type, data, x, y) {
   const popup = document.getElementById('stat-popup');
   const title = document.getElementById('sp-title');
@@ -1269,11 +1318,39 @@ window.showStatPopup = function(type, data, x, y) {
   popup.classList.add('visible');
 };
 
-document.getElementById('sp-close').addEventListener('click', () => { document.getElementById('stat-popup').classList.remove('visible'); });
-document.getElementById('dp-close').addEventListener('click', () => { document.getElementById('data-panel').classList.remove('visible'); });
+window.openPP = function(pd) {
+  window._currentPD = pd;
+  const pp = document.getElementById('planet-panel');
+  const colHex = '#' + pd.col.toString(16).padStart(6, '0');
 
-// Mostrar Panel del Aspecto
-function showAspectPanel(userName) {
+  document.getElementById('pp-name').textContent = pd.name;
+  document.getElementById('pp-name').style.color = colHex;
+  document.getElementById('pp-subtitle').textContent = pd.desc || pd.subtitle || '';
+
+  let html = '';
+  if (pd.url && pd.url !== '#') {
+    html += `<div class="pp-section" style="padding:0;">
+      <iframe class="pp-universe-frame" src="${pd.url}" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" referrerpolicy="no-referrer"></iframe>
+    </div>`;
+    html += `<div class="pp-section" style="padding:15px; display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="${pd.url}" target="_blank" class="pp-enter-btn" style="flex:1; border-color:${colHex}44">◈ Entrar Universo</a>
+      <a href="${pd.blogUrl || 'https://durirock.github.io/blog'}" target="_blank" class="pp-enter-btn" style="flex:1; border-color:rgba(255,255,255,.1)">📖 Blog</a>
+    </div>`;
+  } else {
+    html += `<div class="dp-empty">Este universo está en fase de desarrollo o concepto. Próximamente...</div>`;
+  }
+  
+  document.getElementById('pp-body').innerHTML = html;
+  pp.classList.add('open');
+};
+
+window.closePP = function() {
+  const pp = document.getElementById('planet-panel');
+  pp.classList.remove('open');
+  setTimeout(() => { document.getElementById('pp-body').innerHTML = ''; }, 300);
+};
+
+window.showAspectPanel = function(userName) {
   if(!window._cosmicEggData) return;
   const panel = document.getElementById('data-panel'); const nav = document.getElementById('dp-nav'); const content = document.getElementById('dp-content');
   const userData = window._cosmicEggData.perfiles_usuarios[userName]; if (!userData) return;
@@ -1349,8 +1426,7 @@ function showAspectPanel(userName) {
   setupNavTabs(nav, content); panel.classList.add('visible');
 }
 
-// Mostrar Panel del Sol de Voluntad
-function showSelfPanel() {
+window.showSelfPanel = function() {
   if(!window._cosmicEggData) return;
   const panel = document.getElementById('data-panel'); const nav = document.getElementById('dp-nav'); const content = document.getElementById('dp-content');
   const global = window._cosmicEggData.perfil_global;
@@ -1403,10 +1479,9 @@ function showSelfPanel() {
       </div>
   `;
   setupNavTabs(nav, content); panel.classList.add('visible');
-}
+};
 
-// Mostrar Panel de Economía (Mu)
-function showMuPanel() {
+window.showMuPanel = function() {
   if(!window._cosmicEggData) return;
   const panel = document.getElementById('data-panel'); const nav = document.getElementById('dp-nav'); const content = document.getElementById('dp-content');
   const usuarios = window._cosmicEggData.perfiles_usuarios;
@@ -1453,11 +1528,13 @@ function showMuPanel() {
       </div>
   `;
   setupNavTabs(nav, content); panel.classList.add('visible');
-}
+};
 
-/* ════════════════════════════════════
-   CÓDIGO ORIGINAL / EVENTOS GENERALES
-════════════════════════════════════ */
+/* CERRAR PANELES DESDE LOS BOTONES ✕ DE HTML */
+document.getElementById('sp-close').addEventListener('click', () => { document.getElementById('stat-popup').classList.remove('visible'); });
+document.getElementById('dp-close').addEventListener('click', () => { document.getElementById('data-panel').classList.remove('visible'); });
+
+
 const _isFileProtocol = location.protocol === 'file:';
 document.getElementById('cegg-dot').textContent = '🥚 carga manual';
 
@@ -1475,23 +1552,44 @@ document.getElementById('cegg-dot').textContent = '🥚 carga manual';
         }
       } catch (_) {}
     };
+    ws.onerror = () => {}; 
     ws.onclose = () => setTimeout(connectWS, 6000);
   } catch (_) {}
 })();
 
 function parseCegg(txt) { try { const s  = txt.indexOf('<<<DATA-START>>>') + 16; const en = txt.indexOf('<<<DATA-END>>>'); if (s < 16 || en < 0) return null; return JSON.parse(txt.slice(s, en).trim()); } catch (_) { return null; } }
 function loadCeggFile(inp) { const f = inp.files[0]; if (!f) return; const r = new FileReader(); r.onload = e => { const d = parseCegg(e.target.result); if (d && window._ACTIVATE) window._ACTIVATE(d); }; r.readAsText(f, 'utf-8'); }
+window.loadCeggFile = loadCeggFile;
 
 function toggleCfg() { document.getElementById('panel-cfg').classList.toggle('open'); }
+window.toggleCfg = toggleCfg;
+
 function closeCfg()  { document.getElementById('panel-cfg').classList.remove('open'); }
+window.closeCfg = closeCfg;
+
 function setSolBright(v) { const f = v / 100; document.getElementById('v-bright').textContent = f.toFixed(2); if (window._coreMat) window._coreMat.emissiveIntensity = 0.02 + f * 0.8; }
+window.setSolBright = setSolBright;
+
 function setCoronaBright(v) { const f = v / 100; document.getElementById('v-corona').textContent = f.toFixed(2); window._coronaOpacity = f; if (window._coronaMat) window._coronaMat.uniforms.uOpacity.value = f; }
+window.setCoronaBright = setCoronaBright;
+
 function setPulseSpeed(v) { const labels = ['muy lento','lento','normal','rápido','muy rápido']; document.getElementById('v-pulse').textContent = labels[Math.min(4, Math.floor(v/2))]; window._pulseSpeed = 0.1 + (v - 1) / 9 * 0.6; }
+window.setPulseSpeed = setPulseSpeed;
+
 function setOrbSpeed(v) { const f = v / 10; document.getElementById('v-orb').textContent = f.toFixed(1) + '×'; window._orbSpeedMult = f; if (window._setOrbSpeedMod) window._setOrbSpeedMod(f); }
+window.setOrbSpeed = setOrbSpeed;
+
 function setDiscTransparency(v) { const f = v / 100; document.getElementById('v-disc').textContent = Math.round(v) + '%'; window._discOpacity = f; try { localStorage.setItem('cml_disc_opacity', f); } catch(_){} }
+window.setDiscTransparency = setDiscTransparency;
+
 function openCeggInfo()  { document.getElementById('panel-cegg-info').classList.add('open'); }
+window.openCeggInfo = openCeggInfo;
+
 function closeCeggInfo() { document.getElementById('panel-cegg-info').classList.remove('open'); }
+window.closeCeggInfo = closeCeggInfo;
+
 function loginGoogle()   { closeCfg(); alert('Firebase próximamente — arrastra tu .cegg para activar el universo.'); }
+window.loginGoogle = loginGoogle;
 
 </script>
 </body>
