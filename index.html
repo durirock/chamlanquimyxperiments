@@ -1,345 +1,1498 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>El Eneagrama como Proceso Dinámico</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --color-bg: #0a0a0a;
-            --color-text: #e0e0e0;
-            --color-primary: #3b82f6; /* Blue 500 */
-            --color-secondary: #ec4899; /* Pink 500 */
-            --color-accent: #14b8a6; /* Teal 500 */
-            --color-glow-primary: rgba(59, 130, 246, 0.6);
-            --color-glow-secondary: rgba(236, 72, 153, 0.6);
-            --color-glow-accent: rgba(20, 184, 166, 0.6);
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--color-bg);
-            color: var(--color-text);
-            overscroll-behavior: none;
-        }
-        .enneagram-container svg {
-            width: 100%;
-            height: 100%;
-            overflow: visible;
-        }
-        .point {
-            cursor: pointer;
-            transition: transform 0.3s ease-in-out;
-            transform-origin: center;
-            transform-box: fill-box;
-        }
-        .point circle {
-            transition: all 0.3s ease-in-out;
-            stroke-width: 2px;
-            stroke: var(--color-primary);
-            fill: var(--color-bg);
-        }
-        .point text {
-            fill: var(--color-text);
-            font-size: 24px;
-            font-weight: 500;
-            text-anchor: middle;
-            alignment-baseline: central;
-            pointer-events: none;
-            transition: fill 0.3s ease-in-out;
-        }
-        
-        .point:hover, .point.active {
-            transform: scale(1.1);
-        }
-        .point:hover circle, .point.active circle {
-            fill: var(--color-primary);
-            filter: drop-shadow(0 0 10px var(--color-glow-primary));
-        }
-        .point:hover text, .point.active text {
-            fill: white;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chamalnquimyst Universe</title>
+<link href="https://fonts.googleapis.com/css2?family=Italiana&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   CHAMALNQUIMYST UNIVERSE — NEUROESTÉTICA v4
+   Glassmorphism, elegancia contemplativa, cristal puro
+============================================================ */
+:root {
+  --void:      #030108;
+  --cyan:      #00f0ff;
+  --purple:    #cc44ff;
+  --fuchsia:   #ff2d95;
+  --gold:      #ffd700;
+  --green:     #00ff88;
+  --priority-a: #ff2d55;
+  --priority-b: #ff9500;
+  --priority-c: #30d158;
+}
 
-        .line {
-            stroke-width: 1.5;
-            fill: none;
-            stroke-linecap: round;
-            transition: all 0.3s ease-in-out;
-        }
-        .line.circle-path { stroke: #444; }
-        .line.triangle-path { stroke: var(--color-secondary); }
-        .line.hexad-path { stroke: var(--color-accent); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-        .line.active.triangle-path {
-            stroke-width: 4;
-            filter: drop-shadow(0 0 8px var(--color-glow-secondary));
-        }
-        .line.active.hexad-path {
-            stroke-width: 4;
-            filter: drop-shadow(0 0 8px var(--color-glow-accent));
-        }
-        .line.active.circle-path {
-            stroke: #999;
-            stroke-width: 3;
-        }
-        
-        #path-hexad.is-drawing {
-            transition: stroke-dashoffset 4s ease-in-out;
-        }
-        
-        .content-box {
-            background-color: rgba(26, 26, 26, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-        }
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--void);
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+  cursor: crosshair;
+  user-select: none;
+}
 
-        .control-btn {
-            transition: all 0.2s ease-in-out;
-            background-color: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .control-btn:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-        .control-btn.active {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
-    </style>
+canvas#c { position: fixed; inset: 0; z-index: 1; }
+
+/* ── TOP BAR ── */
+#top-bar {
+  position: fixed; top: 0; left: 0; right: 0;
+  padding: 20px 30px; z-index: 80;
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(180deg, rgba(3,1,8,.6) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+#logo {
+  font-family: 'Italiana', serif;
+  font-size: 1.25rem; letter-spacing: .4em;
+  pointer-events: all; text-transform: uppercase;
+  background: linear-gradient(90deg, #fff, #cc44ff, #00f0ff, #fff);
+  background-size: 300% 100%;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  animation: liquidFlow 8s linear infinite;
+  text-shadow: 0 0 20px rgba(255,255,255,0.2);
+}
+
+@keyframes liquidFlow { 0% { background-position: 0% 0%; } 100% { background-position: 300% 0%; } }
+
+#hud-stats { display: flex; gap: 30px; pointer-events: none; }
+.hst { text-align: center; }
+.hst-v { display: block; font-size: .85rem; font-weight: 400; color: #fff; text-shadow: 0 0 10px var(--cyan); }
+.hst-l { font-size: .45rem; letter-spacing: .2em; color: rgba(255,255,255,.4); text-transform: uppercase; margin-top: 2px;}
+
+#btn-cfg {
+  pointer-events: all; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.02);
+  color: rgba(255,255,255,.6);
+  font-size: .9rem; transition: all .3s ease;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+#btn-cfg:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 15px rgba(0,240,255,.3); transform: rotate(90deg); }
+
+/* ── PANELES DE CRISTAL (ESTÉTICA GLOBAL) ── */
+.glass-panel {
+  background: radial-gradient(circle at top right, rgba(20, 10, 45, 0.25), rgba(5, 2, 10, 0.35));
+  backdrop-filter: blur(35px); -webkit-backdrop-filter: blur(35px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.03);
+  border-radius: 16px;
+}
+
+/* ── PANEL CONFIGURACIÓN ── */
+#panel-cfg {
+  position: fixed; top: 70px; right: 25px;
+  width: 280px; z-index: 200;
+  transform: translateY(-10px) scale(.98);
+  opacity: 0; pointer-events: none;
+  transition: all .4s cubic-bezier(.23,1,.32,1);
+}
+#panel-cfg.open { transform: translateY(0) scale(1); opacity: 1; pointer-events: all; }
+
+.cfg-hdr {
+  padding: 15px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: .6rem; letter-spacing: .2em; color: var(--cyan); text-transform: uppercase;
+}
+.cfg-s { padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,.03); }
+.cfg-lbl { font-size: .5rem; letter-spacing: .15em; color: rgba(255,255,255,.5); text-transform: uppercase; margin-bottom: 10px; }
+.cfg-btn {
+  display: block; width: 100%; padding: 8px 12px; margin-bottom: 8px;
+  background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.05); border-radius: 8px;
+  color: rgba(255,255,255,.8); font-family: 'Space Mono', monospace; font-size: .55rem; letter-spacing: .1em;
+  cursor: pointer; text-align: center; transition: all .3s ease;
+}
+.cfg-btn:hover { background: rgba(0,240,255,.1); border-color: rgba(0,240,255,.3); color: var(--cyan); box-shadow: 0 0 15px rgba(0,240,255,.2); }
+.cfg-row { display: flex; justify-content: space-between; align-items: center; font-size: .55rem; color: rgba(255,255,255,.6); padding: 4px 0; }
+.cfg-val { font-size: .55rem; color: var(--cyan); min-width: 30px; text-align: right; }
+.cfg-slider { width: 100%; -webkit-appearance: none; background: rgba(255,255,255,.1); height: 2px; border-radius: 2px; outline: none; margin-top: 8px; }
+.cfg-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--cyan); cursor: pointer; box-shadow: 0 0 10px var(--cyan); }
+
+/* ── TAG NOMBRE FLOTANTE (Reemplaza cuadros negros) ── */
+#planet-name-tag {
+  position: fixed; z-index: 130; pointer-events: none;
+  font-family: 'Italiana', serif; font-size: 1.4rem; letter-spacing: .25em; text-transform: uppercase;
+  color: rgba(255,255,255,0); text-shadow: 0 0 20px currentColor, 0 5px 15px rgba(0,0,0,0.8);
+  transform: translate(-50%, 0); transition: color .4s ease, opacity .4s ease; white-space: nowrap;
+}
+#planet-name-tag.vis { color: rgba(255,255,255,1); }
+#planet-name-tag.hide { color: rgba(255,255,255,0); }
+
+/* ── DATA PANEL DETALLADO (El cristal central principal) ── */
+#data-panel {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95);
+  width: 92%; max-width: 1100px; max-height: 85vh;
+  z-index: 300; opacity: 0; visibility: hidden;
+  transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+#data-panel.visible { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); pointer-events: all; }
+
+.dp-header {
+  padding: 2rem 2.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+}
+.dp-title { font-family: 'Italiana', serif; font-size: 2rem; letter-spacing: 0.15em; color: #fff; font-weight: 300; text-shadow: 0 0 20px rgba(255,255,255,0.4); }
+.dp-subtitle { font-family: 'Space Mono', monospace; font-size: 0.65rem; color: var(--gold); margin-top: 0.5rem; letter-spacing: 0.2em; text-transform: uppercase; }
+.dp-close {
+  width: 40px; height: 40px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 50%;
+  color: #fff; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;
+}
+.dp-close:hover { background: rgba(255, 45, 149, 0.2); border-color: var(--fuchsia); color: var(--fuchsia); transform: rotate(90deg); }
+
+.dp-body { display: flex; flex: 1; overflow: hidden; }
+.dp-nav {
+  width: 220px; border-right: 1px solid rgba(255,255,255,0.05); padding: 1.5rem 0;
+  display: flex; flex-direction: column; overflow-y: auto;
+}
+.dp-nav-btn {
+  padding: 1rem 2rem; background: transparent; border: none; text-align: left;
+  font-family: 'Space Mono', monospace; font-size: 0.65rem; color: rgba(255, 255, 255, 0.4); text-transform: uppercase;
+  cursor: pointer; transition: all 0.3s ease; border-left: 2px solid transparent; letter-spacing: 0.15em;
+}
+.dp-nav-btn:hover { color: #fff; background: rgba(255,255,255,0.02); }
+.dp-nav-btn.active { color: #fff; background: rgba(255, 255, 255, 0.05); border-left-color: var(--cyan); text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+.dp-nav-sep { height: 1px; background: rgba(255,255,255,0.03); margin: 1rem 2rem; }
+
+.dp-content { flex: 1; padding: 2rem 3rem; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.2) transparent; }
+.dp-tab-pane { display: none; animation: fadeIn 0.5s cubic-bezier(0.19, 1, 0.22, 1); }
+.dp-tab-pane.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Tipografía y Contenidos dentro del Panel */
+.dp-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+.dp-stat-card {
+  background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;
+  padding: 1.5rem 1rem; text-align: center; cursor: pointer; transition: all 0.4s ease;
+}
+.dp-stat-card:hover { background: rgba(255, 255, 255, 0.04); border-color: rgba(255,255,255,0.2); transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+.dp-stat-card .val { font-family: 'Space Mono', monospace; font-size: 2.2rem; font-weight: 300; color: #fff; text-shadow: 0 0 15px rgba(255,255,255,0.3); }
+.dp-stat-card .lbl { font-size: 0.55rem; letter-spacing: 0.2em; color: rgba(255, 255, 255, 0.5); margin-top: 0.8rem; text-transform: uppercase;}
+
+.dp-section-title {
+  font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; color: #fff; font-weight: 300; letter-spacing: 0.05em;
+  margin: 2.5rem 0 1.5rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.dp-section-title:first-child { margin-top: 0; }
+
+.dp-data-item {
+  padding: 1.2rem 1.5rem; margin-bottom: 0.8rem; background: rgba(255, 255, 255, 0.015); border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.03); transition: all 0.3s ease; position: relative; overflow: hidden;
+}
+.dp-data-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--cyan); opacity: 0.5; transition: all 0.3s ease; }
+.dp-data-item:hover { background: rgba(255, 255, 255, 0.03); transform: translateX(5px); border-color: rgba(255,255,255,0.08); }
+.dp-data-item:hover::before { opacity: 1; width: 4px; box-shadow: 0 0 15px var(--cyan); }
+
+.dp-item-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
+.dp-item-sender { font-size: 0.75rem; font-weight: 400; color: var(--cyan); letter-spacing: 0.1em; text-transform: uppercase; }
+.dp-item-time { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: rgba(255, 255, 255, 0.4); letter-spacing: 0.05em; }
+.dp-item-txt { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; color: rgba(255, 255, 255, 0.85); line-height: 1.7; font-weight: 300; }
+.dp-item-name { font-size: 0.9rem; color: #fff; letter-spacing: 0.05em; font-weight: 400;}
+.dp-empty { text-align: center; padding: 4rem; color: rgba(255,255,255,0.2); font-size: 1rem; font-family: 'Cormorant Garamond', serif; font-style: italic; }
+
+.priority-tag { font-family: 'Space Mono', monospace; font-size: 0.5rem; padding: 0.2rem 0.5rem; margin-left: 0.8rem; border-radius: 20px; letter-spacing: 0.1em; text-transform: uppercase; }
+.priority-tag.a { background: rgba(255,45,85,0.15); color: #ff2d55; border: 1px solid rgba(255,45,85,0.3); }
+.priority-tag.b { background: rgba(255,149,0,0.15); color: #ff9500; border: 1px solid rgba(255,149,0,0.3); }
+.priority-tag.c { background: rgba(48,209,88,0.15); color: #30d158; border: 1px solid rgba(48,209,88,0.3); }
+
+/* ── PANEL ASPECTO RÁPIDO (Hover) ── */
+#aspect-panel {
+  position: fixed; z-index: 250; pointer-events: none; width: 240px;
+  padding: 18px 20px; opacity: 0; transform: translateY(10px) scale(0.95);
+  transition: opacity .3s, transform .3s cubic-bezier(.23,1,.32,1);
+}
+#aspect-panel.vis { opacity: 1; transform: translateY(0) scale(1); }
+#asp-name { font-family: 'Italiana', serif; font-size: 1.3rem; letter-spacing: .15em; margin-bottom: 12px; text-shadow: 0 0 15px currentColor; color: #fff; }
+.asp-row { display: flex; justify-content: space-between; font-size: .55rem; color: rgba(255,255,255,.5); padding: 4px 0; text-transform: uppercase; letter-spacing: 0.1em;}
+.asp-row b { color: #fff; font-family: 'Space Mono', monospace; font-size: .7rem; }
+.asp-task { font-family: 'Cormorant Garamond', serif; font-size: 0.95rem; color: rgba(255,255,255,.8); padding: 4px 0; border-left: 1px solid rgba(255,255,255,.2); padding-left: 12px; margin-top: 8px; line-height: 1.3; }
+
+/* ── STAT POPUP ── */
+#stat-popup {
+  position: fixed; width: 400px; max-height: 450px; z-index: 400; opacity: 0; visibility: hidden; transform: scale(0.95);
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); display: flex; flex-direction: column;
+}
+#stat-popup.visible { opacity: 1; visibility: visible; transform: scale(1); pointer-events: all; }
+.sp-hdr { padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'Space Mono', monospace; font-size: 0.7rem; color: #fff; text-transform: uppercase; letter-spacing: 0.15em; display: flex; justify-content: space-between; align-items: center; }
+.sp-close { background: none; border: none; color: rgba(255,255,255,0.5); cursor: pointer; font-size: 1.2rem; transition: color 0.3s; }
+.sp-close:hover { color: var(--cyan); }
+.sp-body { flex: 1; overflow-y: auto; padding: 1rem 1.5rem; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.2) transparent; }
+.sp-item { padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; color: rgba(255,255,255,0.8); line-height: 1.5; }
+.sp-item:last-child { border-bottom: none; }
+.sp-date { font-family: 'Space Mono', monospace; font-size: 0.55rem; color: var(--cyan); display: block; margin-bottom: 0.3rem; letter-spacing: 0.1em; }
+
+/* ── CONTROLES Y EXTRAS ── */
+#ctrl-hint {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 12px; z-index: 50; pointer-events: none; opacity: 0; transition: opacity 1.5s ease; flex-wrap: wrap; justify-content: center;
+}
+#ctrl-hint.vis  { opacity: 1; }
+#ctrl-hint.fade { opacity: 0; }
+.key-h { display: flex; align-items: center; gap: 6px; font-size: .45rem; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: 0.1em;}
+.key-b { padding: 4px 8px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 4px; font-size: .5rem; color: #fff; }
+
+#cegg-micro {
+  position: fixed; bottom: 20px; right: 20px; z-index: 60;
+  width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.02); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: .9rem; color: rgba(255,255,255,.8); transition: all .3s ease;
+  backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+}
+#cegg-micro:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 20px rgba(0,240,255,.3); transform: scale(1.1); }
+#cegg-file { display: none; }
+#cegg-dot { position: fixed; bottom: 28px; right: 80px; z-index: 61; font-size: .45rem; letter-spacing: .15em; color: rgba(255,255,255,.4); text-transform: uppercase; pointer-events: none; white-space: nowrap; }
+
+#flash { position: fixed; inset: 0; z-index: 500; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at 50% 50%, rgba(0,255,136,.15), transparent 70%); transition: opacity .1s; }
+
+#btn-universe-mode {
+  position: fixed; bottom: 85px; right: 20px; z-index: 100; padding: 12px 20px;
+  background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 30px; color: rgba(255,255,255,0.7);
+  font-family: 'Space Mono', monospace; font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase;
+  cursor: pointer; display: none; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); transition: all 0.4s ease;
+}
+#btn-universe-mode:hover { border-color: rgba(255,255,255,0.3); color: #fff; }
+#btn-universe-mode.active { border-color: var(--cyan); color: var(--cyan); background: rgba(0,240,255,0.05); box-shadow: 0 0 25px rgba(0,240,255,0.2); }
+</style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4 lg:p-8">
+<body>
 
-    <div class="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        
-        <!-- Columna del Eneagrama Interactivo -->
-        <div class="flex flex-col items-center justify-center">
-            <h1 class="text-3xl lg:text-4xl font-bold text-center mb-2 text-white">El Eneagrama como Proceso Dinámico</h1>
-            <p class="text-center text-gray-400 mb-6">Interactúa con el símbolo para explorar sus leyes.</p>
-            <div id="enneagram-container" class="w-full max-w-lg aspect-square">
-                <!-- SVG will be generated here by JavaScript -->
-            </div>
+<canvas id="c"></canvas>
+<div id="flash"></div>
+
+<div id="top-bar">
+  <div id="logo">Chamalnquimyst Universe</div>
+  <div id="hud-stats">
+    <div class="hst"><span class="hst-v" id="s-xp">—</span><span class="hst-l">PV</span></div>
+    <div class="hst"><span class="hst-v" id="s-arq">—</span><span class="hst-l">Arq.</span></div>
+    <div class="hst"><span class="hst-v" id="s-mu">—</span><span class="hst-l">Mu</span></div>
+  </div>
+  <button id="btn-cfg" onclick="toggleCfg()" title="Configuración">⚙</button>
+</div>
+
+<div id="panel-cfg" class="glass-panel">
+  <div class="cfg-hdr">⚙ Configuración</div>
+  <div class="cfg-s">
+    <div class="cfg-lbl">Autenticación</div>
+    <button class="cfg-btn" onclick="loginGoogle()">▶ Entrar con Google</button>
+    <button class="cfg-btn" onclick="closeCfg(); document.getElementById('cegg-file').click()">⬆ Cargar .cegg</button>
+  </div>
+  <div class="cfg-s">
+    <div class="cfg-lbl">Sol de Voluntad</div>
+    <div class="cfg-row"><span>Brillo base</span><span class="cfg-val" id="v-bright">0.10</span></div>
+    <input type="range" class="cfg-slider" id="sl-bright" min="2" max="80" value="10" oninput="setSolBright(this.value)">
+    <div class="cfg-row" style="margin-top:8px"><span>Brillo corona</span><span class="cfg-val" id="v-corona">0.03</span></div>
+    <input type="range" class="cfg-slider" id="sl-corona" min="1" max="50" value="3" oninput="setCoronaBright(this.value)">
+    <div class="cfg-row" style="margin-top:8px"><span>Velocidad pulso</span><span class="cfg-val" id="v-pulse">lento</span></div>
+    <input type="range" class="cfg-slider" id="sl-pulse" min="1" max="10" value="3" oninput="setPulseSpeed(this.value)">
+  </div>
+  <div class="cfg-s">
+    <div class="cfg-lbl">Universo</div>
+    <div class="cfg-row">
+      <span>Órbita auto</span>
+      <div class="tog on" id="tog-orbit" onclick="this.classList.toggle('on'); window._orbitAuto = this.classList.contains('on')"></div>
+    </div>
+    <div class="cfg-row" style="margin-top:8px"><span>Velocidad órbita</span><span class="cfg-val" id="v-orb">0.4×</span></div>
+    <input type="range" class="cfg-slider" id="sl-orb" min="1" max="30" value="4" oninput="setOrbSpeed(this.value)">
+    <div class="cfg-row" style="margin-top:8px"><span>Transparencia discos</span><span class="cfg-val" id="v-disc">35%</span></div>
+    <input type="range" class="cfg-slider" id="sl-disc" min="0" max="100" value="35" oninput="setDiscTransparency(this.value)">
+  </div>
+</div>
+
+<div id="panel-cegg-info">
+  <div id="cegg-info-card" class="glass-panel">
+    <button id="ci-close" onclick="closeCeggInfo()">✕</button>
+    <div class="ci-title">¿Qué es un .cegg?</div>
+    <div class="ci-sub">Huevo Cósmico · Protocolo de Voluntad v1.2</div>
+    <div class="ci-body">
+      El archivo <strong style="color:#ffdd00">.cegg</strong> es generado por <strong style="color:#ffcc55">Killer Pendiente</strong> y contiene la psique operacional completa.
+    </div>
+    <a href="https://mega.nz" target="_blank" class="ci-link">⬇ Descargar Killer Pendiente</a>
+  </div>
+</div>
+
+<!-- Nombre Flotante Elegante en el Espacio -->
+<div id="planet-name-tag"></div>
+
+<div id="planet-panel" class="glass-panel">
+  <div id="pp-hdr">
+    <div id="pp-name">—</div>
+    <div id="pp-subtitle" style="font-size:.5rem;color:rgba(255,255,255,.5);letter-spacing:.2em; font-family:'Space Mono', monospace; text-transform:uppercase;"></div>
+    <button id="pp-close" onclick="closePP()">✕</button>
+  </div>
+  <div id="pp-body"></div>
+</div>
+
+<div id="aspect-panel" class="glass-panel">
+  <div id="asp-name">—</div>
+  <div class="asp-row"><span>Voluntad</span><b id="asp-xp">—</b></div>
+  <div class="asp-row"><span>Mu Total</span><b id="asp-mu">—</b></div>
+  <div class="asp-row" style="margin-top:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;"><span>Misiones</span><b id="asp-pend">—</b></div>
+  <div id="asp-tasks"></div>
+</div>
+
+<div id="data-panel" class="glass-panel">
+    <div class="dp-header">
+        <div class="dp-title-area">
+            <h2 class="dp-title" id="dp-title">—</h2>
+            <div class="dp-subtitle" id="dp-subtitle"></div>
         </div>
-
-        <!-- Columna de Contenido y Controles -->
-        <div class="flex flex-col justify-center">
-            <div id="controls" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                <button data-view="intro" class="control-btn p-3 rounded-lg text-white font-semibold">Inicio</button>
-                <button data-view="ley3" class="control-btn p-3 rounded-lg text-white font-semibold">Ley del Tres</button>
-                <button data-view="ley7" class="control-btn p-3 rounded-lg text-white font-semibold">Ley del Siete</button>
-                <button data-view="recorridos" class="control-btn p-3 rounded-lg text-white font-semibold">Recorridos</button>
-            </div>
-            <div id="content-container" class="content-box p-6 rounded-xl h-[500px] overflow-y-auto">
-                <h2 id="content-title" class="text-2xl font-bold mb-3 text-white"></h2>
-                <div id="content-body" class="text-gray-300 space-y-4 leading-relaxed"></div>
-            </div>
+        <div class="dp-controls">
+            <button class="dp-close" id="dp-close">✕</button>
         </div>
     </div>
+    <div class="dp-body">
+        <nav class="dp-nav" id="dp-nav"></nav>
+        <div class="dp-content" id="dp-content"></div>
+    </div>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const contentData = {
-                intro: {
-                    title: "El Símbolo del Movimiento Perpetuo",
-                    body: `<p>Presentado por G.I. Gurdjieff, el eneagrama es un modelo de cualquier proceso completo en el tiempo. Desde la creación de una idea hasta la evolución de una galaxia, todo sigue las leyes contenidas en este símbolo.</p><p>Representa la unión de la <strong>Ley del Tres</strong> (las fuerzas que inician todo) y la <strong>Ley del Siete</strong> (los pasos que sigue un proceso). Explora estas leyes para entender su funcionamiento.</p>`
-                },
-                ley3: {
-                    title: "La Ley del Tres: El Impulso Creador",
-                    body: `<p>El triángulo interior (9-3-6) representa la Ley del Tres. Sostiene que todo fenómeno es el resultado de tres fuerzas:</p>
-                        <ul class="list-disc list-inside space-y-2 mt-2">
-                            <li><strong style="color:var(--color-primary)">Fuerza Activa (+):</strong> El impulso inicial, la afirmación.</li>
-                            <li><strong style="color:var(--color-secondary)">Fuerza Pasiva (-):</strong> La resistencia, la recepción, el 'no'.</li>
-                            <li><strong style="color:var(--color-accent)">Fuerza Neutralizante (=):</strong> El catalizador, el contexto que permite la interacción.</li>
-                        </ul>
-                        <p class="mt-4">Sin estas tres fuerzas en juego, nada nuevo puede ser creado. El triángulo es la "voluntad" o la "conciencia" que impulsa el proceso.</p>`
-                },
-                ley7: {
-                    title: "La Ley del Siete: El Flujo del Proceso",
-                    body: `<p>El círculo y la héxada (1-4-2-8-5-7) ilustran la Ley del Siete o Ley de las Octavas. Afirma que los procesos no se desarrollan de forma lineal, sino que siguen una progresión similar a una octava musical.</p>
-                        <p>Esta progresión tiene dos "intervalos" donde la energía tiende a desviarse: en los puntos <strong>3</strong> y <strong>6</strong>. Para que el proceso continúe con éxito, se necesita un "choque" o una ayuda externa en estos puntos, conectando así con la Ley del Tres.</p>
-                        <p class="mt-4">La secuencia <strong>1-4-2-8-5-7</strong>, derivada de la división matemática de 1/7, muestra las conexiones internas y las consecuencias ocultas del proceso.</p>`
-                },
-                recorridos: {
-                    title: "Los Recorridos: La Danza de la Energía",
-                    body: `<p>El eneagrama no es estático; se recorre. Existen diferentes flujos de energía que revelan su dinámica:</p>
-                        <ul class="list-disc list-inside space-y-2 mt-2">
-                            <li><strong>Recorrido Secuencial (Círculo):</strong> 1-2-3...9. Representa el paso del tiempo, la secuencia lógica y externa de los eventos.</li>
-                            <li><strong>Recorrido Interno (Héxada):</strong> 1-4-2-8-5-7... Muestra la maquinaria interna del proceso, cómo las etapas se influyen mutuamente de forma no lineal. Lo que ocurre en '1' tiene un eco directo en '4'.</li>
-                            <li><strong>Intervenciones (Triángulo):</strong> Los saltos a través del triángulo (p.ej. de 4 a 6) no son pasos, sino cambios de nivel, intervenciones conscientes que alteran el curso.</li>
-                        </ul>`
-                },
-                points: {
-                    '9': { title: "Punto 9: El Contexto", body: "En la Ley del Tres, es la Fuerza Neutralizante. El entorno, el catalizador, el estado de quietud inicial desde donde todo parte. En el círculo, es el fin y el principio, la resolución que se convierte en el inicio de un nuevo ciclo." },
-                    '1': { title: "Punto 1: El Inicio", body: "El primer paso del proceso, la idea inicial. En la héxada, está conectado directamente al 4, indicando que la planificación inicial (1) impacta directamente en la estructuración (4)." },
-                    '2': { title: "Punto 2: El Desarrollo", body: "La elaboración de la idea inicial. Se encuentra entre el 1 y el 3, mostrando un desarrollo natural antes del primer punto de prueba." },
-                    '3': { title: "Punto 3: El Primer Choque", body: "En la Ley del Tres, es la Fuerza Activa. En la Ley del Siete, es el primer 'intervalo'. Aquí el proceso necesita una nueva energía o una decisión consciente para no desviarse. Es un punto de crisis y oportunidad." },
-                    '4': { title: "Punto 4: La Estructura", body: "Después del primer choque, el proceso toma forma, se materializa. La conexión 1-4 muestra cómo la idea original se convierte en un plan tangible." },
-                    '5': { title: "Punto 5: La Expansión", body: "El proceso se expande, se investiga, se profundiza. La conexión 8-5 muestra cómo los resultados (8) llevan a una nueva comprensión (5)." },
-                    '6': { title: "Punto 6: El Segundo Choque", body: "En la Ley del Tres, es la Fuerza Pasiva. En la Ley del Siete, el segundo 'intervalo'. Aquí surgen las dificultades prácticas y la resistencia. Se necesita otro impulso consciente para llevar el proceso a su fin." },
-                    '7': { title: "Punto 7: La Aceptación", body: "Después de superar el segundo obstáculo, se acepta el resultado posible. La conexión 5-7 muestra cómo la profundización (5) lleva a una nueva visión (7)." },
-                    '8': { title: "Punto 8: El Resultado", body: "El proceso da su fruto, el resultado se manifiesta. La conexión 2-8 muestra cómo el desarrollo inicial (2) culmina en un resultado concreto (8)." },
-                }
-            };
+<div id="stat-popup" class="glass-panel">
+    <div class="sp-hdr">
+        <span id="sp-title">—</span>
+        <button class="sp-close" id="sp-close">✕</button>
+    </div>
+    <div class="sp-body" id="sp-content"></div>
+</div>
 
-            const container = document.getElementById('enneagram-container');
-            const contentTitle = document.getElementById('content-title');
-            const contentBody = document.getElementById('content-body');
-            const controlBtns = document.querySelectorAll('.control-btn');
+<div id="ctrl-hint">
+  <div class="key-h"><span class="key-b">W A S D</span> mover nave</div>
+  <div class="key-h"><span class="key-b">Q E</span> rotar visión</div>
+  <div class="key-h"><span class="key-b">Z X</span> altitud</div>
+  <div class="key-h"><span class="key-b">SPACE</span> propulsor</div>
+  <div class="key-h"><span class="key-b">C</span> anclar órbita</div>
+  <div class="key-h"><span class="key-b">Shift+C / ESC</span> liberar</div>
+  <div class="key-h"><span class="key-b">dblclick</span> salto cuántico</div>
+</div>
+<button id="btn-universe-mode" onclick="toggleUniverseMode()">MODO: CÁMARA LIBRE</button>
 
-            let points = [];
+<div id="cegg-micro" onclick="document.getElementById('cegg-file').click()" title="Cargar psique .cegg">🥚</div>
+<input type="file" id="cegg-file" accept=".cegg" onchange="loadCeggFile(this)">
+<div id="cegg-dot">buscando señal cegg...</div>
 
-            function drawEnneagram() {
-                const svgNS = "http://www.w3.org/2000/svg";
-                const svg = document.createElementNS(svgNS, "svg");
-                svg.setAttribute("viewBox", "0 0 600 600");
+<!-- ════════════════════════════════════════════════
+    THREE.JS r165
+════════════════════════════════════════════════ -->
+<script type="importmap">
+{
+  "imports": {
+    "three":          "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
 
-                const center = { x: 300, y: 300 };
-                const radius = 260;
-                const pointRadius = 25;
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer }   from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }       from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass }  from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass }       from 'three/addons/postprocessing/OutputPass.js';
 
-                for (let i = 1; i <= 9; i++) {
-                    const angleDeg = -90 + (i === 9 ? 0 : i * 40);
-                    const angleRad = angleDeg * Math.PI / 180;
-                    points[i] = {
-                        x: center.x + radius * Math.cos(angleRad),
-                        y: center.y + radius * Math.sin(angleRad)
-                    };
-                }
-                
-                const circlePath = document.createElementNS(svgNS, 'circle');
-                circlePath.setAttribute('cx', center.x);
-                circlePath.setAttribute('cy', center.y);
-                circlePath.setAttribute('r', radius);
-                circlePath.setAttribute('class', 'line circle-path');
-                circlePath.id = 'path-circle';
-                svg.appendChild(circlePath);
+window._cosmicEggData = null; 
 
-                const trianglePath = document.createElementNS(svgNS, 'path');
-                trianglePath.setAttribute('d', `M ${points[9].x} ${points[9].y} L ${points[3].x} ${points[3].y} L ${points[6].x} ${points[6].y} Z`);
-                trianglePath.setAttribute('class', 'line triangle-path');
-                trianglePath.id = 'path-triangle';
-                svg.appendChild(trianglePath);
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.9;
+renderer.setClearColor(0x020006, 1);
 
-                const hexadOrder = [1, 4, 2, 8, 5, 7, 1];
-                const hexadPath = document.createElementNS(svgNS, 'path');
-                let d = `M ${points[hexadOrder[0]].x} ${points[hexadOrder[0]].y}`;
-                for(let i=1; i < hexadOrder.length; i++) {
-                    d += ` L ${points[hexadOrder[i]].x} ${points[hexadOrder[i]].y}`;
-                }
-                hexadPath.setAttribute('d', d);
-                hexadPath.setAttribute('class', 'line hexad-path');
-                hexadPath.id = 'path-hexad';
-                svg.appendChild(hexadPath);
+const scene  = new THREE.Scene();
 
-                for (let i = 1; i <= 9; i++) {
-                    const g = document.createElementNS(svgNS, 'g');
-                    g.id = `point-${i}`;
-                    g.classList.add('point');
-                    g.dataset.id = i;
+/* ── 1. GRUPOS ESPACIALES SEPARADOS (Corrección de Física) ── */
+// Planetas del sistema solar y Aspectos (Viajan con el motor de voluntad)
+const universeGroup = new THREE.Group(); 
+scene.add(universeGroup);
 
-                    const circle = document.createElementNS(svgNS, 'circle');
-                    circle.setAttribute('cx', points[i].x);
-                    circle.setAttribute('cy', points[i].y);
-                    circle.setAttribute('r', pointRadius);
+// Estrella de Mu (A lo lejos, independiente del motor de voluntad)
+const muGroup = new THREE.Group(); 
+scene.add(muGroup);
 
-                    const text = document.createElementNS(svgNS, 'text');
-                    text.setAttribute('x', points[i].x);
-                    text.setAttribute('y', points[i].y);
-                    text.textContent = i;
+window._universeGroup = universeGroup;
+window._muGroup = muGroup;
+window._moveUniverseMode = false;
 
-                    g.appendChild(circle);
-                    g.appendChild(text);
-                    svg.appendChild(g);
-                }
+const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 2000);
+camera.position.set(0, 15, 110);
+camera.lookAt(0, 0, 0);
 
-                container.innerHTML = '';
-                container.appendChild(svg);
-                addEventListeners();
-            }
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(512, 512), 0.9, 0.4, 0.25);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
 
-            function updateContent(view) {
-                const data = contentData[view];
-                if (data) {
-                    contentTitle.textContent = data.title;
-                    contentBody.innerHTML = data.body;
-                }
-            }
+function onResize() {
+  const W = innerWidth, H = innerHeight;
+  renderer.setSize(W, H); composer.setSize(W, H);
+  camera.aspect = W / H; camera.updateProjectionMatrix();
+  bloom.resolution.set(W, H);
+}
+window.addEventListener('resize', onResize);
+onResize();
 
-            function updatePointContent(pointId) {
-                const data = contentData.points[pointId];
-                if (data) {
-                    contentTitle.textContent = data.title;
-                    contentBody.innerHTML = `<p>${data.body}</p>`;
-                }
-            }
+/* ── ESTRELLAS FONDO ── */
+{
+  const N = 4000; const pos = new Float32Array(N * 3); const col = new Float32Array(N * 3); const sz  = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const r = 500 + Math.random() * 1200; const t = Math.random() * Math.PI * 2; const p = Math.random() * Math.PI;
+    pos[i*3] = r * Math.sin(p) * Math.cos(t); pos[i*3+1] = r * Math.sin(p) * Math.sin(t); pos[i*3+2] = r * Math.cos(p);
+    const c = new THREE.Color().setHSL(Math.random(), 0.4 + Math.random() * 0.4, 0.3 + Math.random() * 0.5);
+    col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b; sz[i] = 0.5 + Math.random() * 2.2;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setAttribute('aSize', new THREE.BufferAttribute(sz, 1));
+  const starMat = new THREE.ShaderMaterial({
+    vertexShader: `attribute float aSize; varying vec3 vCol; void main() { vCol = color; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = aSize * (280.0 / -mv.z); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `varying vec3 vCol; void main() { float d = length(gl_PointCoord - vec2(0.5)) * 2.0; if (d > 1.0) discard; float alpha = smoothstep(1.0, 0.25, d) * 0.6; gl_FragColor = vec4(vCol, alpha); }`,
+    transparent: true, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  scene.add(new THREE.Points(geo, starMat));
+}
 
-            function resetStyles() {
-                document.querySelectorAll('.point').forEach(p => p.classList.remove('active'));
-                document.querySelectorAll('.line').forEach(l => l.classList.remove('active'));
-                
-                const hexadPath = document.getElementById('path-hexad');
-                if (hexadPath) {
-                    hexadPath.classList.remove('is-drawing');
-                    hexadPath.style.removeProperty('stroke-dasharray');
-                    hexadPath.style.removeProperty('stroke-dashoffset');
-                }
-            }
-            
-            function addEventListeners() {
-                controlBtns.forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        controlBtns.forEach(b => b.classList.remove('active'));
-                        btn.classList.add('active');
-                        
-                        const view = btn.dataset.view;
-                        updateContent(view);
-                        resetStyles();
+/* ── SOL DE VOLUNTAD (Centro del Sistema) ── */
+const coreGeo = new THREE.IcosahedronGeometry(3.2, 10);
+const coreMat = new THREE.MeshStandardMaterial({
+    color: 0x040008, emissive: new THREE.Color(0.02, 0.0, 0.05), roughness: 0.1, metalness: 0.8, emissiveIntensity: 0.05, 
+});
+const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+coreMesh.userData = { type: 'sun', name: 'Sol de Voluntad' };
+universeGroup.add(coreMesh); // El Sol viaja CON los planetas
+window._coreMat = coreMat;
 
-                        if (view === 'ley3') {
-                            document.getElementById('path-triangle').classList.add('active');
-                            ['9', '3', '6'].forEach(id => document.getElementById(`point-${id}`).classList.add('active'));
-                        } else if (view === 'ley7') {
-                            document.getElementById('path-circle').classList.add('active');
-                            document.getElementById('path-hexad').classList.add('active');
-                            ['1','4','2','8','5','7'].forEach(id => document.getElementById(`point-${id}`).classList.add('active'));
-                        } else if (view === 'recorridos') {
-                            const hexadPath = document.getElementById('path-hexad');
-                            hexadPath.classList.add('active');
-                            
-                            const length = hexadPath.getTotalLength();
-                            hexadPath.style.strokeDasharray = length;
-                            hexadPath.style.strokeDashoffset = length;
-                            
-                            // Force reflow to apply the starting state of the animation
-                            hexadPath.getBoundingClientRect();
-                            
-                            hexadPath.classList.add('is-drawing');
-                            hexadPath.style.strokeDashoffset = 0;
-                        }
-                    });
-                });
+const L1 = new THREE.PointLight(0xffffff, 0.1, 200);
+const L2 = new THREE.PointLight(0x8844ff, 0.05, 150);
+const L3 = new THREE.PointLight(0x00ffcc, 0.05, 180);
+universeGroup.add(L1, L2, L3);
 
-                document.querySelectorAll('.point').forEach(point => {
-                    point.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const pointId = point.dataset.id;
-                        
-                        controlBtns.forEach(b => b.classList.remove('active'));
-                        resetStyles();
-                        point.classList.add('active');
-                        
-                        updatePointContent(pointId);
-                    });
-                });
-            }
+const haloGeo = new THREE.SphereGeometry(5.5, 24, 24);
+const haloMat = new THREE.MeshBasicMaterial({ color: 0x8844ff, transparent: true, opacity: 0.015, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide });
+universeGroup.add(new THREE.Mesh(haloGeo, haloMat));
 
-            drawEnneagram();
-            document.querySelector('[data-view="intro"]').click();
-        });
-    </script>
+/* ── CORONA DE VOLUNTAD (Pixeles Ultra Nítidos) ── */
+let coronaPoints = null; let coronaGeo = null; let filamentos = []; let shadowRings = []; let starPower = 0;
+window._coronaOpacity = 0.03; // Brillo reducido y elegante
+
+function buildCorona(totalXP) {
+  if (coronaPoints) { scene.remove(coronaPoints); coronaGeo.dispose(); }
+  const N = Math.min(6000, Math.max(500, Math.floor(Math.log(totalXP + 1) * 150)));
+  const pos = new Float32Array(N * 3); const col = new Float32Array(N * 3); const sz  = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    const phi = Math.acos(1 - 2 * (i + 0.5) / N); const theta = Math.PI * (1 + Math.sqrt(5)) * i; const r = 4.5 + Math.random() * 10;
+    pos[i*3] = r * Math.sin(phi) * Math.cos(theta); pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta); pos[i*3+2] = r * Math.cos(phi);
+    const hues = [0.78, 0.82, 0.87, 0.93, 0.97, 0.02, 0.08]; const h = hues[i % hues.length] + (Math.random() - 0.5) * 0.03;
+    const c = new THREE.Color().setHSL(h, 0.9, 0.6 + Math.random() * 0.3);
+    col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b; sz[i] = 1.0 + Math.random() * 2.5; // Puntos más precisos
+  }
+  coronaGeo = new THREE.BufferGeometry();
+  coronaGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); coronaGeo.setAttribute('color', new THREE.BufferAttribute(col, 3)); coronaGeo.setAttribute('aSize', new THREE.BufferAttribute(sz, 1));
+  coronaGeo.userData.orig = pos.slice();
+
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uOpacity: { value: 0.0 } },
+    vertexShader: `attribute float aSize; varying vec3 vC; void main() { vC = color; vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = aSize * (350.0 / -mv.z); gl_Position = projectionMatrix * mv; }`,
+    // smoothstep(1.0, 0.95) genera bordes afiladísimos, círculos perfectos
+    fragmentShader: `uniform float uOpacity; varying vec3 vC; void main() { float d = length(gl_PointCoord - vec2(0.5)) * 2.0; if (d > 1.0) discard; float a = smoothstep(1.0, 0.95, d) * uOpacity; gl_FragColor = vec4(vC, a); }`,
+    transparent: true, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  coronaPoints = new THREE.Points(coronaGeo, mat); window._coronaMat = mat; 
+  universeGroup.add(coronaPoints); 
+}
+
+function buildFilamentos(arqs) {
+  filamentos.forEach(f => { scene.remove(f); f.geometry.dispose(); }); filamentos = [];
+  arqs.forEach((arq, i) => {
+    const hue = i / arqs.length; const color = new THREE.Color().setHSL(hue, 1.0, 0.55); const pts = []; const N = 60;
+    for (let j = 0; j < N; j++) {
+      const t = j / (N - 1); const r = (1 - t) * (12 + i * 0.8) + t * 3.2; const ang = hue * Math.PI * 2 + t * Math.PI * 4.5;
+      const elev = Math.sin(t * Math.PI) * 2.5 * (i % 2 === 0 ? 1 : -1);
+      pts.push(new THREE.Vector3(Math.cos(ang) * r, elev, Math.sin(ang) * r));
+    }
+    const curve = new THREE.CatmullRomCurve3(pts); const geo = new THREE.TubeGeometry(curve, 40, 0.04, 4, false);
+    const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+    const mesh = new THREE.Mesh(geo, mat); mesh.userData = { hue, arq }; 
+    universeGroup.add(mesh); filamentos.push(mesh);
+  });
+}
+
+function buildShadowRings(totalDistr) {
+  shadowRings.forEach(r => { scene.remove(r); r.geometry.dispose(); }); shadowRings = [];
+  const cnt = Math.min(5, Math.max(1, Math.ceil(totalDistr / 10)));
+  for (let i = 0; i < cnt; i++) {
+    const geo = new THREE.TorusGeometry(5 + i * 0.9, 0.03, 4, 90);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x110004, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+    const mesh = new THREE.Mesh(geo, mat); mesh.rotation.x = Math.PI / 2 + i * 0.4; mesh.userData.spd = 0.002 + i * 0.0008;
+    universeGroup.add(mesh); shadowRings.push(mesh);
+  }
+}
+
+/* ── ASPECTOS (Arquetipos Orbitan el Sol Central) ── */
+let aspectInner = []; const arqMeshMap = new Map(); 
+
+function buildAspectInner(arqs) {
+  aspectInner.forEach(a => { universeGroup.remove(a.mesh); arqMeshMap.delete(a.mesh); }); aspectInner = [];
+  arqs.forEach((arq, i) => {
+    const hue = i / arqs.length; const c = new THREE.Color().setHSL(hue, 1.0, 0.62);
+    const geo = new THREE.SphereGeometry(0.35, 12, 12);
+    const mat = new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
+    const mesh = new THREE.Mesh(geo, mat);
+    const phi = Math.acos(1 - 2 * (i + 0.5) / arqs.length); const initialTheta = Math.PI * (1 + Math.sqrt(5)) * i;
+    mesh.userData = { type: 'aspect', arq, hue, emerging: false, flashTimer: 0, orbitPhi: phi, orbitTheta: initialTheta, index: i };
+
+    const haloN = 6; const haloPos = new Float32Array(haloN * 3);
+    for (let k = 0; k < haloN; k++) {
+      const a2 = k / haloN * Math.PI * 2; const r2 = 0.4 + Math.random() * 0.3;
+      haloPos[k*3] = Math.cos(a2) * r2; haloPos[k*3+1] = (Math.random() - 0.5) * 0.4; haloPos[k*3+2] = Math.sin(a2) * r2;
+    }
+    const haloGeo = new THREE.BufferGeometry(); haloGeo.setAttribute('position', new THREE.BufferAttribute(haloPos, 3));
+    const haloMat = new THREE.PointsMaterial({ color: c, size: 0.15, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+    mesh.add(new THREE.Points(haloGeo, haloMat)); mesh.userData.haloMat = haloMat;
+
+    universeGroup.add(mesh); arqMeshMap.set(mesh, arq); aspectInner.push({ mesh });
+  });
+}
+
+/* ── ESTRELLA DE MU (El Banco Cósmico) - INDEPENDIENTE, LEJOS ── */
+let muMesh = null;
+function buildMuStar(totalMu) {
+  if (muMesh) { muGroup.remove(muMesh); }
+  
+  const sz = Math.max(2, Math.min(10, 2 + Math.log10(totalMu + 1) * 1.2));
+  const muGeo = new THREE.IcosahedronGeometry(sz, 4);
+  const muMat = new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffaa00, emissiveIntensity: 0.6, wireframe: true, transparent: true, opacity: 0.85 });
+  muMesh = new THREE.Mesh(muGeo, muMat);
+  
+  // Ubicación ultra-profunda, independiente del movimiento de "universeGroup"
+  muMesh.position.set(150, 40, -350); 
+  muMesh.userData = { type: 'mu_star', name: 'Estrella de Mu', sz: sz, mu: totalMu };
+  muGroup.add(muMesh); // ← Grupo INDEPENDIENTE
+
+  const muGlow = new THREE.Mesh(
+    new THREE.SphereGeometry(sz * 1.8, 24, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  muMesh.add(muGlow); muMesh.userData.glow = muGlow;
+  const muLight = new THREE.PointLight(0xffea00, 1.2, 200); muMesh.add(muLight);
+
+  const pCount = Math.min(2000, totalMu); const pGeo = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3); const pCol = new Float32Array(pCount * 3);
+  for(let i=0; i<pCount; i++) {
+    const r = sz * 1.8 + Math.random() * sz * 4; const a = Math.random() * Math.PI * 2; const b = Math.acos(2 * Math.random() - 1);
+    pPos[i*3] = r * Math.sin(b) * Math.cos(a); pPos[i*3+1] = r * Math.sin(b) * Math.sin(a); pPos[i*3+2] = r * Math.cos(b);
+    const c = new THREE.Color().setHSL(0.1 + Math.random() * 0.06, 0.9, 0.5 + Math.random() * 0.5);
+    pCol[i*3] = c.r; pCol[i*3+1] = c.g; pCol[i*3+2] = c.b;
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3)); pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+  const pMat = new THREE.PointsMaterial({vertexColors: true, size: 0.35, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending});
+  const muCloud = new THREE.Points(pGeo, pMat); muMesh.add(muCloud); muMesh.userData.cloud = muCloud;
+}
+
+/* ── PLANETAS EXTERNOS ── */
+const PLANETS = [
+  { id: 'musicosmos', name: 'Musicosmos', url: 'https://www.musicosmosonline.com', col: 0xa87fff, orbitR: 30, spd: 0.0055, sz: 4.5, detail: 5, incl: 0.12, desc: 'Espacio tridimensional donde la música cobra vida.' },
+  { id: 'kalpa', name: 'Kalpa', url: 'https://durirock.github.io/chamlanquimyxperiments/kalpa6.0.html', col: 0xff6a5a, orbitR: 43, spd: 0.004, sz: 2.2, detail: 2, incl: -0.18, desc: 'Experiencia contemplativa de túnel infinito con shaders de coseno.' },
+  { id: 'archhtml', name: 'Mundo Interior', url: 'https://durirock.github.io/paramispacientespacientes/', col: 0x00e5cc, orbitR: 56, spd: 0.003, sz: 3.8, detail: 5, incl: 0.24, desc: 'Navegador de archivos 3D.' },
+  { id: 'pfunk', name: 'PlanetaFunk', url: 'https://durirock.github.io/musicosmosonline/planetafunk.html', col: 0x66ff99, orbitR: 68, spd: 0.0022, sz: 3.0, detail: 3, incl: -0.1, desc: 'Mundo procedural con terreno fBm.' },
+  { id: 'wildmedicine', name: 'Wild Medicine', url: 'https://www.wildmedicine.cl', col: 0x22dd88, orbitR: 79, spd: 0.0018, sz: 3.4, detail: 4, incl: 0.08, desc: 'Puente entre la sabiduría ancestral y la medicina moderna.' },
+  { id: 'kp', name: 'Killer Pendiente', url: 'https://durirock.github.io/blog', col: 0xffcc55, orbitR: 91, spd: 0.0016, sz: 5.2, detail: 3, incl: 0.2, isKP: true, desc: 'Sistema gamificado de productividad.' },
+  { id: 'bitacora', name: 'Bitácora', url: 'https://durirock.github.io/blog', col: 0xffaa33, orbitR: 104, spd: 0.0012, sz: 2.0, detail: 3, incl: -0.15, desc: 'Museo viviente del ecosistema Chamalnquimyst.' },
+  { id: 'botica', name: 'La Botica', url: '#', col: 0xff44cc, orbitR: 116, spd: 0.0009, sz: 1.8, detail: 4, incl: 0.3, isBotica: true, desc: 'Convergencia entre medicina occidental y sabiduría ancestral.' }
+];
+
+const planetMeshes = []; const ray = new THREE.Raycaster(); const mpos = new THREE.Vector2();
+PLANETS.forEach((p, i) => {
+  const pivot = new THREE.Group(); pivot.rotation.x = p.incl; universeGroup.add(pivot);
+  const rg = new THREE.RingGeometry(p.orbitR - 0.12, p.orbitR + 0.12, 128);
+  const rm = new THREE.MeshBasicMaterial({ color: p.col, side: THREE.DoubleSide, transparent: true, opacity: 0.045 });
+  const ring = new THREE.Mesh(rg, rm); ring.rotation.x = Math.PI / 2; pivot.add(ring);
+  
+  const pg = new THREE.IcosahedronGeometry(p.sz, p.detail); const col = new THREE.Color(p.col);
+  const pm = new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uCol: { value: col.clone() }, uIdx: { value: i } },
+    vertexShader: `uniform float uTime; uniform float uIdx; varying vec3 vN; varying vec3 vV; void main() { vN = normalize(normalMatrix * normal); float breath = sin(uTime * 0.75 + uIdx * 0.9) * 0.04; vec4 mv = modelViewMatrix * vec4(position + normal * breath, 1.0); vV = -normalize(mv.xyz); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform vec3 uCol; uniform float uTime; uniform float uIdx; varying vec3 vN; varying vec3 vV; void main() { float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.0); vec3 inner = uCol * 0.28; vec3 edge = uCol * 1.3; float shift = sin(uTime * 0.12 + uIdx) * 0.08; edge += vec3(shift * 0.5, shift * 0.3, -shift * 0.2); vec3 c = mix(inner, edge, f); float alpha = f * 0.88 + 0.08; gl_FragColor = vec4(c, alpha); }`,
+    transparent: true, side: THREE.FrontSide, blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(pg, pm);
+  mesh.userData = { ...p, type: 'planet', angle: i * (Math.PI * 2 / PLANETS.length), uTime: pm.uniforms.uTime };
+  pivot.add(mesh); planetMeshes.push(mesh);
+
+  const gg = new THREE.SphereGeometry(p.sz * 2.0, 12, 12);
+  const gm = new THREE.MeshBasicMaterial({ color: p.col, transparent: true, opacity: 0.03, blending: THREE.AdditiveBlending, depthWrite: false });
+  mesh.add(new THREE.Mesh(gg, gm)); mesh.userData.glowMat = gm;
+
+  if (!p.isBotica) {
+    const discGeo = new THREE.CircleGeometry(p.sz, 48);
+    const discMat = new THREE.ShaderMaterial({
+      uniforms: { uColor: { value: new THREE.Color(p.col) }, uOpacity: { value: 0.35 }, uTime: { value: 0 }, uIdx: { value: i } },
+      vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: `uniform vec3 uColor; uniform float uOpacity; uniform float uTime; uniform float uIdx; varying vec2 vUv; void main() { float d = length(vUv - vec2(0.5)) * 2.0; if (d > 1.0) discard; float alpha = smoothstep(1.0, 0.2, d) * uOpacity; alpha *= 0.85 + sin(uTime * 0.4 + uIdx * 1.3) * 0.15; float ring = smoothstep(0.85, 0.92, d) * smoothstep(1.0, 0.95, d); vec3 col = mix(uColor * 0.6, uColor * 1.4, ring); alpha += ring * uOpacity * 0.6; gl_FragColor = vec4(col, alpha); }`,
+      transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+    });
+    const disc = new THREE.Mesh(discGeo, discMat); disc.userData.isDimensionDisc = true; mesh.add(disc); mesh.userData.dimensionDisc = disc; mesh.userData.discMat = discMat;
+  }
+  const microN = Math.round(20 + p.sz * 8); const mPos = new Float32Array(microN * 3); const mSz = new Float32Array(microN); const mSpd = new Float32Array(microN); 
+  for (let k = 0; k < microN; k++) {
+    const phi = Math.acos(2 * Math.random() - 1); const theta = Math.random() * Math.PI * 2; const r = p.sz * (1.3 + Math.random() * 1.2);
+    mPos[k*3] = r * Math.sin(phi) * Math.cos(theta); mPos[k*3+1] = r * Math.sin(phi) * Math.sin(theta); mPos[k*3+2] = r * Math.cos(phi);
+    mSz[k] = 0.4 + Math.random() * 1.4; mSpd[k] = (Math.random() - 0.5) * 2; 
+  }
+  const mGeo = new THREE.BufferGeometry(); mGeo.setAttribute('position', new THREE.BufferAttribute(mPos, 3)); mGeo.setAttribute('aSize', new THREE.BufferAttribute(mSz, 1));
+  mGeo.userData.origPos = mPos.slice(); mGeo.userData.spd = mSpd;
+  const mMat = new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 }, uExpand: { value: 0.0 }, uColor: { value: new THREE.Color(p.col) } },
+    vertexShader: `attribute float aSize; uniform float uTime; uniform float uExpand; varying float vA; void main() { float dist = length(position); float expanded = dist * (1.0 + uExpand * 2.5); vec3 pos = normalize(position) * expanded; pos += normalize(position) * sin(uTime * 1.4 + dist * 0.8) * 0.18 * uExpand; vec4 mv = modelViewMatrix * vec4(pos, 1.0); gl_PointSize = aSize * (220.0 / -mv.z) * (0.5 + uExpand * 0.7); gl_Position = projectionMatrix * mv; vA = 0.3 + uExpand * 0.7; }`,
+    fragmentShader: `uniform vec3 uColor; uniform float uExpand; varying float vA; void main() { float d = length(gl_PointCoord - vec2(0.5)) * 2.0; if (d > 1.0) discard; float alpha = smoothstep(1.0, 0.2, d) * vA * 0.75; gl_FragColor = vec4(uColor * 1.4, alpha); }`,
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const microCloud = new THREE.Points(mGeo, mMat); mesh.add(microCloud); mesh.userData.microGeo = mGeo; mesh.userData.microMat = mMat;
+});
+
+try {
+  const savedOp = localStorage.getItem('cml_disc_opacity');
+  if (savedOp !== null) {
+    window._discOpacity = parseFloat(savedOp);
+    setTimeout(() => {
+      const sl = document.getElementById('sl-disc'); const vd = document.getElementById('v-disc');
+      if (sl && vd) { sl.value = Math.round(window._discOpacity * 100); vd.textContent = Math.round(window._discOpacity * 100) + '%'; }
+    }, 100);
+  } else { window._discOpacity = 0.35; }
+} catch(_){ window._discOpacity = 0.35; }
+
+/* ── OVERLAY ORBITAL (iFrames) ── */
+const orbitOverlay = document.createElement('div');
+orbitOverlay.id = 'orbit-overlay';
+orbitOverlay.style.cssText = `position:fixed; z-index:10; pointer-events:none; display:none; border-radius:50%; overflow:hidden; background:rgba(4,2,16,0.15); box-shadow: 0 0 60px rgba(0,0,0,0.5); -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,.92) 0%, rgba(0,0,0,.5) 70%, transparent 100%); mask-image: radial-gradient(circle, rgba(0,0,0,.92) 0%, rgba(0,0,0,.5) 70%, transparent 100%);`;
+const orbitIframe = document.createElement('iframe');
+orbitIframe.id = 'orbit-iframe';
+orbitIframe.style.cssText = `width:140%; height:140%; position:absolute; left:-20%; top:-20%; border:none; pointer-events:none; opacity:0.92;`;
+orbitIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
+orbitOverlay.appendChild(orbitIframe); document.body.appendChild(orbitOverlay);
+
+function showOrbitOverlay(pd) {
+  orbitIframe.src = pd.url; orbitOverlay.style.display = 'block';
+  const sz = Math.min(innerWidth, innerHeight) * 0.7;
+  orbitOverlay.style.width = sz + 'px'; orbitOverlay.style.height = sz + 'px';
+  const cr = new THREE.Color(pd.col);
+  orbitOverlay.style.borderColor = `rgba(${cr.r*255|0},${cr.g*255|0},${cr.b*255|0}, 0.3)`;
+  orbitOverlay.style.border = `1px solid rgba(${cr.r*255|0},${cr.g*255|0},${cr.b*255|0}, 0.3)`;
+}
+function hideOrbitOverlay() { orbitOverlay.style.display = 'none'; orbitIframe.style.pointerEvents = 'none'; orbitIframe.src = 'about:blank'; }
+function activateOrbitIframe() { orbitIframe.style.pointerEvents = 'auto'; orbitOverlay.style.pointerEvents = 'auto'; }
+function deactivateOrbitIframe() { orbitIframe.style.pointerEvents = 'none'; orbitOverlay.style.pointerEvents = 'none'; }
+function updateOrbitOverlayPosition() {
+  if (orbitOverlay.style.display === 'none' || !_flyTarget || _flyTarget.userData.type !== 'planet') return;
+  const pd = _flyTarget.userData; const planetPos = new THREE.Vector3(); _flyTarget.getWorldPosition(planetPos); 
+  const v = planetPos.clone().project(camera);
+  const cx = ( v.x * 0.5 + 0.5) * innerWidth; const cy = (-v.y * 0.5 + 0.5) * innerHeight;
+  const dist = camera.position.distanceTo(planetPos); const fov = camera.fov * Math.PI / 180; const screenH = innerHeight;
+  const projRadius = (pd.sz / dist) * (screenH / (2 * Math.tan(fov / 2))); const finalSz = projRadius * 2 * 1.05;
+  orbitOverlay.style.width = finalSz + 'px'; orbitOverlay.style.height = finalSz + 'px';
+  orbitOverlay.style.left = (cx - finalSz / 2) + 'px'; orbitOverlay.style.top = (cy - finalSz / 2) + 'px';
+}
+
+/* ════════════════════════════════════
+   ACTIVACIÓN DEL UNIVERSO (.cegg)
+════════════════════════════════════ */
+let _arqs = [];
+
+function activateUniverse(data) {
+  window._cosmicEggData = data;
+  const usuarios = data.perfiles_usuarios || {};
+  const glob     = data.perfil_global     || {};
+  const totalXP  = glob.estadisticas_globales?.total_pv_acumulado || 0;
+  let totalMu  = 0;
+  
+  _arqs = Object.entries(usuarios).map(([nombre, p]) => {
+    const mu = p.datos_cuantitativos?.nivel_y_xp?.mu_disponibles || 0;
+    totalMu += mu;
+    
+    // Leemos el historico de tareas rico en datos
+    const historico = p.datos_cualitativos?.historico_tareas || [];
+    
+    return {
+      nombre,
+      xp:    p.datos_cuantitativos?.nivel_y_xp?.xp_total || 0,
+      mu:    mu,
+      comp:  p.datos_cuantitativos?.estadisticas_tareas?.completadas || 0,
+      pend:  p.datos_cuantitativos?.estadisticas_tareas?.pendientes || 0,
+      distr: p.datos_cuantitativos?.informacion_mara_egosombra?.total_distracciones || 0,
+      bitac: p.datos_cualitativos?.bitacora_personal || [],
+      tareas:p.datos_cualitativos?.tareas_detalladas || [],
+      historico_tareas: historico // Historial completo para el panel
+    };
+  }).sort((a, b) => b.xp - a.xp);
+
+  document.getElementById('s-xp').textContent  = (totalXP / 1000).toFixed(1) + 'k';
+  document.getElementById('s-arq').textContent = _arqs.length;
+  document.getElementById('s-mu').textContent  = totalMu;
+
+  starPower = Math.min(1, Math.log(totalXP + 1) / Math.log(500000));
+
+  buildCorona(totalXP);
+  buildFilamentos(_arqs);
+  buildShadowRings(_arqs.reduce((s,a)=>s+a.distr,0));
+  buildAspectInner(_arqs);
+  buildMuStar(totalMu);
+
+  window._ARQS  = _arqs;
+  window._CEGG  = true;
+
+  setTimeout(() => {
+    const slB = document.getElementById('sl-bright'); if (slB) { slB.value = 8; setSolBright(8); }
+    const slC = document.getElementById('sl-corona'); if (slC) { slC.value = 3; setCoronaBright(3); } // Muy tenue
+    const slD = document.getElementById('sl-disc'); if (slD) { slD.value = 28; setDiscTransparency(28); }
+  }, 50);
+
+  let f = 0; const D = 200; const targetCoronaOpacity = window._coronaOpacity;
+  (function step() {
+    f++; const p = Math.min(1, f / D); const e = 1 - Math.pow(1 - p, 4); 
+
+    coreMat.emissiveIntensity = 0.02 + e * starPower * 0.4; 
+    coreMat.emissive.setHSL(e * 0.6, 0.85, 0.45);
+    L1.intensity = e * starPower * 1.0; L2.intensity = e * starPower * 0.6; L3.intensity = e * starPower * 0.4;
+    L1.color.setHSL((f * 0.003) % 1, 1, 0.7);
+
+    if (coronaPoints) {
+      window._coronaMat.uniforms.uOpacity.value = e * targetCoronaOpacity;
+      const orig = coronaGeo.userData.orig; const cur = coronaGeo.attributes.position.array; const fac = 0.25 + e * 0.75;
+      for (let j = 0; j < cur.length; j++) cur[j] = orig[j] * fac;
+      coronaGeo.attributes.position.needsUpdate = true;
+    }
+
+    filamentos.forEach((fl, i) => { const delay = i / filamentos.length; const fp = Math.max(0, (p - delay * 0.5) / 0.5); fl.material.opacity = Math.min(0.4, fp * 0.4) * starPower; });
+    shadowRings.forEach(r => { r.material.opacity = e * 0.1; });
+    aspectInner.forEach(a => { a.mesh.material.opacity = e * 0.55; });
+
+    if (f < D) { requestAnimationFrame(step); } 
+    else {
+      document.getElementById('cegg-dot').textContent = '● cegg activo';
+      const ch = document.getElementById('ctrl-hint'); ch.classList.add('vis');
+      setTimeout(() => ch.classList.add('fade'), 8000);
+    }
+  })();
+
+  const ev = data.estado_vivo || {};
+  if (ev.ultimo_evento?.usuario) {
+    const age = (Date.now() / 1000) - (ev.ultimo_evento.timestamp || 0);
+    if (age < 6) triggerFlash(ev.ultimo_evento.usuario);
+  }
+  document.getElementById('btn-universe-mode').style.display = 'block';
+  camPitch = camera.rotation.x; camYaw = camera.rotation.y;
+}
+
+window._ACTIVATE = activateUniverse;
+
+function triggerFlash(nombre) {
+  document.getElementById('flash').style.opacity = '1';
+  setTimeout(() => { document.getElementById('flash').style.opacity = '0'; }, 300);
+  aspectInner.forEach(a => { if (a.mesh.userData.arq?.nombre === nombre) a.mesh.userData.flashTimer = 3; });
+  if (muMesh) {
+    muMesh.material.emissive.setHex(0x00ff88);
+    setTimeout(() => muMesh.material.emissive.setHex(0xffaa00), 2000);
+  }
+}
+
+let hoveredPlanet   = null;
+let nameTagTimer    = null;
+const nameTag       = document.getElementById('planet-name-tag');
+window._aspectsExp  = false; 
+
+function worldToScreen(pos3d) {
+  const v = pos3d.clone().project(camera);
+  return { x: ( v.x * 0.5 + 0.5) * innerWidth, y: (-v.y * 0.5 + 0.5) * innerHeight };
+}
+
+window.addEventListener('mousemove', e => {
+  mpos.x = (e.clientX / innerWidth)  * 2 - 1; mpos.y = -(e.clientY / innerHeight) * 2 + 1;
+  ray.setFromCamera(mpos, camera);
+
+  const targets = [coreMesh, ...planetMeshes, ...aspectInner.map(a=>a.mesh)];
+  if(muMesh) targets.push(muMesh);
+  const hits = ray.intersectObjects(targets, false);
+
+  if (hits.length) {
+    const obj = hits[0].object;
+    hoveredPlanet = obj;
+    document.body.style.cursor = 'pointer';
+
+    if (obj === coreMesh || obj.userData.type === 'planet' || obj.userData.type === 'mu_star') {
+      const _wp = new THREE.Vector3(); obj.getWorldPosition(_wp); const sc = worldToScreen(_wp);
+      
+      nameTag.textContent = obj.userData.name || 'Sol de Voluntad';
+      let colHex = '#ffffff';
+      if(obj.userData.type === 'planet') colHex = '#' + new THREE.Color(obj.userData.col).getHexString();
+      if(obj.userData.type === 'mu_star') colHex = '#ffd700';
+      if(obj === coreMesh) colHex = '#cc44ff';
+      
+      nameTag.style.color = colHex;
+      nameTag.style.left = sc.x + 'px'; 
+      nameTag.style.top = (sc.y + (obj.userData.sz || 4.5) * 18 + 15) + 'px'; // Ligeramente más abajo
+      
+      nameTag.classList.add('vis'); nameTag.classList.remove('hide'); clearTimeout(nameTagTimer);
+      document.getElementById('aspect-panel').classList.remove('vis');
+    }
+    else if (obj.userData.type === 'aspect') {
+      // Hover Micro Panel
+      const arq = obj.userData.arq;
+      document.getElementById('asp-name').textContent = arq.nombre;
+      document.getElementById('asp-name').style.color = '#' + new THREE.Color().setHSL(obj.userData.hue || 0, 1, 0.65).getHexString();
+      document.getElementById('asp-xp').textContent   = formatNumber(arq.xp);
+      document.getElementById('asp-mu').textContent   = arq.mu;
+      document.getElementById('asp-pend').textContent = arq.pend;
+      const tasks = (arq.tareas || []).filter(t => !t.completed).slice(0, 2); // Top 2
+      document.getElementById('asp-tasks').innerHTML  = tasks.map(t => `<div class="asp-task">${t.name || t}</div>`).join('');
+      const aspPanel = document.getElementById('aspect-panel');
+      aspPanel.style.left = (e.clientX + 20) + 'px'; aspPanel.style.top = (e.clientY - 20) + 'px';
+      aspPanel.classList.add('vis');
+      nameTag.classList.remove('vis'); 
+    }
+
+  } else {
+    document.getElementById('aspect-panel').classList.remove('vis');
+    document.body.style.cursor = 'crosshair';
+
+    if (hoveredPlanet) {
+      hoveredPlanet = null; clearTimeout(nameTagTimer);
+      nameTagTimer = setTimeout(() => { nameTag.classList.remove('vis'); nameTag.classList.add('hide'); }, 400);
+    }
+  }
+
+  if (hoveredPlanet && (hoveredPlanet.userData.type === 'planet' || hoveredPlanet.userData.type === 'mu_star')) {
+    const _hwp = new THREE.Vector3(); hoveredPlanet.getWorldPosition(_hwp); const sc = worldToScreen(_hwp);
+    nameTag.style.left = sc.x + 'px'; nameTag.style.top = (sc.y + (hoveredPlanet.userData.sz || 4.5) * 18 + 15) + 'px';
+  }
+
+  // ── HYSTERESIS MEJORADO (Seguridad de expansión) ──
+  const d2 = mpos.x * mpos.x + mpos.y * mpos.y;
+  const isHovAsp = hoveredPlanet && hoveredPlanet.userData.type === 'aspect';
+  
+  if (d2 < 0.05) window._aspectsExp = true; // Si está muy cerca al centro, expandir.
+  else if (d2 > 0.6 && !isHovAsp) window._aspectsExp = false; // Solo contraer si salimos muy lejos de los arquetipos.
+
+  aspectInner.forEach(a => { a.mesh.userData.emerging = (window._aspectsExp || isHovAsp) && starPower > 0; });
+});
+
+let _lastClickTime = 0; let _lastClickObj  = null; const DBLCLICK_THRESHOLD = 400;
+
+window.addEventListener('click', e => {
+  if (e.target.closest('#panel-cfg, #panel-cegg-info, #planet-panel, #data-panel, #stat-popup, #top-bar, #cegg-micro, #orbit-overlay')) return;
+
+  mpos.x = (e.clientX / innerWidth)  * 2 - 1; mpos.y = -(e.clientY / innerHeight) * 2 + 1;
+  ray.setFromCamera(mpos, camera);
+
+  const targets = [coreMesh, ...planetMeshes, ...aspectInner.map(a=>a.mesh)];
+  if(muMesh) targets.push(muMesh);
+  const hits = ray.intersectObjects(targets, false);
+  const now  = Date.now();
+
+  if (hits.length) {
+    const obj = hits[0].object;
+    const isDbl = (now - _lastClickTime < DBLCLICK_THRESHOLD) && _lastClickObj === obj;
+    _lastClickTime = now; _lastClickObj  = obj;
+
+    if (isDbl) {
+      if (obj.userData.type === 'planet') {
+        if (_isOrbiting && _flyTarget === obj) navigateToUniverse(obj.userData);
+        else { closePP(); document.getElementById('data-panel').classList.remove('visible'); enterOrbit(obj); }
+      } else if (obj === coreMesh && !window._CEGG) {
+        document.getElementById('cegg-file').click();
+      } else {
+        enterOrbit(obj);
+      }
+    } else {
+      setTimeout(() => {
+        if (Date.now() - _lastClickTime >= DBLCLICK_THRESHOLD) {
+          if (_isOrbiting && _flyTarget === obj && obj.userData.type === 'planet') activateOrbitIframe();
+          else if (!_isOrbiting) {
+            if (obj === coreMesh && window._CEGG) showSelfPanel();
+            else if (obj.userData.type === 'planet') window.openPP(obj.userData);
+            else if (obj.userData.type === 'aspect') showAspectPanel(obj.userData.arq.nombre);
+            else if (obj === muMesh) showMuPanel();
+          }
+        }
+      }, DBLCLICK_THRESHOLD + 20);
+    }
+  } else {
+    if (_isOrbiting) {
+      deactivateOrbitIframe();
+      const isDblVoid = (now - _lastClickTime < DBLCLICK_THRESHOLD) && _lastClickObj === null;
+      _lastClickTime = now; _lastClickObj = null;
+      if (isDblVoid) exitOrbit();
+    } else { _lastClickTime = now; _lastClickObj = null; }
+  }
+});
+
+/* ════════════════════════════════════
+   SISTEMA DE ÓRBITA Y VUELO
+════════════════════════════════════ */
+let _isTransitioning = false; let _isOrbiting = false; let _isFlyingTo = false;  
+let _flyTarget = null; let _flyTargetPos = new THREE.Vector3(); let _flyTargetQuat = new THREE.Quaternion();
+let _lastCamPos = new THREE.Vector3(); let _lastCamQuat = new THREE.Quaternion(); let _orbitOffset = new THREE.Vector3();
+
+function enterOrbit(objMesh) {
+  if (!_isOrbiting) { _lastCamPos.copy(camera.position); _lastCamQuat.copy(camera.quaternion); }
+  _flyTarget = objMesh; _isFlyingTo = true; _isTransitioning = true; _isOrbiting = false;
+
+  let sz = objMesh.userData.sz || 3;
+  if(objMesh === coreMesh) sz = 5;
+  if(objMesh.userData.type === 'aspect') sz = 1.5;
+
+  const dir = camera.position.clone().sub(objMesh.position).normalize();
+  _orbitOffset.copy(dir).multiplyScalar(sz * 4.0); 
+  _flyTargetPos.copy(objMesh.position).add(_orbitOffset);
+
+  const m = new THREE.Matrix4(); m.lookAt(_flyTargetPos, objMesh.position, camera.up);
+  _flyTargetQuat.setFromRotationMatrix(m);
+
+  if(objMesh.userData.type === 'planet') showOrbitOverlay(objMesh.userData);
+}
+
+function exitOrbit() {
+  if (!_isOrbiting && !_isFlyingTo) return;
+  _isFlyingTo = false; _isOrbiting = false; _isTransitioning = true;
+  hideOrbitOverlay(); _flyTarget = null;
+}
+
+function navigateToUniverse(pd) {
+  if (!pd.url || pd.url === '#') return;
+  const anchor = { planetId: pd.id, camPos: { x: _lastCamPos.x, y: _lastCamPos.y, z: _lastCamPos.z }, camYaw: camYaw, camPitch: camPitch, camRadius: camRadius, camTarget: { x: camTarget.x, y: camTarget.y, z: camTarget.z }, timestamp: Date.now() };
+  try { sessionStorage.setItem('cml_anchor', JSON.stringify(anchor)); } catch(_){}
+  window.location.href = pd.url;
+}
+
+function restoreAnchorIfNeeded() {
+  try {
+    const raw = sessionStorage.getItem('cml_anchor'); if (!raw) return;
+    const anchor = JSON.parse(raw); if (Date.now() - anchor.timestamp > 30 * 60 * 1000) { sessionStorage.removeItem('cml_anchor'); return; }
+    camYaw = anchor.camYaw || 0; camPitch = anchor.camPitch || -0.13; camRadius = anchor.camRadius || 90;
+    camTarget.set(anchor.camTarget?.x || 0, anchor.camTarget?.y || 0, anchor.camTarget?.z || 0);
+    const pm = planetMeshes.find(p => p.userData.id === anchor.planetId);
+    if (pm) { setTimeout(() => { _lastCamPos.set(anchor.camPos.x, anchor.camPos.y, anchor.camPos.z); _lastCamQuat.copy(camera.quaternion); enterOrbit(pm); }, 100); }
+  } catch(_){}
+}
+function clearAnchor() { try { sessionStorage.removeItem('cml_anchor'); } catch(_){} }
+
+/* ════════════════════════════════════
+   TECLADO Y CONTROLES
+════════════════════════════════════ */
+const KEYS = { w:0, a:0, s:0, d:0, q:0, e:0, z:0, x:0, shift:0, space:0 };
+const CAM_SPEED = 18; const CAM_FAST  = 50; const YAW_SPEED = 1.2; 
+let camYaw = 0; let camPitch = -0.13; let camRadius = 90; let camTarget = new THREE.Vector3(0, 0, 0);
+let isDrag = false; let prevMouse = { x: 0, y: 0 };
+
+document.addEventListener('keydown', ke => {
+  const k = ke.key.toLowerCase();
+  if (k in KEYS) KEYS[k] = 1; if (ke.shiftKey) KEYS.shift = 1;
+  if (ke.key === ' ') { KEYS.space = 1; ke.preventDefault(); }
+  if (k === 'h') {
+    if (_isOrbiting) exitOrbit();
+    camTarget.set(0, 0, 0); camYaw = window._CEGG ? camera.rotation.y : 0; camPitch = window._CEGG ? camera.rotation.x : -0.13; camRadius = 90;
+  }
+  if (k === 'c') {
+    if (KEYS.shift || _isOrbiting) { exitOrbit(); }
+    else if (hoveredPlanet) { enterOrbit(hoveredPlanet); }
+    else if (muMesh && camera.position.distanceTo(muMesh.position) < 250) { enterOrbit(muMesh); }
+  }
+  if (ke.key === 'Escape' || ke.key === 'Backspace') {
+    if (_isOrbiting) { exitOrbit(); ke.preventDefault(); }
+    closePP(); document.getElementById('data-panel').classList.remove('visible'); document.getElementById('stat-popup').classList.remove('visible');
+  }
+  if (ke.key === 'Enter') {
+    if (_isOrbiting && _flyTarget?.userData.type === 'planet') navigateToUniverse(_flyTarget.userData);
+    else if (window._currentPD?.url && window._currentPD.url !== '#') navigateToUniverse(window._currentPD);
+  }
+});
+document.addEventListener('keyup', ke => {
+  const k = ke.key.toLowerCase(); if (k in KEYS) KEYS[k] = 0; if (!ke.shiftKey) KEYS.shift = 0; if (ke.key === ' ') KEYS.space = 0;
+});
+
+renderer.domElement.addEventListener('mousedown', e => { if (e.button === 0) { isDrag = true; prevMouse = { x: e.clientX, y: e.clientY }; } });
+window.addEventListener('mouseup', () => { isDrag = false; });
+window.addEventListener('mousemove', e => {
+  if (!isDrag) return;
+  if (_isOrbiting) deactivateOrbitIframe(); 
+  camYaw -= (e.clientX - prevMouse.x) * 0.003; camPitch -= (e.clientY - prevMouse.y) * 0.003;
+  camPitch = Math.max(-Math.PI / 2.1, Math.min(0.45, camPitch)); prevMouse = { x: e.clientX, y: e.clientY };
+});
+renderer.domElement.addEventListener('wheel', e => {
+  if (_isOrbiting) {
+    const len = _orbitOffset.length();
+    const newLen = Math.max(_flyTarget ? (_flyTarget.userData.sz || 3) * 2 : 5, Math.min(120, len + e.deltaY * 0.05));
+    _orbitOffset.normalize().multiplyScalar(newLen);
+  } else {
+    camRadius += e.deltaY * 0.07; camRadius = Math.max(15, Math.min(280, camRadius));
+  }
+}, { passive: true });
+
+function updateCamera(dt) {
+  const sp = (KEYS.shift || KEYS.space ? CAM_FAST : CAM_SPEED) * dt;
+  const movingWASD = KEYS.w || KEYS.s || KEYS.a || KEYS.d; const movingAll = movingWASD || KEYS.q || KEYS.e || KEYS.z || KEYS.x;
+  if (movingAll && _isOrbiting) exitOrbit();
+  if (KEYS.q) camYaw += YAW_SPEED * dt; if (KEYS.e) camYaw -= YAW_SPEED * dt;
+
+  if (window._CEGG && !_isTransitioning && !_isOrbiting) {
+    camera.quaternion.setFromEuler(new THREE.Euler(camPitch, camYaw, 0, 'YXZ'));
+    const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion); const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion); const up = new THREE.Vector3(0, 1, 0);
+    const moveVec = new THREE.Vector3(0, 0, 0);
+    if (KEYS.w) moveVec.addScaledVector(fwd, sp); if (KEYS.s) moveVec.addScaledVector(fwd, -sp);
+    if (KEYS.a) moveVec.addScaledVector(right, -sp); if (KEYS.d) moveVec.addScaledVector(right, sp);
+    if (KEYS.z) moveVec.addScaledVector(up, sp); if (KEYS.x) moveVec.addScaledVector(up, -sp);
+    
+    // El Modo Motor mueve la cámara y al Grupo Universo. MU NO SE MUEVE (se queda atrás).
+    if (window._moveUniverseMode) { 
+        camera.position.add(moveVec); 
+        universeGroup.position.add(moveVec); 
+    }
+    else { camera.position.add(moveVec); }
+    _lastCamPos.copy(camera.position); _lastCamQuat.copy(camera.quaternion);
+  } else if (!_isTransitioning && !_isOrbiting) {
+    const fwd = new THREE.Vector3(-Math.sin(camYaw) * Math.cos(camPitch), 0, -Math.cos(camYaw) * Math.cos(camPitch));
+    const right = new THREE.Vector3(Math.cos(camYaw), 0, -Math.sin(camYaw));
+    if (KEYS.z) camTarget.y += sp; if (KEYS.x) camTarget.y -= sp;
+    if (KEYS.w) camTarget.addScaledVector(fwd, sp); if (KEYS.s) camTarget.addScaledVector(fwd, -sp);
+    if (KEYS.a) camTarget.addScaledVector(right, -sp); if (KEYS.d) camTarget.addScaledVector(right, sp);
+    const tx = camTarget.x + camRadius * Math.sin(camYaw) * Math.cos(camPitch); const ty = camTarget.y + camRadius * Math.sin(camPitch); const tz = camTarget.z + camRadius * Math.cos(camYaw) * Math.cos(camPitch);
+    camera.position.lerp(new THREE.Vector3(tx, ty, tz), 0.06); camera.lookAt(camTarget);
+  }
+}
+
+const clock = new THREE.Clock(); window._orbitAuto = true; let _orbSpeedMult = 0.4;
+
+(function animate() {
+  requestAnimationFrame(animate); const dt = Math.min(clock.getDelta(), 0.05); const t = clock.getElapsedTime();
+
+  updateCamera(dt); if (!_isOrbiting) { camera.position.x += Math.sin(t * 0.04) * 0.008; camera.position.y += Math.sin(t * 0.05) * 0.006; }
+
+  coreMesh.rotation.x = t * 0.025; coreMesh.rotation.y = t * 0.035; coreMesh.rotation.z = t * 0.018;
+  const pulse = Math.sin(t * 0.35) * 0.5 + 0.5; 
+
+  if (starPower > 0) {
+    const sc = 1 + pulse * 0.05 * starPower; coreMesh.scale.setScalar(sc);
+    const hue = (t * 0.04) % 1; coreMat.emissive.setHSL(hue, 0.9, 0.42); coreMat.emissiveIntensity = 0.05 + starPower * (0.5 + pulse * 0.2);
+    L1.color.setHSL(hue, 1.0, 0.65); L2.color.setHSL((hue + 0.33) % 1, 1.0, 0.6); L3.color.setHSL((hue + 0.66) % 1, 1.0, 0.6);
+    L1.intensity = starPower * 1.2 * (0.6 + pulse * 0.4); L2.intensity = starPower * 0.8; L3.intensity = starPower * 0.6;
+  } else {
+    const lv = Math.sin(t * 0.28) * 0.5 + 0.5; const hue = (t * 0.02) % 1;
+    coreMat.emissive.setHSL(hue, 0.75, 0.35); coreMat.emissiveIntensity = 0.05 + lv * 0.05;
+    L1.intensity = 0.1 + lv * 0.05; L2.intensity = 0.08 + lv * 0.03; L1.color.setHSL(hue, 0.8, 0.6);
+  }
+
+  if (muMesh) {
+    muMesh.rotation.y = t * 0.2; muMesh.rotation.x = t * 0.1;
+    if(muMesh.userData.cloud) muMesh.userData.cloud.rotation.y = -t * 0.05;
+    const gPulse = 1 + Math.sin(t * 2) * 0.05;
+    muMesh.scale.setScalar(gPulse);
+  }
+
+  if (coronaPoints && starPower > 0) { coronaPoints.rotation.y = t * 0.018; coronaPoints.rotation.x = t * 0.009; }
+  filamentos.forEach((fl, i) => { fl.rotation.y = t * (0.012 + i * 0.002); fl.rotation.z = Math.sin(t * 0.06 + i) * 0.025; });
+  shadowRings.forEach(r => { r.rotation.z += r.userData.spd; r.rotation.x += r.userData.spd * 0.6; });
+
+  // ── ASPECTOS ORBITANDO ──
+  aspectInner.forEach((a, i) => {
+    const d = a.mesh.userData;
+    const em = d.emerging || d.flashTimer > 0;
+    
+    const targetR = em ? 12 + i * 0.5 : 3.5 + (i % 3) * 0.6;
+    const curLen = a.mesh.position.length() || targetR;
+    const newR = curLen + (targetR - curLen) * 0.045;
+
+    // Frenado Magnético al hacer Hover
+    const isHovered = hoveredPlanet === a.mesh;
+    const baseSpd = 0.1 + (i % 3) * 0.02;
+    const targetSpd = isHovered ? 0.003 : baseSpd; 
+    
+    d.currentSpeed = d.currentSpeed || baseSpd;
+    d.currentSpeed += (targetSpd - d.currentSpeed) * 0.15;
+    d.orbitTheta += dt * d.currentSpeed;
+
+    a.mesh.position.set(
+      newR * Math.sin(d.orbitPhi) * Math.cos(d.orbitTheta),
+      newR * Math.cos(d.orbitPhi),
+      newR * Math.sin(d.orbitPhi) * Math.sin(d.orbitTheta)
+    );
+    a.mesh.rotation.y = t * 0.5 + i;
+
+    if (d.flashTimer > 0) {
+      d.flashTimer -= dt;
+      a.mesh.material.color.setHSL(d.flashTimer / 3, 0.9, 0.72);
+      a.mesh.scale.setScalar(1.5 + Math.sin(d.flashTimer * 6) * 0.5);
+    } else {
+      a.mesh.material.color.setHSL(d.hue, 1, 0.62);
+      a.mesh.scale.setScalar(em ? 1.4 : 1.0);
+    }
+    const targetOp = starPower > 0 ? (em ? 0.9 : 0.5) : 0;
+    a.mesh.material.opacity += (targetOp - a.mesh.material.opacity) * 0.06;
+    if (d.haloMat) d.haloMat.opacity = a.mesh.material.opacity * 0.6;
+  });
+
+  planetMeshes.forEach((pm, i) => {
+    const d = pm.userData;
+    if (window._orbitAuto) d.angle += d.spd * _orbSpeedMult;
+    pm.position.x = Math.cos(d.angle) * d.orbitR; pm.position.y = 0; pm.position.z = -Math.sin(d.angle) * d.orbitR;
+    pm.rotation.y = t * 0.15 + i; d.uTime.value = t;
+    if (d.glowMat) d.glowMat.opacity = 0.03 + Math.sin(t * 0.8 + i) * 0.015;
+    if (d.dimensionDisc) { d.dimensionDisc.lookAt(pm.worldToLocal(camera.position.clone())); d.discMat.uniforms.uTime.value = t; if (window._discOpacity !== undefined) d.discMat.uniforms.uOpacity.value = window._discOpacity; }
+    if (d.microMat) {
+      d.microMat.uniforms.uTime.value = t;
+      const isHov = pm === hoveredPlanet; const cur = d.microMat.uniforms.uExpand.value;
+      d.microMat.uniforms.uExpand.value += ((isHov ? 1 : 0) - cur) * 0.07;
+    }
+  });
+
+  if (_isTransitioning) {
+    if (_isFlyingTo && _flyTarget) {
+      const wp = new THREE.Vector3(); _flyTarget.getWorldPosition(wp); 
+      _flyTargetPos.copy(wp).add(_orbitOffset);
+      const m = new THREE.Matrix4(); m.lookAt(_flyTargetPos, wp, camera.up); _flyTargetQuat.setFromRotationMatrix(m);
+      camera.position.lerp(_flyTargetPos, 0.055); camera.quaternion.slerp(_flyTargetQuat, 0.055);
+      if (camera.position.distanceTo(_flyTargetPos) < 1.2) { _isTransitioning = false; _isFlyingTo = false; _isOrbiting = true; }
+    } else if (!_isFlyingTo) {
+      camera.position.lerp(_lastCamPos, 0.055); camera.quaternion.slerp(_lastCamQuat, 0.055);
+      if (camera.position.distanceTo(_lastCamPos) < 0.8) { _isTransitioning = false; clearAnchor(); }
+    }
+  }
+
+  if (_isOrbiting && _flyTarget) {
+    const wp = new THREE.Vector3(); _flyTarget.getWorldPosition(wp);
+    const targetPos = wp.clone().add(_orbitOffset);
+    camera.position.lerp(targetPos, 0.12); camera.lookAt(wp);
+  }
+
+  composer.render(); updateOrbitOverlayPosition();
+})(); 
+
+restoreAnchorIfNeeded();
+window.toggleUniverseMode = function() {
+  window._moveUniverseMode = !window._moveUniverseMode;
+  const btn = document.getElementById('btn-universe-mode'); btn.blur(); 
+  if (window._axesHelper) window._axesHelper.visible = window._moveUniverseMode;
+  if (window._moveUniverseMode) { btn.textContent = "MODO: MOTOR DE VOLUNTAD"; btn.classList.add('active'); } else { btn.textContent = "MODO: CÁMARA LIBRE"; btn.classList.remove('active'); }
+};
+
+window.addEventListener('blur', () => { for (let k in KEYS) KEYS[k] = 0; isDrag = false; });
+</script>
+
+<script>
+/* ════════════════════════════════════
+   LÓGICA DE PANELES DETALLADOS (Glassmorphism + Históricos)
+════════════════════════════════════ */
+function formatNumber(num) {
+  if (!num) return '0';
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toString();
+}
+
+function formatTime(seconds) {
+  if (!seconds) return '0m';
+  const hours = Math.floor(seconds / 3600); const minutes = Math.floor((seconds % 3600) / 60);
+  if (hours > 24) return `${Math.floor(hours/24)}d ${hours%24}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+function niceDate(str) {
+  if(!str) return '';
+  const d = new Date(str);
+  if(isNaN(d)) return str;
+  return d.toLocaleString('es-ES', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+}
+
+function calculateLevelAndXp(totalXp) {
+  let level = 1; let currentXp = totalXp; let nextLevelXp = 30;
+  while (currentXp >= nextLevelXp) {
+      currentXp -= nextLevelXp; level++; nextLevelXp = Math.floor(nextLevelXp * 1.5);
+      if (level > 10) nextLevelXp = Math.floor(nextLevelXp * 1.2);
+      if (level > 20) nextLevelXp = Math.floor(nextLevelXp * 1.1);
+  }
+  return { level, currentXp, nextLevelXp };
+}
+
+function calculateLevel(xp) { return calculateLevelAndXp(xp).level; }
+function xpForNextLevel(xp) { return calculateLevelAndXp(xp).nextLevelXp; }
+function xpProgress(xp) { const data = calculateLevelAndXp(xp); return data.currentXp / data.nextLevelXp; }
+function xpRemaining(xp) { const data = calculateLevelAndXp(xp); return data.nextLevelXp - data.currentXp; }
+function parseDate(str) { if (!str) return new Date(0); try { return new Date(str); } catch(e) { return new Date(0); } }
+
+function generateAIAnalysis(userData, userName) {
+  const quant = userData?.datos_cuantitativos || {}; const qual = userData?.datos_cualitativos || {};
+  const tasks = qual.tareas_detalladas || []; const pending = tasks.filter(t => !t.completed); const completed = tasks.filter(t => t.completed);
+  const xp = quant.nivel_y_xp?.xp_total || 0; const distractions = quant.informacion_mara_egosombra?.total_distracciones || 0;
+  const completionRate = tasks.length > 0 ? Math.round((completed.length / tasks.length) * 100) : 0;
+  
+  let insights = [];
+  insights.push({ title: 'Tasa de Completación', text: completionRate >= 70 ? `Excelente: ${completionRate}% de tareas completadas. Mantén este ritmo de luz.` : `${completionRate}% completado. Considera dividir tareas grandes en partes microscópicas.` });
+  if (distractions > 5) insights.push({ title: 'Patrón Ego-Sombra', text: `Se han detectado ${distractions} distracciones de Mara. Identifica tus momentos vulnerables y respira profundamente.` });
+  insights.push({ title: 'Integración Áurica', text: `${userName} aporta ${formatNumber(xp)} PV al Ser central. ${xp > 10000 ? 'Este aspecto vibra en altísima frecuencia.' : 'Nutre este aspecto completando más misiones.'}` });
+  return insights;
+}
+
+function setupNavTabs(nav, content) {
+  nav.querySelectorAll('.dp-nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+          nav.querySelectorAll('.dp-nav-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          content.querySelectorAll('.dp-tab-pane').forEach(t => t.classList.remove('active'));
+          document.getElementById('tab-' + btn.dataset.tab)?.classList.add('active');
+      });
+  });
+}
+
+window.showStatPopup = function(type, data, x, y) {
+  const popup = document.getElementById('stat-popup');
+  const title = document.getElementById('sp-title');
+  const content = document.getElementById('sp-content');
+  let html = '';
+  
+  switch(type) {
+      case 'pending':
+          title.textContent = `Pendientes (${data.length})`;
+          html = data.map(t => { const p = (t.priority || 'c').toLowerCase(); return `<div class="sp-item" style="border-left-color:var(--priority-${p})"><span class="sp-date">PRIORIDAD ${p.toUpperCase()}</span>${t.name}</div>`; }).join('') || '<div class="sp-item">No hay misiones pendientes.</div>';
+          break;
+      case 'completed':
+          title.textContent = `Misiones Históricas (${data.length})`;
+          html = data.map(t => `<div class="sp-item" style="opacity:0.8"><span class="sp-date">${niceDate(t.timestamp)}</span>${t.task_name || t.text || t.name}</div>`).join('') || '<div class="sp-item">El historial está vacío.</div>';
+          break;
+      case 'distractions':
+          title.textContent = `Distracciones (${data.length})`;
+          html = data.map(d => `<div class="sp-item" style="border-left-color:var(--fuchsia)">${d.category || '?'}: ${d.description || d}</div>`).join('') || '<div class="sp-item">No hay sombras detectadas.</div>';
+          break;
+  }
+  content.innerHTML = html;
+  popup.style.left = Math.min(x, window.innerWidth - 420) + 'px';
+  popup.style.top = Math.min(y, window.innerHeight - 470) + 'px';
+  popup.classList.add('visible');
+};
+
+document.getElementById('sp-close').addEventListener('click', () => { document.getElementById('stat-popup').classList.remove('visible'); });
+document.getElementById('dp-close').addEventListener('click', () => { document.getElementById('data-panel').classList.remove('visible'); });
+
+// Mostrar Panel del Aspecto
+function showAspectPanel(userName) {
+  if(!window._cosmicEggData) return;
+  const panel = document.getElementById('data-panel'); const nav = document.getElementById('dp-nav'); const content = document.getElementById('dp-content');
+  const userData = window._cosmicEggData.perfiles_usuarios[userName]; if (!userData) return;
+  
+  const quant = userData.datos_cuantitativos; const qual = userData.datos_cualitativos;
+  const userXp = quant.nivel_y_xp?.xp_total || 0; const level = calculateLevel(userXp);
+  
+  document.getElementById('dp-title').innerHTML = `${userName}`;
+  document.getElementById('dp-subtitle').textContent = `Nivel ${level} · ${formatNumber(userXp)} PV`;
+  
+  const tasks = qual.tareas_detalladas || [];
+  window.currentPendingTasks = tasks.filter(t => !t.completed);
+  window.currentCompletedTasks = qual.historico_tareas || []; // Usamos el histórico rico en datos
+  window.currentDistractions = qual.distracciones_detalladas || [];
+  const bitacoraPersonal = qual.bitacora_personal || [];
+  
+  const aiInsights = generateAIAnalysis(userData, userName);
+  
+  nav.innerHTML = `
+      <button class="dp-nav-btn active" data-tab="overview">◈ Síntesis Áurica</button>
+      <div class="dp-nav-sep"></div>
+      <button class="dp-nav-btn" data-tab="bitacora">📔 Bitácora de Viaje</button>
+      <div class="dp-nav-sep"></div>
+      <button class="dp-nav-btn" data-tab="pending">⏳ Misiones Activas</button>
+      <button class="dp-nav-btn" data-tab="historico">📜 Histórico de Victorias</button>
+  `;
+  
+  content.innerHTML = `
+      <div class="dp-tab-pane active" id="tab-overview">
+          <div class="dp-level-box">
+              <div class="dp-level-badge">${level}</div>
+              <div class="dp-level-info">
+                  <div class="dp-level-title">Trascendencia del Arquetipo</div>
+                  <div class="dp-level-val">${formatNumber(calculateLevelAndXp(userXp).currentXp)} / ${formatNumber(xpForNextLevel(userXp))} PV</div>
+                  <div class="dp-level-prog"><div class="dp-level-prog-bar" style="width: ${xpProgress(userXp) * 100}%"></div></div>
+              </div>
+          </div>
+          <div class="dp-stats-grid">
+              <div class="dp-stat-card" onclick="showStatPopup('pending', window.currentPendingTasks, event.pageX, event.pageY)"><div class="val">${window.currentPendingTasks.length}</div><div class="lbl">Activas</div></div>
+              <div class="dp-stat-card" onclick="showStatPopup('completed', window.currentCompletedTasks, event.pageX, event.pageY)"><div class="val">${window.currentCompletedTasks.length}</div><div class="lbl">Victorias</div></div>
+              <div class="dp-stat-card" onclick="showStatPopup('distractions', window.currentDistractions, event.pageX, event.pageY)"><div class="val">${window.currentDistractions.length}</div><div class="lbl">Sombras</div></div>
+              <div class="dp-stat-card"><div class="val">${quant.nivel_y_xp?.mu_disponibles || 0}</div><div class="lbl">MU</div></div>
+          </div>
+          <div class="dp-ai-box">
+              ${aiInsights.map(i => `<div class="dp-ai-insight"><div class="dp-ai-insight-title">${i.title}</div><div style="font-family:'Cormorant Garamond',serif; font-size:1.1rem; color:rgba(255,255,255,.85); line-height: 1.5; font-weight: 300;">${i.text}</div></div>`).join('')}
+          </div>
+      </div>
+      <div class="dp-tab-pane" id="tab-bitacora">
+          <h3 class="dp-section-title">📔 Bitácora de Viaje (${bitacoraPersonal.length})</h3>
+          ${bitacoraPersonal.slice(0, 50).map(entry => `
+              <div class="dp-data-item log">
+                  <div class="dp-item-hdr"><span class="dp-item-sender">${entry.username || userName}</span><span class="dp-item-time">${niceDate(entry.date)}</span></div>
+                  <div class="dp-item-txt">${entry.entry}</div>
+              </div>
+          `).join('') || '<div class="dp-empty">El diario de este arquetipo está en blanco.</div>'}
+      </div>
+      <div class="dp-tab-pane" id="tab-pending">
+          <h3 class="dp-section-title">⏳ Misiones Activas (${window.currentPendingTasks.length})</h3>
+          ${window.currentPendingTasks.map(t => {
+              const p = (t.priority || 'c').toLowerCase();
+              return `<div class="dp-data-item" style="border-left-color:var(--priority-${p})"><div class="dp-item-name">${t.name}</div><span class="priority-tag ${p}">Prioridad ${p.toUpperCase()}</span></div>`;
+          }).join('') || '<div class="dp-empty">No hay misiones encomendadas.</div>'}
+      </div>
+      <div class="dp-tab-pane" id="tab-historico">
+          <h3 class="dp-section-title">📜 Histórico de Victorias (${window.currentCompletedTasks.length})</h3>
+          ${[...window.currentCompletedTasks].reverse().map(t => `
+              <div class="dp-data-item" style="opacity:0.8; border-left-color:var(--cyan);">
+                 <div class="dp-item-time" style="margin-bottom:6px;">LOGRADO: ${niceDate(t.timestamp)}</div>
+                 <div class="dp-item-name">${t.task_name || t.text}</div>
+              </div>`).join('') || '<div class="dp-empty">Aún no hay victorias registradas en el histórico.</div>'}
+      </div>
+  `;
+  setupNavTabs(nav, content); panel.classList.add('visible');
+}
+
+// Mostrar Panel del Sol de Voluntad
+function showSelfPanel() {
+  if(!window._cosmicEggData) return;
+  const panel = document.getElementById('data-panel'); const nav = document.getElementById('dp-nav'); const content = document.getElementById('dp-content');
+  const global = window._cosmicEggData.perfil_global;
+  const totalXp = global.estadisticas_globales.total_pv_acumulado || 0; const level = calculateLevel(totalXp);
+  
+  document.getElementById('dp-title').innerHTML = `Sistema Global`;
+  document.getElementById('dp-subtitle').textContent = `Nivel ${level} · ${formatNumber(totalXp)} PV Total`;
+  
+  const granBitacora = global.gran_bitacora_universal || [];
+  const sortedBitacora = [...granBitacora].sort((a, b) => parseDate(b.timestamp || b.date) - parseDate(a.timestamp || a.date));
+  
+  nav.innerHTML = `
+      <button class="dp-nav-btn active" data-tab="overview">◈ Estado del Ser</button>
+      <div class="dp-nav-sep"></div>
+      <button class="dp-nav-btn" data-tab="bitacora">📜 Gran Bitácora</button>
+      <button class="dp-nav-btn" data-tab="aspects">👥 Arquetipos</button>
+  `;
+  
+  content.innerHTML = `
+      <div class="dp-tab-pane active" id="tab-overview">
+          <div class="dp-level-box">
+              <div class="dp-level-badge">${level}</div>
+              <div class="dp-level-info">
+                  <div class="dp-level-title">Nivel Universal</div>
+                  <div class="dp-level-val">${formatNumber(calculateLevelAndXp(totalXp).currentXp)} / ${formatNumber(xpForNextLevel(totalXp))} PV</div>
+                  <div class="dp-level-prog"><div class="dp-level-prog-bar" style="width: ${xpProgress(totalXp) * 100}%"></div></div>
+              </div>
+          </div>
+          <div class="dp-stats-grid">
+              <div class="dp-stat-card"><div class="val">${global.lista_usuarios.length}</div><div class="lbl">Arquetipos</div></div>
+              <div class="dp-stat-card"><div class="val">${formatNumber(global.estadisticas_globales.total_pv_acumulado)}</div><div class="lbl">PV Total</div></div>
+              <div class="dp-stat-card"><div class="val">${formatTime(global.estadisticas_globales.total_tiempo_uso_app_seg)}</div><div class="lbl">Consciencia</div></div>
+          </div>
+      </div>
+      <div class="dp-tab-pane" id="tab-bitacora">
+          <h3 class="dp-section-title">📜 Gran Bitácora Cósmica (${granBitacora.length})</h3>
+          ${sortedBitacora.slice(0, 50).map(entry => `
+              <div class="dp-data-item log">
+                  <div class="dp-item-hdr"><span class="dp-item-sender">${entry.username}</span><span class="dp-item-time">${niceDate(entry.date || entry.timestamp)}</span></div>
+                  <div class="dp-item-txt">${entry.entry}</div>
+              </div>
+          `).join('') || '<div class="dp-empty">El tejido del tiempo está en blanco.</div>'}
+      </div>
+      <div class="dp-tab-pane" id="tab-aspects">
+          <h3 class="dp-section-title">👥 Aspectos Activos (${global.lista_usuarios.length})</h3>
+          ${global.lista_usuarios.map(u => {
+              const uxp = window._cosmicEggData.perfiles_usuarios[u]?.datos_cuantitativos?.nivel_y_xp?.xp_total || 0;
+              return `<div class="dp-data-item"><div class="dp-item-name">${u}</div><span style="font-family:'Space Mono', monospace; font-size:0.6rem; color:var(--cyan);">Nivel ${calculateLevel(uxp)} · ${formatNumber(uxp)} PV</span></div>`;
+          }).join('')}
+      </div>
+  `;
+  setupNavTabs(nav, content); panel.classList.add('visible');
+}
+
+// Mostrar Panel de Economía (Mu)
+function showMuPanel() {
+  if(!window._cosmicEggData) return;
+  const panel = document.getElementById('data-panel'); const nav = document.getElementById('dp-nav'); const content = document.getElementById('dp-content');
+  const usuarios = window._cosmicEggData.perfiles_usuarios;
+  
+  let muTotal = 0; let arqData = [];
+  for(let u in usuarios) {
+      const mu = usuarios[u].datos_cuantitativos?.nivel_y_xp?.mu_disponibles || 0;
+      muTotal += mu;
+      arqData.push({ nombre: u, mu: mu });
+  }
+  arqData.sort((a,b) => b.mu - a.mu);
+  
+  document.getElementById('dp-title').innerHTML = `Banco Central de Mu`;
+  document.getElementById('dp-subtitle').textContent = `Economía Universal · ${muTotal} Mu Totales`;
+  
+  nav.innerHTML = `
+      <button class="dp-nav-btn active" data-tab="overview">◈ Reservas</button>
+      <button class="dp-nav-btn" data-tab="distr">📊 Distribución</button>
+  `;
+  
+  content.innerHTML = `
+      <div class="dp-tab-pane active" id="tab-overview">
+          <div class="dp-level-box" style="justify-content:center; text-align:center; background:rgba(255,215,0,0.02); border-color:rgba(255,215,0,0.1);">
+              <div>
+                <div class="dp-level-val" style="font-size: 3.5rem; text-shadow: 0 0 20px rgba(255,215,0,0.3); font-weight:300; font-family:'Space Mono', monospace;">${muTotal}</div>
+                <div class="dp-level-title" style="margin-top:0.8rem; letter-spacing:0.3em; color:rgba(255,215,0,0.8);">Mu Cósmico Disponible</div>
+              </div>
+          </div>
+          <div class="dp-ai-box" style="border-color:rgba(255,215,0,0.2); background:rgba(255,215,0,0.02);">
+              <div class="dp-ai-insight"><div class="dp-ai-insight-title" style="color:var(--gold);">Intercambio de Energía</div>
+              <div style="font-family:'Cormorant Garamond',serif; font-size:1.15rem; color:rgba(255,255,255,.9); font-weight:300; line-height:1.6;">
+                  A medida que los aspectos del Ser completan misiones y conquistan a Mara en <em>Killer Pendiente</em>, la voluntad (PV) se cristaliza en Mu. Esta estrella crece e intensifica su luz a medida que acumulas recursos para expandir el universo.
+              </div></div>
+          </div>
+      </div>
+      <div class="dp-tab-pane" id="tab-distr">
+          <h3 class="dp-section-title">📊 Distribución de Mu por Arquetipo</h3>
+          ${arqData.map(a => `
+              <div class="dp-data-item" style="display:flex; justify-content:space-between; border-left-color:var(--gold);">
+                  <strong style="color:#fff; font-weight:400; font-size:1.1rem; font-family:'Cormorant Garamond', serif;">${a.nombre}</strong> 
+                  <span style="font-family:'Space Mono', monospace; color:var(--gold); font-size:0.85rem;">${a.mu} Mu</span>
+              </div>
+          `).join('')}
+      </div>
+  `;
+  setupNavTabs(nav, content); panel.classList.add('visible');
+}
+
+/* ════════════════════════════════════
+   CÓDIGO ORIGINAL / EVENTOS GENERALES
+════════════════════════════════════ */
+const _isFileProtocol = location.protocol === 'file:';
+document.getElementById('cegg-dot').textContent = '🥚 carga manual';
+
+(function connectWS() {
+  if (_isFileProtocol) return; 
+  try {
+    const ws = new WebSocket('ws://localhost:8765');
+    ws.onmessage = e => {
+      try {
+        const d = JSON.parse(e.data);
+        if (d.tipo === 'tarea_completada') {
+          triggerFlash(d.usuario || '');
+          document.getElementById('cegg-dot').textContent = '⚡ tarea completada!';
+          setTimeout(() => { document.getElementById('cegg-dot').textContent = '● cegg live'; }, 2000);
+        }
+      } catch (_) {}
+    };
+    ws.onclose = () => setTimeout(connectWS, 6000);
+  } catch (_) {}
+})();
+
+function parseCegg(txt) { try { const s  = txt.indexOf('<<<DATA-START>>>') + 16; const en = txt.indexOf('<<<DATA-END>>>'); if (s < 16 || en < 0) return null; return JSON.parse(txt.slice(s, en).trim()); } catch (_) { return null; } }
+function loadCeggFile(inp) { const f = inp.files[0]; if (!f) return; const r = new FileReader(); r.onload = e => { const d = parseCegg(e.target.result); if (d && window._ACTIVATE) window._ACTIVATE(d); }; r.readAsText(f, 'utf-8'); }
+
+function toggleCfg() { document.getElementById('panel-cfg').classList.toggle('open'); }
+function closeCfg()  { document.getElementById('panel-cfg').classList.remove('open'); }
+function setSolBright(v) { const f = v / 100; document.getElementById('v-bright').textContent = f.toFixed(2); if (window._coreMat) window._coreMat.emissiveIntensity = 0.02 + f * 0.8; }
+function setCoronaBright(v) { const f = v / 100; document.getElementById('v-corona').textContent = f.toFixed(2); window._coronaOpacity = f; if (window._coronaMat) window._coronaMat.uniforms.uOpacity.value = f; }
+function setPulseSpeed(v) { const labels = ['muy lento','lento','normal','rápido','muy rápido']; document.getElementById('v-pulse').textContent = labels[Math.min(4, Math.floor(v/2))]; window._pulseSpeed = 0.1 + (v - 1) / 9 * 0.6; }
+function setOrbSpeed(v) { const f = v / 10; document.getElementById('v-orb').textContent = f.toFixed(1) + '×'; window._orbSpeedMult = f; if (window._setOrbSpeedMod) window._setOrbSpeedMod(f); }
+function setDiscTransparency(v) { const f = v / 100; document.getElementById('v-disc').textContent = Math.round(v) + '%'; window._discOpacity = f; try { localStorage.setItem('cml_disc_opacity', f); } catch(_){} }
+function openCeggInfo()  { document.getElementById('panel-cegg-info').classList.add('open'); }
+function closeCeggInfo() { document.getElementById('panel-cegg-info').classList.remove('open'); }
+function loginGoogle()   { closeCfg(); alert('Firebase próximamente — arrastra tu .cegg para activar el universo.'); }
+
+</script>
 </body>
 </html>
