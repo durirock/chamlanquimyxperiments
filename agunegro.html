@@ -35,7 +35,7 @@
             width: 100%;
             height: 100%;
             z-index: 10;
-            pointer-events: none; /* Let clicks pass through to 3D scene */
+            pointer-events: none; /* Clicks traspasan hacia el canvas 3D */
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -111,7 +111,7 @@
 
         .hud-panel {
             position: absolute;
-            top: 6rem; /* Bajado para no tapar el botón de configuración */
+            top: 6rem;
             right: 2rem;
             width: 300px;
             background: rgba(10, 15, 20, 0.6);
@@ -121,11 +121,18 @@
             backdrop-filter: blur(12px);
             pointer-events: auto;
             transform: translateX(120%);
-            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease;
+            opacity: 1;
         }
 
         .hud-panel.active {
             transform: translateX(0);
+            opacity: 1;
+        }
+
+        .hud-panel.fade-out {
+            opacity: 0 !important;
+            pointer-events: none;
         }
 
         .hud-title {
@@ -141,6 +148,12 @@
             color: #ccc;
             line-height: 1.6;
             margin: 0;
+        }
+
+        .fade-out {
+            opacity: 0 !important;
+            pointer-events: none;
+            transition: opacity 2s ease-in-out;
         }
 
         /* Loading Screen */
@@ -185,16 +198,46 @@
         #btn-settings:hover { border-color: #ffdd66; }
         #btn-settings:hover svg { transform: rotate(45deg); color: #ffdd66; }
         
+        #btn-stereo {
+            position: absolute;
+            top: 2rem;
+            right: 6rem;
+            width: 44px;
+            height: 44px;
+            background: rgba(10, 15, 20, 0.6);
+            border: 1px solid rgba(136, 204, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 20;
+            pointer-events: auto;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        #btn-stereo svg { width: 22px; height: 22px; color: #fff; transition: transform 0.3s ease; }
+        #btn-stereo:hover, #btn-stereo.active { border-color: #ffdd66; }
+        #btn-stereo:hover svg, #btn-stereo.active svg { color: #ffdd66; }
+
+        body.stereo-active #main-header,
+        body.stereo-active #controls-hint,
+        body.stereo-active .hud-panel,
+        body.stereo-active .joystick-zone {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+        
         #settings-modal {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.1);
             z-index: 30;
             display: flex;
             justify-content: center;
             align-items: center;
             pointer-events: auto;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(2px);
             opacity: 1;
             transition: opacity 0.3s ease;
         }
@@ -202,13 +245,14 @@
             opacity: 0; pointer-events: none;
         }
         .modal-content {
-            background: rgba(10, 15, 20, 0.85);
+            background: rgba(10, 15, 20, 0.4);
             border: 1px solid rgba(136, 204, 255, 0.3);
             border-radius: 12px;
             width: 90%; max-width: 500px;
             padding: 2rem;
             position: relative;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px);
         }
         .modal-close {
             position: absolute; top: 1rem; right: 1.5rem;
@@ -243,6 +287,29 @@
         .modal-pane::-webkit-scrollbar { width: 6px; }
         .modal-pane::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 3px;}
         .modal-pane::-webkit-scrollbar-thumb { background: rgba(136, 204, 255, 0.3); border-radius: 3px;}
+
+        /* Joysticks para Móviles */
+        .joystick-zone {
+            position: absolute; bottom: 2rem; width: 110px; height: 110px;
+            background: rgba(255, 255, 255, 0.03); border: 2px solid rgba(136, 204, 255, 0.15);
+            border-radius: 50%; pointer-events: auto; display: none; touch-action: none; z-index: 15;
+            backdrop-filter: blur(5px);
+            transition: opacity 1s ease;
+            opacity: 1;
+        }
+        .fade-out-joy {
+            opacity: 0 !important;
+            pointer-events: none;
+        }
+        #joy-left { left: 2rem; }
+        #joy-right { right: 2rem; }
+        .joy-knob {
+            position: absolute; top: 50%; left: 50%; width: 44px; height: 44px;
+            background: rgba(255, 221, 102, 0.4); border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none;
+            box-shadow: 0 0 15px rgba(255, 221, 102, 0.5); border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        @media (pointer: coarse) { .joystick-zone { display: block; } } /* Solo visible en pantallas táctiles */
     </style>
 </head>
 <body>
@@ -251,6 +318,15 @@
 
     <div id="canvas-container"></div>
     
+    <div id="btn-stereo" title="Modo Estereoscópico (VR / 3D)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="10" rx="2" ry="2"></rect>
+            <line x1="12" y1="7" x2="12" y2="17"></line>
+            <circle cx="7" cy="12" r="1.5"></circle>
+            <circle cx="17" cy="12" r="1.5"></circle>
+        </svg>
+    </div>
+
     <div id="btn-settings" title="Configuraciones y Teoría">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
@@ -274,6 +350,10 @@
                 <div class="setting-group">
                     <label>Hundimiento Gravitacional <span id="val-well" class="highlight">8.0</span></label>
                     <input type="range" id="slider-well" min="0" max="20" step="0.5" value="8.0">
+                </div>
+                <div class="setting-group">
+                    <label>Brillo Estelar <span id="val-brightness" class="highlight">1.0</span></label>
+                    <input type="range" id="slider-brightness" min="0.1" max="3.0" step="0.1" value="1.0">
                 </div>
             </div>
             
@@ -300,7 +380,7 @@
         </header>
 
         <div id="controls-hint">
-            Rotar: Arrastrar | Zoom: Scroll | Explorar: Click en estrella
+            WASD: Navegar | Q/E: Rotar | Mouse: Mirar | Click en estrella para explorar
         </div>
 
         <div id="hud" class="hud-panel">
@@ -311,6 +391,10 @@
         </div>
 
         <button id="btn-back">← Retornar al Gran Atractor</button>
+        
+        <!-- Joysticks Táctiles -->
+        <div id="joy-left" class="joystick-zone"><div class="joy-knob" id="knob-left"></div></div>
+        <div id="joy-right" class="joystick-zone"><div class="joy-knob" id="knob-right"></div></div>
     </div>
 
     <!-- Three.js and Dependencies via CDN -->
@@ -322,9 +406,8 @@
         /**
          * FÍSICA Y ARQUITECTURA DEL ESPACIO-TIEMPO
          * ----------------------------------------
-         * Implementación de la métrica de Kerr (arrastre de marco o Lense-Thirring)
-         * utilizando shaders para manipular vértices a nivel GPU, asegurando
-         * sincronía perfecta entre el tejido espacial, los ejes temporales y las estrellas.
+         * Implementación inmersiva con WASD + Joypads, iluminación de cuerpos celestes
+         * reales (Enanas Rojas, Gigantes, Soles Amarillos) y soporte de control Estereoscópico.
          */
 
         // Variables Globales
@@ -332,6 +415,8 @@
         let clock = new THREE.Clock();
         let globalUniforms;
         let stars = [];
+        let starMaterials = []; // Almacenar materiales para la animación de pulsación
+        let starGlows = [];     // Almacenar las coronas para animar tamaño
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
         
@@ -339,15 +424,34 @@
         let targetedStar = null;
         let originalCameraPos = new THREE.Vector3(0, 15, 30);
         let originalTarget = new THREE.Vector3(0, 0, 0);
+        
+        let isAnimatingZoom = false;
+        let zoomProgress = { value: 0 };
+        let startCamPos = new THREE.Vector3();
+        let startTargetPos = new THREE.Vector3();
+        let pointerDownPos = new THREE.Vector2();
+
+        let stereoCamera = new THREE.StereoCamera();
+        stereoCamera.eyeSep = 0.5;
+        let isStereo = false;
+
+        // Variables de Control Teclado y Joysticks Multitouch
+        const keys = { w:false, a:false, s:false, d:false, q:false, e:false };
+        const joyL = { x: 0, y: 0 };
+        const joyR = { x: 0, y: 0 };
+        let joystickTimeout;
+        let hudTimeout;
 
         // UI Elements
         const uiLoader = document.getElementById('loader');
         const btnBack = document.getElementById('btn-back');
         const hud = document.getElementById('hud');
         const mainHeader = document.getElementById('main-header');
+        const controlsHint = document.getElementById('controls-hint');
         
         // Modal UI Elements
         const btnSettings = document.getElementById('btn-settings');
+        const btnStereo = document.getElementById('btn-stereo');
         const settingsModal = document.getElementById('settings-modal');
         const btnCloseModal = document.getElementById('btn-close-modal');
         const tabs = document.querySelectorAll('.modal-tab');
@@ -356,10 +460,13 @@
         const valSpin = document.getElementById('val-spin');
         const sliderWell = document.getElementById('slider-well');
         const valWell = document.getElementById('val-well');
+        const sliderBrightness = document.getElementById('slider-brightness');
+        const valBrightness = document.getElementById('val-brightness');
 
         // Shader constants -> Transformadas a variables dinámicas
         let G_WELL_DEPTH = 8.0;
         let SPIN_SPEED = 5.0; // Velocidad de rotación del agujero negro
+        let STAR_BRIGHTNESS = 1.0; // Brillo base de los soles
         const MAX_RADIUS = 40.0;
 
         function init() {
@@ -369,6 +476,10 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x020204);
             scene.fog = new THREE.FogExp2(0x020204, 0.015);
+
+            // Iluminación global tenue para no dejar los planetas 100% oscuros por detrás
+            const ambientLight = new THREE.AmbientLight(0x151525);
+            scene.add(ambientLight);
 
             // Camera setup
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -386,7 +497,6 @@
             controls.dampingFactor = 0.05;
             controls.maxDistance = 80;
             controls.minDistance = 2;
-            controls.maxPolarAngle = Math.PI / 1.8; // Don't go too far below the grid
 
             // Uniforms compartidos para sincronizar todo el universo
             globalUniforms = {
@@ -399,14 +509,69 @@
 
             // Events
             window.addEventListener('resize', onWindowResize);
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('click', onClick);
+            
+            // Eventos de Teclado (Navegación WASD + QE)
+            window.addEventListener('keydown', (e) => {
+                const k = e.key.toLowerCase();
+                if (keys.hasOwnProperty(k)) keys[k] = true;
+                resetInactivity();
+            });
+            window.addEventListener('keyup', (e) => {
+                const k = e.key.toLowerCase();
+                if (keys.hasOwnProperty(k)) keys[k] = false;
+            });
+
+            // Inicializar Joysticks Táctiles Seguros Multitouch
+            setupJoystick('joy-left', 'knob-left', joyL);
+            setupJoystick('joy-right', 'knob-right', joyR);
+
+            // Interacción con el cursor (identificar estrellas y resetear inactividad)
+            window.addEventListener('pointerdown', (e) => {
+                resetInactivity();
+                if (e.target.closest('#ui-layer')) return; 
+                pointerDownPos.set(e.clientX, e.clientY);
+            });
+            
+            window.addEventListener('pointermove', (e) => {
+                resetInactivity();
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            window.addEventListener('pointerup', (e) => {
+                const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+                if (dist < 10 && e.target.tagName === 'CANVAS') { 
+                    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                    onClick();
+                }
+            });
+
             btnBack.addEventListener('click', returnToCenter);
 
             // Modal Events
             btnSettings.addEventListener('click', () => settingsModal.classList.remove('modal-hidden'));
             btnCloseModal.addEventListener('click', () => settingsModal.classList.add('modal-hidden'));
             
+            // Stereo Event
+            btnStereo.addEventListener('click', () => {
+                isStereo = !isStereo;
+                btnStereo.classList.toggle('active');
+                document.body.classList.toggle('stereo-active');
+                
+                onWindowResize();
+                
+                if(isStereo) {
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen().catch(() => {});
+                    }
+                } else {
+                    if (document.fullscreenElement && document.exitFullscreen) {
+                        document.exitFullscreen().catch(() => {});
+                    }
+                }
+            });
+
             tabs.forEach(tab => {
                 tab.addEventListener('click', () => {
                     tabs.forEach(t => t.classList.remove('active'));
@@ -431,11 +596,46 @@
                 globalUniforms.uWellDepth.value = val;
             });
 
-            // Remove loader
+            sliderBrightness.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                valBrightness.textContent = val.toFixed(1);
+                STAR_BRIGHTNESS = val;
+                // Actualizar intensidad base de todas las estrellas en tiempo real
+                starMaterials.forEach(item => {
+                    item.baseIntensity = val;
+                });
+            });
+
+            // Ocultar Loader
             setTimeout(() => {
                 uiLoader.style.opacity = '0';
                 setTimeout(() => uiLoader.style.display = 'none', 1000);
             }, 1500);
+
+            // Inmersión total inicial
+            setTimeout(() => {
+                mainHeader.classList.add('fade-out');
+                controlsHint.classList.add('fade-out');
+            }, 4000);
+
+            resetInactivity(); // Iniciar control de inactividad de joysticks
+        }
+
+        // Lógica de desvanecimiento inteligente de los Joysticks
+        function resetInactivity() {
+            const joyL = document.getElementById('joy-left');
+            const joyR = document.getElementById('joy-right');
+            if (joyL && joyR) {
+                joyL.classList.remove('fade-out-joy');
+                joyR.classList.remove('fade-out-joy');
+            }
+            clearTimeout(joystickTimeout);
+            joystickTimeout = setTimeout(() => {
+                if (joyL && joyR) {
+                    joyL.classList.add('fade-out-joy');
+                    joyR.classList.add('fade-out-joy');
+                }
+            }, 5000);
         }
 
         function buildUniverse() {
@@ -513,15 +713,83 @@
             const wake = new THREE.Points(wakeGeom, wakeMat);
             scene.add(wake);
 
-            // 5. Sistemas Estelares (Nodos de consciencia/masa)
+            // 5. Sistemas Estelares
             createStarSystems();
         }
 
-        // --- GENERADORES DE GEOMETRÍA ---
+        // Lógica segura para Multitouch en Joysticks
+        function setupJoystick(zoneId, knobId, outVec) {
+            const zone = document.getElementById(zoneId);
+            const knob = document.getElementById(knobId);
+            let activePointerId = null;
+            let centerX, centerY, maxR = 30; // Radio máximo de movimiento del pulgar
+
+            zone.addEventListener('pointerdown', (e) => {
+                if (activePointerId !== null) return; 
+                activePointerId = e.pointerId;
+                zone.setPointerCapture(e.pointerId); 
+                const rect = zone.getBoundingClientRect();
+                centerX = rect.left + rect.width / 2;
+                centerY = rect.top + rect.height / 2;
+                updateKnob(e);
+                e.preventDefault();
+            });
+            
+            zone.addEventListener('pointermove', (e) => {
+                if(e.pointerId !== activePointerId) return;
+                updateKnob(e);
+            });
+            
+            function handleUp(e) {
+                if(e.pointerId !== activePointerId) return;
+                activePointerId = null;
+                outVec.x = 0; outVec.y = 0;
+                knob.style.transform = `translate(-50%, -50%)`;
+            }
+
+            zone.addEventListener('pointerup', handleUp);
+            zone.addEventListener('pointercancel', handleUp);
+            
+            function updateKnob(e) {
+                let dx = e.clientX - centerX;
+                let dy = e.clientY - centerY;
+                const dist = Math.hypot(dx, dy);
+                if (dist > maxR) {
+                    dx = (dx / dist) * maxR;
+                    dy = (dy / dist) * maxR;
+                }
+                knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                outVec.x = dx / maxR;
+                outVec.y = dy / maxR;
+            }
+        }
+
+        // --- GENERADORES DE GEOMETRÍA Y TEXTURAS ---
+
+        // Generar un resplandor degradado y realista para la corona solar (Flare óptico)
+        function createGlowTexture(colorHex) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const context = canvas.getContext('2d');
+            
+            const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64);
+            const color = new THREE.Color(colorHex);
+            
+            // Degradado suavizado para que no tape el color de la estrella central
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+            gradient.addColorStop(0.1, `rgba(${color.r*255}, ${color.g*255}, ${color.b*255}, 0.8)`);
+            gradient.addColorStop(0.4, `rgba(${color.r*255}, ${color.g*255}, ${color.b*255}, 0.25)`);
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
+            
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 128, 128);
+            
+            return new THREE.CanvasTexture(canvas);
+        }
 
         function createPolarGridGeometry(rings, radials, maxRadius) {
             const positions = [];
-            // Anillos
             for (let r = 1; r <= rings; r++) {
                 const radius = (r / rings) * maxRadius;
                 for (let i = 0; i <= radials; i++) {
@@ -531,7 +799,6 @@
                     positions.push(radius * Math.cos(nextTheta), 0, radius * Math.sin(nextTheta));
                 }
             }
-            // Radiales
             for (let i = 0; i < radials; i++) {
                 const theta = (i / radials) * Math.PI * 2;
                 for (let r = 1; r < rings; r++) {
@@ -548,7 +815,7 @@
 
         function createTimeLinesGeometry(rings, radials, maxRadius) {
             const positions = [];
-            const heights = []; // Para identificar base (0) y punta (1) en el shader
+            const heights = []; 
             for (let r = 1; r <= rings; r++) {
                 const radius = (r / rings) * maxRadius;
                 for (let i = 0; i < radials; i++) {
@@ -556,12 +823,11 @@
                     const x = radius * Math.cos(theta);
                     const z = radius * Math.sin(theta);
                     
-                    // Altura de la línea de tiempo varía según el radio para estética
                     const h = 1.0 + (radius / maxRadius) * 2.0; 
 
-                    positions.push(x, 0, z); // Base
+                    positions.push(x, 0, z);
                     heights.push(0);
-                    positions.push(x, h, z); // Punta
+                    positions.push(x, h, z);
                     heights.push(1);
                 }
             }
@@ -575,11 +841,10 @@
             const positions = [];
             const randoms = [];
             for (let i = 0; i < count; i++) {
-                // Distribuir más partículas cerca del centro
                 const r = Math.pow(Math.random(), 1.5) * (maxRadius - 2) + 2; 
                 const theta = Math.random() * Math.PI * 2;
                 positions.push(r * Math.cos(theta), 0, r * Math.sin(theta));
-                randoms.push(Math.random()); // Para desfasar animaciones
+                randoms.push(Math.random());
             }
             const geometry = new THREE.BufferGeometry();
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -590,44 +855,72 @@
         function createStarSystems() {
             const systemCount = 15;
             
+            // Espectros reales de cuerpos celestes (Azules, Blancas, Amarillas, Naranjas, Enanas Rojas)
+            const starColors = [0x99ccff, 0xffffff, 0xffeeaa, 0xffcc44, 0xff9900, 0xff3333];
+            
             for (let i = 0; i < systemCount; i++) {
-                // Radio y ángulo base
                 const r = 4 + Math.random() * (MAX_RADIUS - 8);
                 const theta0 = Math.random() * Math.PI * 2;
 
-                // Tamaños y colores variados para generar una contemplación de armonía y diversidad
                 const starSize = 0.15 + Math.random() * 0.25;
-                const starGeo = new THREE.SphereGeometry(starSize, 16, 16);
+                const starGeo = new THREE.SphereGeometry(starSize, 32, 32);
 
-                const hue = Math.random(); // Espectro multicolor completo
-                const starMat = new THREE.MeshBasicMaterial({ 
-                    color: new THREE.Color().setHSL(hue, 0.7, 0.6) 
+                const colorHex = starColors[Math.floor(Math.random() * starColors.length)];
+                
+                // Material de estrella realista (Standard) con propiedades Emisivas
+                // Se reemplaza color base blanco puro por el color real de la estrella
+                const starMat = new THREE.MeshStandardMaterial({ 
+                    color: colorHex, 
+                    emissive: colorHex,
+                    emissiveIntensity: STAR_BRIGHTNESS,
+                    roughness: 0.4,
+                    metalness: 0.1
                 });
                 const star = new THREE.Mesh(starGeo, starMat);
+                starMaterials.push({ mat: starMat, baseIntensity: STAR_BRIGHTNESS });
                 
-                // Guardar datos orbitales para actualizar en JS (currentAngle evita saltos al cambiar sliders)
+                // Luz de fuente intensa para irradiar hacia los planetas
+                const light = new THREE.PointLight(colorHex, 3.5, 15);
+                star.add(light);
+                
+                // Corona / Flare óptico ultra-realista utilizando un Sprite y AdditiveBlending
+                const glowTex = createGlowTexture(colorHex);
+                const glowMat = new THREE.SpriteMaterial({ 
+                    map: glowTex, 
+                    color: 0xffffff, 
+                    transparent: true, 
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
+                });
+                const starGlow = new THREE.Sprite(glowMat);
+                
+                // Las coronas son grandes visualmente pero 2D, escalamos en X, Y (Z es ignorado en sprites)
+                const glowScale = starSize * 8; 
+                starGlow.scale.set(glowScale, glowScale, 1);
+                starGlow.userData.baseScale = glowScale;
+                star.add(starGlow);
+                starGlows.push(starGlow);
+                
                 star.userData = {
                     r: r,
                     currentAngle: theta0,
                     planets: []
                 };
 
-                // Añadir un halo a la estrella (Citrinitas interior / Niño divino dorado)
-                const coreGeo = new THREE.SphereGeometry(starSize * 0.5, 8, 8);
-                const coreMat = new THREE.MeshBasicMaterial({ color: 0xffdd66 });
-                const core = new THREE.Mesh(coreGeo, coreMat);
-                star.add(core);
-
-                // Añadir planetas locales girando por la MISMA matemática escalar
+                // Planetas en órbita
                 const numPlanets = Math.floor(Math.random() * 3) + 1;
-                const planetMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
                 
                 for(let p=0; p<numPlanets; p++) {
                     const pr = 0.6 + p * 0.4;
                     const pTheta = Math.random() * Math.PI * 2;
+                    const pSize = 0.04 + Math.random() * 0.06;
+                    const planetGeo = new THREE.SphereGeometry(pSize, 24, 24);
                     
-                    const pSize = 0.04 + Math.random() * 0.06; // Tamaños variados
-                    const planetGeo = new THREE.SphereGeometry(pSize, 8, 8);
+                    // Planetas de colores reaccionan dinámicamente a la luz emisiva de su sol
+                    const pColor = new THREE.Color().setHSL(Math.random(), 0.7, 0.5);
+                    const planetMat = new THREE.MeshPhongMaterial({ 
+                        color: pColor, shininess: 20, flatShading: false 
+                    });
                     
                     const planet = new THREE.Mesh(planetGeo, planetMat);
                     planet.userData = {
@@ -644,8 +937,6 @@
         }
 
         // --- SHADERS (El Motor Matemático) ---
-
-        // Función reutilizable de deformación en GLSL
         const glslDeformFunctions = `
             uniform float uTime;
             uniform float uSpin;
@@ -653,20 +944,12 @@
 
             vec3 deformSpacetime(vec3 pos, float heightDrag) {
                 float r = length(pos.xz);
-                float r_safe = max(r, 1.5); // Evitar singularidad infinita visual
+                float r_safe = max(r, 1.5);
 
-                // 1. Gravedad: Hundimiento en Y (Potencial de Schwarzschild modificado)
                 float yOffset = -uWellDepth / (r_safe * 0.5);
-                
-                // 2. Arrastre de Marco (Lense-Thirring / Estela)
-                // Velocidad angular decae con r^(-1.5)
                 float omega = uSpin / pow(r_safe, 1.5);
-                
-                // Angulo total = Velocidad * Tiempo
                 float angle = omega * uTime;
 
-                // 3. Torsión del Eje Temporal (heightDrag afecta a la punta de las líneas)
-                // Si es la punta del eje (heightDrag > 0), se adelanta en la dirección del giro
                 angle += heightDrag * (omega * 3.0); 
 
                 float c = cos(angle);
@@ -676,11 +959,9 @@
                 newPos.x = pos.x * c - pos.z * s;
                 newPos.z = pos.x * s + pos.z * c;
                 
-                // Aplicar hundimiento solo a la base de la red
                 if(heightDrag == 0.0) {
                     newPos.y += yOffset;
                 } else {
-                    // La punta de la flecha de tiempo sigue la deformación pero mantiene su altura
                     newPos.y += yOffset;
                 }
 
@@ -706,11 +987,8 @@
                 uniform vec3 uColor2;
                 varying float vRadius;
                 void main() {
-                    // Color basado en la proximidad al centro (Singularidad vs Borde)
                     float mixRatio = clamp(vRadius / 20.0, 0.0, 1.0);
                     vec3 col = mix(uColor2, uColor1, mixRatio);
-                    
-                    // Difuminar bordes externos
                     float alpha = 1.0 - smoothstep(15.0, 35.0, vRadius);
                     gl_FragColor = vec4(col, alpha * 0.6);
                 }
@@ -726,7 +1004,6 @@
                 void main() {
                     vHeight = aHeight;
                     vRadius = length(position.xz);
-                    // aHeight = 1.0 aplica el arrastre temporal
                     vec3 deformed = deformSpacetime(position, aHeight); 
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(deformed, 1.0);
                 }
@@ -738,9 +1015,7 @@
                 varying float vHeight;
                 varying float vRadius;
                 void main() {
-                    // Solo visible cerca del agujero negro para no saturar visualmente
                     float radAlpha = 1.0 - smoothstep(5.0, 20.0, vRadius);
-                    // Difuminar hacia la punta
                     float hAlpha = 1.0 - vHeight;
                     vec3 color = vec3(0.8, 0.9, 1.0);
                     gl_FragColor = vec4(color, radAlpha * hAlpha * 0.5);
@@ -755,18 +1030,13 @@
                 varying float vAlpha;
                 void main() {
                     float r = length(position.xz);
-                    
-                    // Dar un movimiento pulsante en Y para la estela dorada
                     vec3 pos = position;
                     pos.y += sin(uTime * 2.0 + aRandom * 10.0) * 0.5;
 
                     vec3 deformed = deformSpacetime(pos, 0.0);
                     
-                    // Las partículas se desvanecen cerca del horizonte de eventos y en los bordes
                     float alphaIn = smoothstep(1.5, 4.0, r);
                     float alphaOut = 1.0 - smoothstep(20.0, 35.0, r);
-                    
-                    // Titilar
                     float twinkle = (sin(uTime * 5.0 + aRandom * 20.0) + 1.0) * 0.5;
                     
                     vAlpha = alphaIn * alphaOut * twinkle * 0.8;
@@ -782,11 +1052,8 @@
             return `
                 varying float vAlpha;
                 void main() {
-                    // Hacer que los puntos sean redondos
                     vec2 coord = gl_PointCoord - vec2(0.5);
                     if(length(coord) > 0.5) discard;
-                    
-                    // Oro de Citrinitas
                     vec3 color = vec3(1.0, 0.8, 0.3); 
                     gl_FragColor = vec4(color, vAlpha);
                 }
@@ -799,11 +1066,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function onMouseMove(event) {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         }
 
         function onClick() {
@@ -819,62 +1081,73 @@
         }
 
         function focusOnStar(star) {
+            if (isZoomed) return;
             isZoomed = true;
+            isAnimatingZoom = true;
             targetedStar = star;
-            controls.enabled = false; // Desactivar controles globales durante animación
+            controls.enabled = false;
+            
+            clearTimeout(hudTimeout); // Reseteamos si había uno previo
 
-            // Calcular posición destino de la cámara
-            // Queremos mirar la estrella desde un ángulo levemente elevado
-            const offset = new THREE.Vector3(2, 1.5, 2);
-            const targetCamPos = star.position.clone().add(offset);
+            startCamPos.copy(camera.position);
+            startTargetPos.copy(controls.target);
+            zoomProgress.value = 0;
 
-            // Animar posición cámara
-            new TWEEN.Tween(camera.position)
-                .to({ x: targetCamPos.x, y: targetCamPos.y, z: targetCamPos.z }, 1500)
-                .easing(TWEEN.Easing.Cubic.InOut)
-                .start();
-
-            // Animar punto de mira (target)
-            new TWEEN.Tween(controls.target)
-                .to({ x: star.position.x, y: star.position.y, z: star.position.z }, 1500)
+            new TWEEN.Tween(zoomProgress)
+                .to({ value: 1 }, 1500)
                 .easing(TWEEN.Easing.Cubic.InOut)
                 .onUpdate(() => {
+                    const offset = new THREE.Vector3(2, 1.5, 2);
+                    const idealCamPos = star.position.clone().add(offset);
+                    
+                    controls.target.lerpVectors(startTargetPos, star.position, zoomProgress.value);
+                    camera.position.lerpVectors(startCamPos, idealCamPos, zoomProgress.value);
                     camera.lookAt(controls.target);
                 })
                 .onComplete(() => {
+                    isAnimatingZoom = false;
                     controls.enabled = true;
-                    controls.maxDistance = 5; // Restringir zoom exterior local
+                    controls.maxDistance = 5; 
                     btnBack.style.display = 'block';
                     
-                    // Modificar UI
-                    mainHeader.style.opacity = '0.1';
-                    hud.classList.add('active');
+                    if(!isStereo) {
+                        hud.classList.remove('fade-out');
+                        hud.classList.add('active');
+                        // Desvanece el panel a los 5 segundos de haber llegado
+                        hudTimeout = setTimeout(() => {
+                            hud.classList.remove('active');
+                            hud.classList.add('fade-out');
+                        }, 5000);
+                    }
                 })
                 .start();
         }
 
         function returnToCenter() {
             isZoomed = false;
-            targetedStar = null;
+            isAnimatingZoom = true;
             controls.enabled = false;
             btnBack.style.display = 'none';
             
-            // Revertir UI
-            mainHeader.style.opacity = '1';
+            clearTimeout(hudTimeout);
             hud.classList.remove('active');
+            hud.classList.add('fade-out');
 
-            new TWEEN.Tween(camera.position)
-                .to({ x: originalCameraPos.x, y: originalCameraPos.y, z: originalCameraPos.z }, 2000)
-                .easing(TWEEN.Easing.Cubic.InOut)
-                .start();
+            startCamPos.copy(camera.position);
+            startTargetPos.copy(controls.target);
+            zoomProgress.value = 0;
 
-            new TWEEN.Tween(controls.target)
-                .to({ x: originalTarget.x, y: originalTarget.y, z: originalTarget.z }, 2000)
+            new TWEEN.Tween(zoomProgress)
+                .to({ value: 1 }, 2000)
                 .easing(TWEEN.Easing.Cubic.InOut)
                 .onUpdate(() => {
+                    controls.target.lerpVectors(startTargetPos, originalTarget, zoomProgress.value);
+                    camera.position.lerpVectors(startCamPos, originalCameraPos, zoomProgress.value);
                     camera.lookAt(controls.target);
                 })
                 .onComplete(() => {
+                    isAnimatingZoom = false;
+                    targetedStar = null;
                     controls.enabled = true;
                     controls.maxDistance = 80;
                 })
@@ -888,63 +1161,106 @@
             const delta = clock.getDelta();
             const elapsedTime = clock.getElapsedTime();
             
-            // Actualizar tiempo en los shaders
             globalUniforms.uTime.value = elapsedTime;
 
-            // 1. Actualizar posiciones de las estrellas manualmente vía JS
-            // Usamos la misma matriz escalar para que orbiten amarradas orgánicamente a la red
+            // ---- ANIMACIÓN SOLAR (Pulsación de intensidad y corona estelar) ----
+            starMaterials.forEach((item, index) => {
+                // Modulación muy suave de la intensidad de emisión (Brillo estelar) proporcional a su base
+                item.mat.emissiveIntensity = item.baseIntensity + Math.sin(elapsedTime * 3.0 + index) * (0.2 * item.baseIntensity);
+            });
+            starGlows.forEach((glow, index) => {
+                // Variación del tamaño de la corona (plasma expulsado sutilmente)
+                const baseScale = glow.userData.baseScale;
+                const pulse = Math.sin(elapsedTime * 2.0 + index) * 0.08;
+                glow.scale.setScalar(baseScale * (1 + pulse)); 
+            });
+
+            // ---- LÓGICA DE NAVEGACIÓN LIBRE (WASD + Q/E + Joysticks) ----
+            if (!isZoomed && !isAnimatingZoom) {
+                const moveSpeed = 15.0 * delta;
+                const rotSpeed = 2.0 * delta;
+
+                const forward = new THREE.Vector3();
+                camera.getWorldDirection(forward);
+                
+                let right = new THREE.Vector3().crossVectors(forward, camera.up);
+                if (right.lengthSq() < 0.001) right.set(1, 0, 0); 
+                right.normalize();
+
+                // Movimiento Traslacional
+                const inputY = (keys.w ? 1 : 0) + (keys.s ? -1 : 0) - joyL.y; 
+                const inputX = (keys.d ? 1 : 0) + (keys.a ? -1 : 0) + joyL.x;
+
+                if (inputY !== 0 || inputX !== 0) {
+                    const moveVec = new THREE.Vector3()
+                        .addScaledVector(forward, inputY * moveSpeed)
+                        .addScaledVector(right, inputX * moveSpeed);
+                    
+                    camera.position.add(moveVec);
+                    controls.target.add(moveVec); 
+                }
+
+                // Rotación Horizontal
+                const turnInput = (keys.q ? 1 : 0) + (keys.e ? -1 : 0) - joyR.x;
+                if (turnInput !== 0) {
+                    const dist = camera.position.distanceTo(controls.target);
+                    const offset = new THREE.Vector3().subVectors(controls.target, camera.position);
+                    offset.applyAxisAngle(camera.up, turnInput * rotSpeed);
+                    controls.target.copy(camera.position).add(offset);
+                }
+
+                // Subir/Bajar Y global
+                if (joyR.y !== 0) {
+                    const upMove = -joyR.y * moveSpeed;
+                    camera.position.y += upMove;
+                    controls.target.y += upMove;
+                }
+            }
+
+            // Actualizar posiciones dinámicas
             stars.forEach(star => {
                 const data = star.userData;
-                // Calculamos omega dinámicamente con el multiplicador central
                 const omega = SPIN_SPEED / Math.pow(data.r, 1.5);
-                data.currentAngle += omega * delta; // Acumular ángulo usando delta en lugar de tiempo absoluto
+                data.currentAngle += omega * delta; 
                 
                 const currentAngle = data.currentAngle;
-                
-                // Métrica Kerr manual
                 const x = data.r * Math.cos(currentAngle);
                 const z = data.r * Math.sin(currentAngle);
-                // Hundimiento manual
+                
                 const r_safe = Math.max(data.r, 1.5);
                 const y = -G_WELL_DEPTH / (r_safe * 0.5);
 
                 star.position.set(x, y, z);
-
-                // Rotar los planetas locales alrededor de la estrella
+                
+                // Los planetas giran y son iluminados en tiempo real por el shader Phong
                 data.planets.forEach(planet => {
                     const pData = planet.userData;
-                    
-                    // Los planetas giran con un multiplicador minúsculo para lograr la parsimonia armónica
                     const pOmega = (SPIN_SPEED * 0.15) / Math.pow(pData.r, 1.5); 
                     pData.currentAngle += pOmega * delta;
                     
                     const pAngle = pData.currentAngle;
                     planet.position.set(
                         pData.r * Math.cos(pAngle),
-                        0, // Local al plano de la estrella
+                        0,
                         pData.r * Math.sin(pAngle)
                     );
                 });
             });
 
-            // Si estamos zoomeados, la cámara debe "seguir" a la estrella
-            // ya que la estrella se está moviendo a lo largo de su órbita en la red
-            if (isZoomed && targetedStar) {
-                // Calcular el delta de movimiento de la estrella en este frame
-                // Una forma sencilla es mantener el offset relativo constante
+            if (isZoomed && targetedStar && !isAnimatingZoom) {
                 const currentTarget = controls.target.clone();
                 const offset = new THREE.Vector3().subVectors(camera.position, currentTarget);
-                
                 controls.target.copy(targetedStar.position);
                 camera.position.copy(targetedStar.position).add(offset);
             }
 
             // Highlight hover interaction
-            if (!isZoomed) {
+            if (!isZoomed && !isStereo) {
                 raycaster.setFromCamera(mouse, camera);
                 const intersects = raycaster.intersectObjects(stars);
                 document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
                 
+                // Reseteamos escalar la estrella (no aplicar a sprites/coronas, solo al MESH)
                 stars.forEach(s => s.scale.set(1, 1, 1));
                 if (intersects.length > 0) {
                     intersects[0].object.scale.set(1.5, 1.5, 1.5);
@@ -952,10 +1268,29 @@
             }
 
             controls.update();
-            renderer.render(scene, camera);
+            
+            if (isStereo) {
+                renderer.setScissorTest(true);
+                stereoCamera.update(camera);
+                
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+
+                renderer.setScissor(0, 0, width / 2, height);
+                renderer.setViewport(0, 0, width / 2, height);
+                renderer.render(scene, stereoCamera.cameraL);
+
+                renderer.setScissor(width / 2, 0, width / 2, height);
+                renderer.setViewport(width / 2, 0, width / 2, height);
+                renderer.render(scene, stereoCamera.cameraR);
+
+                renderer.setScissorTest(false);
+            } else {
+                renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+                renderer.render(scene, camera);
+            }
         }
 
-        // Iniciar la animación después de que todas las variables estén cargadas
         init();
         animate();
     </script>
