@@ -464,6 +464,30 @@ button{cursor:pointer;background:transparent;}
 .ex-b:hover{border-color:var(--acc);color:var(--acc2);}
 .ex-b.cegg{border-color:var(--acc-d);color:var(--acc);}
 
+/* ═══ SYNC PANEL (Google Drive) ═══ */
+.sync-panel{
+  padding:14px;background:var(--cd);border:1px solid var(--ln2);margin-bottom:16px;
+}
+.sync-title{font-size:9px;letter-spacing:5px;color:var(--c0);opacity:.5;margin-bottom:10px;}
+.sync-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;align-items:center;}
+.sync-inp{
+  flex:1;min-width:180px;background:var(--inp);border:1px solid var(--ln2);color:var(--c1);
+  padding:8px 10px;font-size:11px;letter-spacing:1px;
+}
+.sync-inp:focus{border-color:var(--acc);}
+.sync-btn{
+  padding:8px 14px;border:1px solid var(--acc-d);background:var(--acc-d);color:var(--acc2);
+  font-size:10px;letter-spacing:2px;font-family:'Rajdhani',sans-serif;font-weight:700;
+  text-transform:uppercase;cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.sync-btn:hover{border-color:var(--acc);box-shadow:0 0 10px var(--acc-d);}
+.sync-btn.off{border-color:var(--ln);background:transparent;color:var(--c0);}
+.sync-status{font-size:10px;letter-spacing:2px;color:var(--c0);opacity:.6;display:flex;align-items:center;gap:6px;margin-top:6px;}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--c0);flex-shrink:0;}
+.sync-dot.on{background:var(--hi);box-shadow:0 0 6px var(--hi-g);animation:live-blink 1.4s step-end infinite;}
+.sync-dot.err{background:var(--lo);box-shadow:0 0 6px var(--lo-g);}
+.sync-help{font-size:9px;letter-spacing:1px;color:var(--c0);opacity:.4;line-height:1.7;margin-top:8px;}
+
 /* ═══ MISSION CARD ═══ */
 .mc{
   border:1px solid var(--ln2);border-left:3px solid var(--ln);
@@ -592,6 +616,13 @@ button{cursor:pointer;background:transparent;}
   text-transform:uppercase;transition:all .2s;opacity:.7;cursor:pointer;background:transparent;
 }
 .pip-distract:hover{background:var(--lo-d);opacity:1;}
+.pip-more{
+  width:100%;margin-top:6px;padding:7px;
+  border:1px solid var(--acc-d);color:var(--acc2);background:var(--acc-d);
+  font-size:9px;letter-spacing:3px;font-family:'Rajdhani',sans-serif;font-weight:700;
+  text-transform:uppercase;transition:all .2s;cursor:pointer;
+}
+.pip-more:hover{border-color:var(--acc);box-shadow:0 0 10px var(--acc-d);}
 .pip-done{
   width:100%;margin-top:8px;padding:8px;
   border:1px solid var(--hi-g);color:var(--hi);background:var(--hi-d);
@@ -600,6 +631,7 @@ button{cursor:pointer;background:transparent;}
   animation:done-pulse 2s ease-in-out infinite;
 }
 .pip-done:hover{box-shadow:0 0 16px var(--hi-g);}
+/* Styles are re-injected into the floating Document-PiP window (separate document) — see pipStyles() in JS */
 
 /* ═══ MODAL ═══ */
 .modal-overlay{
@@ -880,7 +912,7 @@ button{cursor:pointer;background:transparent;}
 
 </div><!-- /shell -->
 
-<!-- PIP Floating Timer -->
+<!-- PIP Floating Timer (fallback, in-page — replaced by real OS-level window when supported) -->
 <div class="pip" id="pip">
   <div class="pip-top">
     <span class="pip-label">◈ MISIÓN ACTIVA</span>
@@ -889,6 +921,7 @@ button{cursor:pointer;background:transparent;}
   <div class="pip-name" id="pip-name">—</div>
   <div class="pip-time" id="pip-time">05:00</div>
   <button class="pip-done" onclick="showCompletionModal()">✓ TAREA FINALIZADA</button>
+  <button class="pip-more" onclick="pipNeedMoreTime()">⏱ NECESITO MÁS TIEMPO</button>
   <button class="pip-distract" onclick="distractedHit()">▼ ME DISTRAJE</button>
 </div>
 
@@ -905,6 +938,7 @@ button{cursor:pointer;background:transparent;}
 </div>
 </div>
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 // ══════════════════════════════════════════
 // CONSTANTS
@@ -971,16 +1005,15 @@ async function dbSave() {
 // ══════════════════════════════════════════
 // THEME — Auto by time of day
 // ══════════════════════════════════════════
-// Time bands (hour):  0-4 pergamino · 5-7 amanecer · 8-11 terminal · 12-16 ambar · 17-19 amanecer · 20-23 beskar
 const TIME_THEMES = [
-  {from:0,  to:4,  t:'pergamino'},  // madrugada
-  {from:5,  to:7,  t:'amanecer'},   // amanecer
-  {from:8,  to:11, t:'terminal'},   // mañana
-  {from:12, to:16, t:'ambar'},      // tarde
-  {from:17, to:19, t:'amanecer'},   // atardecer
-  {from:20, to:23, t:'beskar'},     // noche
+  {from:0,  to:4,  t:'pergamino'},
+  {from:5,  to:7,  t:'amanecer'},
+  {from:8,  to:11, t:'terminal'},
+  {from:12, to:16, t:'ambar'},
+  {from:17, to:19, t:'amanecer'},
+  {from:20, to:23, t:'beskar'},
 ];
-let autoTheme = true; // if user manually picks, stop auto
+let autoTheme = true;
 
 function themeForHour(h) {
   for(const b of TIME_THEMES) if(h >= b.from && h <= b.to) return b.t;
@@ -990,21 +1023,18 @@ function applyAutoTheme() {
   if(!autoTheme) return;
   const h = new Date().getHours();
   const t = themeForHour(h);
-  setTheme(t, true); // true = silent (don't disable auto)
+  setTheme(t, true);
 }
 
 function setTheme(t, silent=false) {
-  if(!silent) autoTheme = false; // manual pick disables auto
+  if(!silent) autoTheme = false;
   document.documentElement.setAttribute('data-theme', t);
   document.querySelectorAll('.td').forEach(d => d.classList.toggle('on', d.dataset.t === t));
   try { localStorage.setItem(TH_KEY, t); } catch(e) {}
   syncAutoBtn();
 }
 function initTheme() {
-  // Check if user had a manual preference saved
   let saved = null; try { saved = localStorage.getItem(TH_KEY); } catch(e) {}
-  // Always start with auto-theme based on current hour, but if user saved a specific choice respect it
-  // We use auto unless they explicitly saved something other than the expected time-based theme
   const autoT = themeForHour(new Date().getHours());
   if(saved && saved !== autoT) {
     autoTheme = false;
@@ -1013,7 +1043,6 @@ function initTheme() {
     autoTheme = true;
     applyAutoTheme();
   }
-  // Re-check every 5 minutes
   setInterval(applyAutoTheme, 5 * 60 * 1000);
 }
 
@@ -1037,7 +1066,6 @@ function tGo() {
   document.getElementById('distracted-btn').classList.add('visible');
   document.getElementById('task-done-btn').style.display = 'block';
   timerInt = setInterval(timerTick, 1000);
-  // Auto PV gain: 1 PV every 15 seconds of focus
   pvAutoInt = setInterval(autoPVGain, 15000);
   showPIP();
   updateDisplay();
@@ -1067,10 +1095,10 @@ function timerTick() {
     timerRunning = false;
     timerSec = 0;
     updateDisplay();
-    hidePIP();
     document.getElementById('distracted-btn').classList.remove('visible');
     document.getElementById('task-done-btn').style.display = 'none';
     updateTickerState('idle');
+    notifyExpired();
     showTimerExpiredModal();
   }
 }
@@ -1101,9 +1129,10 @@ function updateDisplay() {
   arcEl.style.stroke = urgent ? 'var(--lo)' : 'var(--hi)';
 
   subEl.textContent = timerRunning ? (urgent ? '¡ÚLTIMO TRAMO!' : 'EN MISIÓN') : (timerSec===0 ? 'COMPLETADO' : 'LISTO');
+
+  document.title = timerRunning ? ('侍 '+display+' · '+(document.getElementById('desafio-input').value.trim()||'Misión')) : 'WARRIOR LOG · 侍';
 }
 
-// Auto PV gain while timer runs
 function autoPVGain() {
   if(!timerRunning) return;
   const gain = 1;
@@ -1128,6 +1157,32 @@ function syncAutoBtn() {
 }
 
 // ══════════════════════════════════════════
+// NOTIFICATIONS (fallback for when PiP can't stay on top —
+// e.g. tab backgrounded on Android Chrome, or after switching to phone)
+// ══════════════════════════════════════════
+let notifPermAsked = false;
+async function ensureNotifPermission() {
+  if(!('Notification' in window)) return false;
+  if(Notification.permission === 'granted') return true;
+  if(Notification.permission === 'denied') return false;
+  if(notifPermAsked) return false;
+  notifPermAsked = true;
+  try { const p = await Notification.requestPermission(); return p === 'granted'; } catch(e) { return false; }
+}
+async function notifyExpired() {
+  const ok = await ensureNotifPermission();
+  if(!ok) return;
+  const name = document.getElementById('desafio-input').value.trim() || 'tu misión';
+  try {
+    const n = new Notification('⏱ Tiempo agotado', {
+      body: `"${name}" — ¿necesitas más tiempo o la diste por completada?`,
+      tag: 'warrior-log-timer', requireInteraction: true
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════
 // DISTRACTED
 // ══════════════════════════════════════════
 function distractedHit() {
@@ -1137,9 +1192,7 @@ function distractedHit() {
   updateNet();
   showPVPop('-'+loss, 'loss');
   setTickerMsg('lose', '-'+loss+' PV · ¡DESVÍO DETECTADO! VUELVE AL CAMINO');
-  // Flash red briefly
   document.body.style.transition = 'background .15s';
-  const orig = getComputedStyle(document.documentElement).getPropertyValue('--bg0');
   document.body.style.background = 'rgba(200,30,0,.15)';
   setTimeout(()=>{ document.body.style.background = ''; }, 400);
 }
@@ -1170,11 +1223,9 @@ function updateTickerState(s) {
 // ══════════════════════════════════════════
 function start2Min() {
   is2Min = true;
-  // Set timer to 2 min
   document.getElementById('min-cfg').value = 2;
   document.getElementById('sec-cfg').value = '00';
   timerTotal = 120; timerSec = 120;
-  // If no desafio name, focus the input
   const di = document.getElementById('desafio-input');
   if(!di.value.trim()) di.focus();
   updateDisplay();
@@ -1203,24 +1254,102 @@ function updateNet() {
 }
 
 // ══════════════════════════════════════════
-// PIP
+// PIP — Document Picture-in-Picture (real OS-level always-on-top window)
+// Falls back to a fixed in-page floating box when the API isn't available
+// (e.g. Android Chrome, iOS Safari, Firefox).
 // ══════════════════════════════════════════
-function showPIP() {
-  const pip = document.getElementById('pip');
+let pipWindow = null;      // the separate floating document, when supported
+let pipUsingDocPiP = false;
+
+function pipStyles() {
+  // Minimal, self-contained styles injected into the floating PiP document —
+  // it does NOT share the page's stylesheet, so key rules are duplicated here.
+  return `
+  :root{--bg:#05070c;--acc:#d4aa14;--acc-d:rgba(184,150,12,.18);--hi:#00ff88;--hi-d:rgba(0,255,136,.12);
+        --hi-g:rgba(0,255,136,.4);--lo:#ff3030;--lo-d:rgba(255,48,48,.12);--c0:#8a9ba8;--c2:#e8f2f8;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--c2);font-family:'Share Tech Mono',monospace;padding:14px;}
+  .pip-label{font-size:9px;letter-spacing:4px;color:var(--c0);opacity:.7;margin-bottom:6px;}
+  .pip-name{font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;letter-spacing:2px;color:var(--acc);margin-bottom:8px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pip-time{font-family:'Rajdhani',sans-serif;font-size:44px;font-weight:700;letter-spacing:2px;text-align:center;color:var(--hi);
+    text-shadow:0 0 16px var(--hi-g);margin-bottom:8px;}
+  .pip-time.urgent{color:var(--lo);}
+  button{width:100%;margin-top:6px;padding:8px;border:1px solid var(--acc-d);background:var(--acc-d);color:var(--acc);
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;}
+  button.done{border-color:var(--hi-g);background:var(--hi-d);color:var(--hi);}
+  button.distract{border-color:var(--lo-g,rgba(255,48,48,.4));background:var(--lo-d);color:var(--lo);}
+  `;
+}
+
+async function showPIP() {
   const name = document.getElementById('desafio-input').value.trim() || '—';
+
+  // Try real always-on-top Document PiP (Chrome/Edge desktop 116+).
+  // This window floats above ALL apps, not just the browser tab, and
+  // keeps running even if the Warrior Log tab loses focus.
+  if ('documentPictureInPicture' in window) {
+    try {
+      if (pipWindow && !pipWindow.closed) { pipWindow.focus(); syncPipDoc(); return; }
+      pipWindow = await documentPictureInPicture.requestWindow({ width: 220, height: 260 });
+      const style = pipWindow.document.createElement('style');
+      style.textContent = pipStyles();
+      pipWindow.document.head.appendChild(style);
+      pipWindow.document.body.innerHTML = `
+        <div class="pip-label">◈ MISIÓN ACTIVA</div>
+        <div class="pip-name" id="p-name"></div>
+        <div class="pip-time" id="p-time">05:00</div>
+        <button class="done" id="p-done">✓ TAREA FINALIZADA</button>
+        <button id="p-more">⏱ NECESITO MÁS TIEMPO</button>
+        <button class="distract" id="p-distract">▼ ME DISTRAJE</button>
+      `;
+      pipWindow.document.getElementById('p-done').onclick = () => showCompletionModal();
+      pipWindow.document.getElementById('p-more').onclick = () => pipNeedMoreTime();
+      pipWindow.document.getElementById('p-distract').onclick = () => distractedHit();
+      pipWindow.addEventListener('pagehide', () => { pipWindow = null; pipUsingDocPiP = false; });
+      pipUsingDocPiP = true;
+      syncPipDoc();
+      return;
+    } catch(e) {
+      pipUsingDocPiP = false; // fell through — user blocked it or API refused
+    }
+  }
+
+  // Fallback: fixed in-page box (only visible while this tab/window is on screen)
+  const pip = document.getElementById('pip');
   document.getElementById('pip-name').textContent = name;
   pip.classList.add('show');
   pipVisible = true;
   makeDraggable(pip);
+  // Ask for notification permission up front so we can reach the person
+  // even on devices where no PiP window can stay on top (phones).
+  ensureNotifPermission();
+}
+function syncPipDoc() {
+  if(!pipWindow || pipWindow.closed) return;
+  const name = document.getElementById('desafio-input').value.trim() || '—';
+  const nameEl = pipWindow.document.getElementById('p-name');
+  const timeEl = pipWindow.document.getElementById('p-time');
+  if(nameEl) nameEl.textContent = name;
+  if(timeEl) {
+    timeEl.textContent = fmt(timerSec);
+    timeEl.className = 'pip-time' + (timerSec<=30 && timerSec>0 ? ' urgent' : '');
+  }
 }
 function hidePIP() {
   document.getElementById('pip').classList.remove('show');
   pipVisible = false;
+  if(pipWindow && !pipWindow.closed) { try { pipWindow.close(); } catch(e){} }
+  pipWindow = null; pipUsingDocPiP = false;
+}
+function pipNeedMoreTime() {
+  if(timerRunning) tPause();
+  showTimerExpiredModal();
 }
 function makeDraggable(el) {
   let ox=0,oy=0,dx=0,dy=0;
   el.onmousedown = function(e) {
-    if(e.target.classList.contains('pip-close')||e.target.classList.contains('pip-distract')) return;
+    if(e.target.classList.contains('pip-close')||e.target.classList.contains('pip-distract')||e.target.classList.contains('pip-more')) return;
     e.preventDefault();
     dx=e.clientX; dy=e.clientY;
     document.onmousemove = function(e) {
@@ -1236,15 +1365,15 @@ function makeDraggable(el) {
   };
 }
 
-// Page visibility: show PIP when tab goes to background
 document.addEventListener('visibilitychange', () => {
-  if(document.hidden && timerRunning) showPIP();
+  if(document.hidden && timerRunning && !pipUsingDocPiP) showPIP();
 });
 
-// Sync desafio input to PIP
 function syncDesafio() {
   const v = document.getElementById('desafio-input').value.trim();
-  document.getElementById('pip-name').textContent = v || '—';
+  const el = document.getElementById('pip-name');
+  if(el) el.textContent = v || '—';
+  syncPipDoc();
 }
 
 // ══════════════════════════════════════════
@@ -1270,31 +1399,28 @@ function deployMission() {
   activeMissionId = m.id;
   missions.unshift(m);
   dbSave();
-  // Reset PV fields for new mission
   document.getElementById('pv-up').value = 0;
   document.getElementById('pv-dn').value = 0;
   updateNet();
-  // Start timer if not running
   if(!timerRunning) { timerSec = timerTotal; tGo(); }
   render();
   toast('▲ DESAFÍO DESPLEGADO · TIMER INICIADO');
+  driveMarkDirty();
 }
 
 // ══════════════════════════════════════════
 // COMPLETION MODAL
 // ══════════════════════════════════════════
-// Called by "✓ TAREA FINALIZADA" button — go straight to dopamine
 function showCompletionModal() {
   if(timerRunning) {
     tPause();
     document.getElementById('task-done-btn').style.display = 'none';
     document.getElementById('distracted-btn').classList.remove('visible');
-    hidePIP();
   }
-  missionCompleted(); // → dopamine directly
+  hidePIP();
+  missionCompleted();
 }
 
-// Called when timer hits 0 — ask if needs more time
 function showTimerExpiredModal() {
   const name = document.getElementById('desafio-input').value.trim() || 'el desafío';
   showModal('expired', { name });
@@ -1351,12 +1477,10 @@ function missionCompleted() {
   const dn   = parseInt(document.getElementById('pv-dn').value)||0;
   const pvNet = base + up - dn;
   const msg = DOPAMINE_MSGS[Math.floor(Math.random()*DOPAMINE_MSGS.length)];
-  // Update active mission status
   if(activeMissionId) {
     const m = missions.find(x=>x.id===activeMissionId);
     if(m) { m.status='done'; m.pvUp=up; m.pvDn=dn; m.pvBase=base; m.duration=timerTotal; dbSave(); }
   }
-  // Show dopamine
   setTimeout(()=>showModal('dopamine',{msg,pvNet}), 200);
 }
 
@@ -1369,6 +1493,7 @@ function saveDopamine() {
   activeMissionId = null;
   tStop();
   toast('✦ VICTORIA REGISTRADA · THIS IS THE WAY');
+  driveMarkDirty();
 }
 
 function addTime() {
@@ -1380,7 +1505,7 @@ function addTime() {
   updateDisplay();
   closeModalDirect();
   timerRunning = false;
-  tGo(); // this also shows task-done-btn and pip
+  tGo();
   toast('+ '+mins+' MIN · ¡SIGUE ADELANTE!');
 }
 
@@ -1481,7 +1606,7 @@ function mcHTML(m) {
         <option value="partial" ${m.status==='partial'?'selected':''}>~ Parcial</option>
         <option value="aborted" ${m.status==='aborted'?'selected':''}>✗ Aprendizaje</option>
       </select>
-      <button class="mc-sv" onclick="dbSave();renderRhStats();toast('GUARDADO')">GUARDAR</button>
+      <button class="mc-sv" onclick="dbSave();renderRhStats();toast('GUARDADO');driveMarkDirty();">GUARDAR</button>
     </div>
     <button class="mc-del" onclick="delM(${m.id})">✗ eliminar del registro</button>
   </div>
@@ -1503,11 +1628,11 @@ function toggleCard(id) {
     bd.style.maxHeight=bd.scrollHeight+120+'px';
   }
 }
-function uf(id,f,v){const m=missions.find(x=>x.id===id);if(m){m[f]=v;dbSave();}if(f==='status')renderFeed();}
-function toggleE(id,k){const m=missions.find(x=>x.id===id);if(!m)return;if(!m.eneagram)m.eneagram=[];const i=m.eneagram.indexOf(k);if(i>=0)m.eneagram.splice(i,1);else m.eneagram.push(k);dbSave();reOpenCard(id);}
-function toggleCombo(id,c){const m=missions.find(x=>x.id===id);if(!m)return;m.combo=m.combo===c?'':c;dbSave();reOpenCard(id);}
+function uf(id,f,v){const m=missions.find(x=>x.id===id);if(m){m[f]=v;dbSave();driveMarkDirty();}if(f==='status')renderFeed();}
+function toggleE(id,k){const m=missions.find(x=>x.id===id);if(!m)return;if(!m.eneagram)m.eneagram=[];const i=m.eneagram.indexOf(k);if(i>=0)m.eneagram.splice(i,1);else m.eneagram.push(k);dbSave();driveMarkDirty();reOpenCard(id);}
+function toggleCombo(id,c){const m=missions.find(x=>x.id===id);if(!m)return;m.combo=m.combo===c?'':c;dbSave();driveMarkDirty();reOpenCard(id);}
 function reOpenCard(id){const wasOpen=document.getElementById('mc'+id)?.classList.contains('expanded');renderFeed();if(wasOpen)setTimeout(()=>toggleCard(id),10);}
-async function delM(id){if(!confirm('¿Borrar esta misión?'))return;missions=missions.filter(x=>x.id!==id);await dbSave();render();toast('Misión eliminada');}
+async function delM(id){if(!confirm('¿Borrar esta misión?'))return;missions=missions.filter(x=>x.id!==id);await dbSave();render();toast('Misión eliminada');driveMarkDirty();}
 
 // ══════════════════════════════════════════
 // STATS
@@ -1519,7 +1644,7 @@ function switchView(v) {
   document.getElementById('mission-feed').style.display = v==='log'?'':'none';
   document.getElementById('stats-view').classList.toggle('on', v==='stats');
   document.getElementById('cegg-view').classList.toggle('on', v==='cegg');
-  const titles = {log:'REGISTRO DE BATALLAS', stats:'ESTADÍSTICAS', cegg:'CARGAR ARCHIVO .CEGG'};
+  const titles = {log:'REGISTRO DE BATALLAS', stats:'ESTADÍSTICAS', cegg:'HUEVO CÓSMICO · CEGG'};
   document.getElementById('rh-title').textContent = titles[v]||'';
   if(v==='stats') buildStats();
   if(v==='cegg') renderCEGGView();
@@ -1555,41 +1680,10 @@ function sr(name,val,cur,max,cls){
 }
 
 // ══════════════════════════════════════════
-// EXPORT
+// EXPORT (raw log)
 // ══════════════════════════════════════════
 function exportJSON(){
   dl(new Blob([JSON.stringify(missions,null,2)],{type:'application/json'}),'warrior_log.json');
-}
-function exportCEGG(){
-  const ene={},zones={},words={};
-  missions.forEach(m=>{
-    if(m.zone)zones[m.zone]=(zones[m.zone]||0)+1;
-    if(m.word)words[m.word]=(words[m.word]||0)+1;
-    (m.eneagram||[]).forEach(e=>{ene[e]=(ene[e]||0)+1;});
-  });
-  const cegg={
-    meta:{format:'cegg',version:'1.1',generated:new Date().toISOString(),player:'guerrero_samurai',protocol:'warrior_log_v3'},
-    summary:{
-      total:missions.length,
-      completed:missions.filter(m=>m.status==='done').length,
-      pv_net:missions.reduce((a,m)=>a+(m.pvBase||250)+(m.pvUp||0)-(m.pvDn||0),0),
-      pv_up:missions.reduce((a,m)=>a+(m.pvUp||0),0),
-      pv_dn:missions.reduce((a,m)=>a+(m.pvDn||0),0),
-      duration_sec:missions.reduce((a,m)=>a+(m.duration||0),0),
-    },
-    zones_frequency:zones,
-    eneagram_deviations:ene,
-    closing_words:words,
-    missions:missions.map(m=>({
-      id:m.id,date:m.date,name:m.name,zone:m.zone,status:m.status,
-      duration_sec:m.duration,
-      pv:{base:m.pvBase||250,up:m.pvUp||0,dn:m.pvDn||0,net:(m.pvBase||250)+(m.pvUp||0)-(m.pvDn||0)},
-      word:m.word,ganado:m.ganado,desvio:m.desvio,rastro:m.rastro,
-      eneagram:m.eneagram,combo:m.combo,
-    })),
-  };
-  dl(new Blob([JSON.stringify(cegg,null,2)],{type:'application/json'}),`warrior_${Date.now()}.cegg`);
-  toast('.CEGG EXPORTADO · LISTO PARA EL UNIVERSO');
 }
 function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);}
 
@@ -1605,38 +1699,381 @@ function toast(msg,err=false){
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 // ══════════════════════════════════════════
-// CEGG LOADER
+// CEGG v2.0 — mismo esquema exacto que Killer Pendiente (kp794server.py
+// → generate_comprehensive_egg). Un jugador ("guerrero_samurai_web" por
+// defecto, editable) queda anidado en perfiles_usuarios junto a los demás
+// usuarios de KP cuando se carga/fusiona un huevo existente.
 // ══════════════════════════════════════════
-let ceggData = null;
+let ceggRaw = null;        // objeto completo cargado (multi-usuario, si viene de KP)
 let ceggFilter = 'all';
 let ceggSelected = null;
+// Por defecto usa el arquetipo "El Guerrero Samuray" — si ese usuario ya
+// existe en tu HuevoCosmico de Killer Pendiente, esta app se fusiona ahí
+// como su extensión móvil. Si no existe todavía, lo crea: esta app *es*
+// esa subpersonalidad — el guía noble y pacífico, versión samurái, para
+// cuando estás lejos del PC. Editable en el panel CEGG si prefieres otro nombre.
+let ceggUsername = 'El Guerrero Samuray';
 
+function colorNombre(hex) {
+  try {
+    const h = hex.replace('#','');
+    const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
+    const mx = Math.max(r,g,b);
+    if(mx===0) return 'negro';
+    if(r>200&&g>200&&b>200) return 'blanco';
+    if(r===mx&&r>g+40&&r>b+40) return 'rojo';
+    if(g===mx&&g>r+40&&g>b+40) return 'verde';
+    if(b===mx&&b>r+40&&b>g+40) return 'azul';
+    if(r>180&&g>180&&b<100) return 'amarillo';
+    return 'dorado';
+  } catch(e){ return 'desconocido'; }
+}
+
+function buildUserProfileV2() {
+  const total = missions.length;
+  const completadas = missions.filter(m=>m.status==='done').length;
+  const pendientes = total - completadas;
+
+  const tareas_detalladas = missions.map(m => ({
+    id: String(m.id),
+    name: m.name,
+    xp: (m.pvBase||250)+(m.pvUp||0)-(m.pvDn||0),
+    time: Math.round((m.duration||0)/60),
+    priority: null,
+    large: false,
+    weekly_goal: false,
+    completed: m.status === 'done',
+    date_added: m.date,
+    subtasks: null,
+    distractions: m.desvio ? [{ text: m.desvio, timestamp: m.date, task_name: m.name }] : [],
+    delays: 0,
+    date_completed: m.status==='done' ? m.date : null,
+    total_time: Math.round((m.duration||0)/60),
+    category: m.zone || 'Otro',
+  }));
+
+  const distracciones_detalladas = [];
+  missions.forEach(m => { if(m.desvio) distracciones_detalladas.push({ text:m.desvio, timestamp:m.date, task_name:m.name, category: m.zone||'sin_categoria' }); });
+
+  const completion_hours = {};
+  missions.forEach(m => { if(m.status==='done'){ const h=String(new Date(m.date).getHours()); completion_hours[h]=(completion_hours[h]||0)+1; } });
+
+  const xp_total = missions.reduce((a,m)=>a+(m.pvBase||250)+(m.pvUp||0)-(m.pvDn||0),0);
+  const indice_consistencia = total>0 ? +(completadas/total).toFixed(3) : 0.0;
+
+  const zonasCount = {};
+  missions.forEach(m => { if(m.zone) zonasCount[m.zone]=(zonasCount[m.zone]||0)+1; });
+  const catDist = {};
+  distracciones_detalladas.forEach(d=>{ const c=d.category||'sin_categoria'; catDist[c]=(catDist[c]||0)+1; });
+  const topCategorias = Object.entries(catDist).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c,n])=>({categoria:c,veces:n}));
+
+  const accHex = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim() || '#b8960c';
+  const fechaRegistro = missions.length ? missions[missions.length-1].date : new Date().toISOString();
+
+  return {
+    perfil_arquetipo: {
+      nombre: ceggUsername,
+      color_hex: accHex,
+      color_nombre: colorNombre(accHex),
+      fecha_registro: fechaRegistro,
+      nivel_actual: null,
+      xp_para_siguiente_nivel: null,
+      xp_en_nivel_actual: xp_total,
+    },
+    datos_cuantitativos: {
+      nivel_y_xp: { xp_total, mu_disponibles: 0 },
+      estadisticas_tareas: { total, completadas, pendientes, horas_pico_productividad: completion_hours },
+      informacion_mara_egosombra: {
+        total_distracciones: distracciones_detalladas.length,
+        categorias_frecuentes: topCategorias,
+        hora_pico_egosombra: null,
+        triggers_detectados: [],
+      },
+    },
+    huella_conductual: {
+      indice_consistencia,
+      tareas_envejecidas_30dias: [],
+      cantidad_tareas_envejecidas: 0,
+      cronotipo_detectado: 'indefinido',
+      ratio_urgencia_tareas_A: 0.0,
+      total_tareas_alta_prioridad: 0,
+    },
+    datos_cualitativos: {
+      bitacora_personal: [],
+      brainstorming_ideas: [],
+      tareas_detalladas,
+      distracciones_detalladas,
+    },
+    nodos_activos: {
+      universo_primario: 'warrior_log_web',
+      estado_visual: timerRunning ? 'activo' : 'dormido',
+      conexiones_activas: [],
+      ultima_actividad_universo: new Date().toISOString(),
+      posicion_3d: { x:0.0, y:0.0, z:0.0 },
+    },
+    perfil_psicologico_inferido: {
+      version_cegg: '2.0',
+      fecha_ultima_inferencia: null,
+      hipotesis_nuclear: null,
+      nivel_riesgo_burnout: null,
+      dimensiones: {},
+      proxima_revision: null,
+      notas_clinicas: null,
+    },
+  };
+}
+
+// Construye el huevo completo. Si ya hay un ceggRaw cargado (p.ej. sincronizado
+// desde KP vía Drive), respeta a los demás usuarios y sólo actualiza el propio.
+function buildCosmicEgg() {
+  const userProfile = buildUserProfileV2();
+  const nowISO = new Date().toISOString();
+
+  let base = ceggRaw && ceggRaw.perfiles_usuarios ? ceggRaw : {
+    metadata: {},
+    perfil_global: {
+      lista_usuarios: [],
+      estadisticas_globales: { total_usuarios:0, total_pv_acumulado:0, total_tiempo_uso_app_seg:0, sesiones_de_uso: [] },
+      comunicaciones_globales: { chat_general: [], todos_los_correos: [] },
+      gran_bitacora_universal: [],
+    },
+    perfiles_usuarios: {},
+  };
+
+  const perfiles = { ...base.perfiles_usuarios, [ceggUsername]: userProfile };
+  const listaUsuarios = Array.from(new Set([...(base.perfil_global?.lista_usuarios||[]), ceggUsername]));
+  const totalPvAcumulado = Object.values(perfiles).reduce((a,p)=>a+(p.datos_cuantitativos?.nivel_y_xp?.xp_total||0),0);
+
+  return {
+    metadata: {
+      version_huevo: '2.0 (LIVE)',
+      formato_cegg: 'v2.0',
+      fecha_creacion: nowISO,
+      app_origen: base?.metadata?.app_origen === 'Killer Pendiente' ? 'Killer Pendiente + Warrior Log Web' : 'Warrior Log Web',
+      changelog: 'CEGG v2.0 — mismo esquema que Killer Pendiente (perfil_arquetipo, huella_conductual, egosombra enriquecida, nodos_activos, perfil_psicologico_inferido).',
+    },
+    perfil_global: {
+      lista_usuarios: listaUsuarios,
+      estadisticas_globales: {
+        total_usuarios: listaUsuarios.length,
+        total_pv_acumulado: totalPvAcumulado,
+        total_tiempo_uso_app_seg: base.perfil_global?.estadisticas_globales?.total_tiempo_uso_app_seg || 0,
+        sesiones_de_uso: base.perfil_global?.estadisticas_globales?.sesiones_de_uso || [],
+      },
+      comunicaciones_globales: base.perfil_global?.comunicaciones_globales || { chat_general: [], todos_los_correos: [] },
+      gran_bitacora_universal: base.perfil_global?.gran_bitacora_universal || [],
+    },
+    perfiles_usuarios: perfiles,
+  };
+}
+
+function eggToText(egg) {
+  return '<<<COSMIC-EGG-START>>>\n' +
+    'FORMAT: COMPREHENSIVE-EGG-2.0\n' +
+    'CREATED: ' + egg.metadata.fecha_creacion + '\n' +
+    '<<<DATA-START>>>\n' +
+    JSON.stringify(egg, null, 2) +
+    '\n<<<DATA-END>>>\n' +
+    '<<<COSMIC-EGG-END>>>';
+}
+
+function parseCeggText(text) {
+  const s = text.indexOf('<<<DATA-START>>>');
+  const e = text.indexOf('<<<DATA-END>>>');
+  const jsonStr = (s>=0 && e>s) ? text.slice(s + '<<<DATA-START>>>'.length, e) : text;
+  return JSON.parse(jsonStr);
+}
+
+function exportCEGG(){
+  const egg = buildCosmicEgg();
+  dl(new Blob([eggToText(egg)],{type:'text/plain'}), 'HuevoCosmico_LIVE.cegg');
+  toast('.CEGG v2.0 EXPORTADO · esquema Killer Pendiente');
+}
+
+// ══════════════════════════════════════════
+// GOOGLE DRIVE SYNC
+// ──────────────────────────────────────────
+// Cómo sincroniza con Killer Pendiente (Python):
+//  1) En KP, la ruta de guardado del huevo (carpeta "Eggs/HuevoCosmico_LIVE.cegg")
+//     se apunta a la carpeta local de Google Drive (la que sincroniza el
+//     cliente de escritorio de Drive). KP ya escribe ahí con manejo defensivo
+//     de bloqueos (mismo patrón "anti-OneDrive" que ya usa) — no requiere
+//     tocar la lógica de generate_comprehensive_egg, sólo el path de salida.
+//  2) Esta web usa la API de Drive (OAuth) para leer/escribir el MISMO archivo
+//     en la nube. Cada vez que Drive Desktop sube el cambio de KP, esta web lo
+//     detecta en el siguiente sondeo (~30s) y lo fusiona sin pisar otros
+//     usuarios. Cada cambio local se sube también automáticamente.
+//  Requiere un OAuth Client ID de Google Cloud Console (gratis, 5 min):
+//    console.cloud.google.com → nuevo proyecto → "APIs y servicios" →
+//    "Pantalla de consentimiento OAuth" (externo, modo prueba) → "Credenciales"
+//    → "ID de cliente OAuth" → tipo "Aplicación web" → agregar el origen donde
+//    se sirve esta página en "Orígenes autorizados de JavaScript". Pegar el
+//    Client ID resultante abajo.
+// ══════════════════════════════════════════
+const DRIVE_KEY = 'wlog_drive_cfg';
+const DRIVE_FILE_NAME = 'HuevoCosmico_LIVE.cegg';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+let driveTokenClient = null;
+let driveAccessToken = null;
+let driveFileId = null;
+let driveClientId = '';
+let drivePollInt = null;
+let driveDirty = false;
+let driveConnected = false;
+
+async function driveLoadCfg() {
+  try {
+    const r = await window.storage.get(DRIVE_KEY);
+    if(r?.value) { const cfg = JSON.parse(r.value); driveClientId = cfg.clientId||''; ceggUsername = cfg.username||ceggUsername; driveFileId = cfg.fileId||null; }
+  } catch(e) {}
+}
+async function driveSaveCfg() {
+  try { await window.storage.set(DRIVE_KEY, JSON.stringify({ clientId:driveClientId, username:ceggUsername, fileId:driveFileId })); } catch(e) {}
+}
+
+function driveInitTokenClient() {
+  if(!window.google?.accounts?.oauth2) return false;
+  driveTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: driveClientId,
+    scope: DRIVE_SCOPE,
+    callback: (resp) => {
+      if(resp.error) { driveSetStatus('err','Error de autorización'); return; }
+      driveAccessToken = resp.access_token;
+      driveConnected = true;
+      driveSetStatus('on','Conectado · sincronizando');
+      driveSyncNow();
+      if(!drivePollInt) drivePollInt = setInterval(driveSyncNow, 30000);
+    },
+  });
+  return true;
+}
+
+function driveConnect() {
+  const idInput = document.getElementById('drive-client-id');
+  const userInput = document.getElementById('drive-username');
+  driveClientId = idInput.value.trim();
+  ceggUsername = userInput.value.trim() || ceggUsername;
+  if(!driveClientId) { toast('Pega tu Google OAuth Client ID primero', true); return; }
+  driveSaveCfg();
+  if(!driveInitTokenClient()) { toast('Google Identity Services no cargó aún, reintenta en unos segundos', true); return; }
+  driveTokenClient.requestAccessToken({ prompt: driveAccessToken ? '' : 'consent' });
+}
+
+function driveDisconnect() {
+  driveAccessToken = null; driveConnected = false;
+  if(drivePollInt) { clearInterval(drivePollInt); drivePollInt = null; }
+  driveSetStatus('','Desconectado');
+}
+
+function driveSetStatus(state, msg) {
+  const dot = document.getElementById('drive-dot');
+  const txt = document.getElementById('drive-status-txt');
+  if(dot) dot.className = 'sync-dot' + (state?(' '+state):'');
+  if(txt) txt.textContent = msg;
+}
+
+async function driveFindOrCreateFile() {
+  if(driveFileId) return driveFileId;
+  // Buscar por nombre (dentro de los archivos creados por esta app, scope drive.file)
+  const q = encodeURIComponent(`name='${DRIVE_FILE_NAME}' and trashed=false`);
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,modifiedTime)`, {
+    headers: { Authorization: `Bearer ${driveAccessToken}` }
+  });
+  const data = await res.json();
+  if(data.files && data.files.length) { driveFileId = data.files[0].id; driveSaveCfg(); return driveFileId; }
+  // Crear archivo vacío
+  const metadata = { name: DRIVE_FILE_NAME, mimeType: 'text/plain' };
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+  form.append('file', new Blob([''], { type: 'text/plain' }));
+  const createRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+    method: 'POST', headers: { Authorization: `Bearer ${driveAccessToken}` }, body: form,
+  });
+  const created = await createRes.json();
+  driveFileId = created.id; driveSaveCfg();
+  return driveFileId;
+}
+
+async function driveDownload() {
+  const id = await driveFindOrCreateFile();
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`, {
+    headers: { Authorization: `Bearer ${driveAccessToken}` }
+  });
+  if(!res.ok) throw new Error('drive download failed: '+res.status);
+  return await res.text();
+}
+
+async function driveUpload(text) {
+  const id = await driveFindOrCreateFile();
+  const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=media`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${driveAccessToken}`, 'Content-Type': 'text/plain' },
+    body: text,
+  });
+  if(!res.ok) throw new Error('drive upload failed: '+res.status);
+}
+
+function driveMarkDirty() { driveDirty = true; }
+
+async function driveSyncNow() {
+  if(!driveConnected || !driveAccessToken) return;
+  try {
+    driveSetStatus('on','Sincronizando…');
+    const remoteText = await driveDownload();
+    if(remoteText && remoteText.trim().length) {
+      try {
+        const remoteEgg = parseCeggText(remoteText);
+        // Fusionar: conservar todos los usuarios remotos (incluido KP), y
+        // reemplazar sólo el propio con el estado local más reciente.
+        ceggRaw = remoteEgg;
+      } catch(e) { /* remoto vacío o corrupto: seguimos con lo local */ }
+    }
+    const merged = buildCosmicEgg();
+    await driveUpload(eggToText(merged));
+    ceggRaw = merged;
+    driveDirty = false;
+    driveSetStatus('on', 'Sincronizado · ' + new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}));
+    if(document.getElementById('nav-cegg')?.classList.contains('on')) renderCEGGView();
+  } catch(e) {
+    driveSetStatus('err','Error de sincronización — reintenta');
+  }
+}
+
+// ══════════════════════════════════════════
+// CEGG VIEW (carga manual + panel de sincronización con Drive)
+// ══════════════════════════════════════════
 function renderCEGGView() {
   const cv = document.getElementById('cegg-view');
-  const hasCegg = !!ceggData;
+  const hasCegg = !!(ceggRaw && ceggRaw.perfiles_usuarios);
   const filterBtns = ['all','A','B','C'].map(f =>
     `<button class="cf-btn${ceggFilter===f?' on':''}" onclick="setCeggFilter('${f}')">${f==='all'?'TODAS':f}</button>`
   ).join('');
 
   let listHTML = '';
   if(hasCegg) {
-    const ms = (ceggData.missions||[]).filter(m => {
-      if(ceggFilter==='all') return true;
-      return (m.priority||m.status||'').toUpperCase().startsWith(ceggFilter);
+    const allMissions = [];
+    Object.entries(ceggRaw.perfiles_usuarios).forEach(([uname, prof]) => {
+      (prof.datos_cualitativos?.tareas_detalladas||[]).forEach(t => allMissions.push({...t, _user: uname}));
     });
-    if(!ms.length) listHTML = `<div class="empty"><span class="empty-k">空</span><div class="empty-t">SIN MISIONES EN ESTA PRIORIDAD</div></div>`;
+    const ms = allMissions.filter(m => {
+      if(ceggFilter==='all') return true;
+      const prio = (m.priority || guessPrio(m)).toUpperCase();
+      return prio.startsWith(ceggFilter);
+    });
+    if(!ms.length) listHTML = `<div class="empty"><span class="empty-k">空</span><div class="empty-t">SIN TAREAS EN ESTA PRIORIDAD</div></div>`;
     else listHTML = ms.map(m => {
       const prio = (m.priority || guessPrio(m)).toUpperCase();
       const prioClass = prio==='A'?'prio-a':prio==='B'?'prio-b':'prio-c';
-      const isDone = m.status==='done';
-      const sel = ceggSelected===m.id||ceggSelected===m.name;
-      return `<div class="cegg-card${isDone?' done':''}${sel?' selected':''}" onclick="selectCeggMission(${JSON.stringify(JSON.stringify(m))})">
+      const isDone = !!m.completed;
+      const sel = ceggSelected===m.id;
+      return `<div class="cegg-card${isDone?' done':''}${sel?' selected':''}" onclick='selectCeggMission(${JSON.stringify(JSON.stringify(m))})'>
         <div>
           <div class="cc-name">${esc(m.name||'—')}</div>
           <div class="cc-meta">
-            ${m.zone?`<span>${m.zone}</span>`:''}
-            ${m.date?`<span>${new Date(m.date).toLocaleDateString('es',{day:'numeric',month:'short'})}</span>`:''}
-            ${m.pv?`<span>PV ${m.pv.net>=0?'+':''}${m.pv.net}</span>`:''}
+            <span>◈ ${esc(m._user)}</span>
+            ${m.category?`<span>${esc(m.category)}</span>`:''}
+            ${m.date_added?`<span>${esc(m.date_added)}</span>`:''}
+            ${typeof m.xp==='number'?`<span>XP ${m.xp}</span>`:''}
             ${isDone?'<span style="color:var(--hi)">✓ completada</span>':''}
           </div>
         </div>
@@ -1645,22 +2082,43 @@ function renderCEGGView() {
     }).join('');
   }
 
+  const totalUsuarios = hasCegg ? Object.keys(ceggRaw.perfiles_usuarios).length : 0;
+
   cv.innerHTML = `
+    <div class="sync-panel">
+      <div class="sync-title">SINCRONIZACIÓN · GOOGLE DRIVE ⇄ KILLER PENDIENTE</div>
+      <div class="sync-row">
+        <input class="sync-inp" id="drive-client-id" placeholder="Google OAuth Client ID" value="${esc(driveClientId)}"/>
+      </div>
+      <div class="sync-row">
+        <input class="sync-inp" id="drive-username" placeholder="Nombre de usuario en KP (ej. El Guerrero Samuray)" value="${esc(ceggUsername)}" style="max-width:260px;"/>
+        ${driveConnected
+          ? `<button class="sync-btn off" onclick="driveDisconnect()">◈ DESCONECTAR</button>`
+          : `<button class="sync-btn" onclick="driveConnect()">◈ CONECTAR A DRIVE</button>`}
+        ${driveConnected ? `<button class="sync-btn off" onclick="driveSyncNow()">↻ SINCRONIZAR AHORA</button>` : ''}
+      </div>
+      <div class="sync-status"><span class="sync-dot" id="drive-dot"></span><span id="drive-status-txt">Desconectado</span></div>
+      <div class="sync-help">
+        En Killer Pendiente (Python), apunta la carpeta "Eggs" al mismo folder local de tu Google Drive de escritorio —
+        así ambas apps leen/escriben el mismo HuevoCosmico_LIVE.cegg y quedan enlazadas por la nube.
+      </div>
+    </div>
+
     <div class="cegg-drop" id="cegg-drop"
       onclick="document.getElementById('cegg-file-inp').click()"
       ondragover="event.preventDefault();this.classList.add('drag')"
       ondragleave="this.classList.remove('drag')"
       ondrop="ceggDropped(event)">
       <span class="cegg-drop-icon">◈</span>
-      <div class="cegg-drop-txt">Arrastra un <span>.cegg</span> aquí · o <span>haz click</span> para cargar</div>
+      <div class="cegg-drop-txt">Arrastra un <span>.cegg</span> aquí · o <span>haz click</span> para cargarlo manualmente</div>
     </div>
     <input type="file" id="cegg-file-inp" accept=".cegg,.json" style="display:none" onchange="ceggFileChosen(this)"/>
 
     ${hasCegg ? `
       <div class="cegg-meta on">
-        ${ceggData.meta?.player ? `<div class="cegg-player-label">◈ ${ceggData.meta.player.toUpperCase()}</div>` : ''}
-        <div class="cegg-meta-title">${ceggData.summary?.total||0} misiones · ${ceggData.summary?.completed||0} completadas</div>
-        <div class="cegg-meta-sub">PV NETO TOTAL: ${ceggData.summary?.pv_net>=0?'+':''}${ceggData.summary?.pv_net||0} · generado ${ceggData.meta?.generated ? new Date(ceggData.meta.generated).toLocaleDateString('es') : '—'}</div>
+        <div class="cegg-player-label">◈ ${totalUsuarios} USUARIO${totalUsuarios!==1?'S':''} EN EL HUEVO</div>
+        <div class="cegg-meta-title">${ceggRaw.perfil_global?.estadisticas_globales?.total_pv_acumulado||0} PV acumulado total</div>
+        <div class="cegg-meta-sub">generado ${ceggRaw.metadata?.fecha_creacion ? new Date(ceggRaw.metadata.fecha_creacion).toLocaleString('es') : '—'} · origen: ${esc(ceggRaw.metadata?.app_origen||'—')}</div>
       </div>
       <div class="cegg-filter">
         <span class="cegg-filter-lbl">PRIORIDAD</span>
@@ -1676,11 +2134,10 @@ function renderCEGGView() {
 }
 
 function guessPrio(m) {
-  // If no priority field, guess from status or pv
-  if(m.status==='done') return 'C';
-  const pv = m.pv?.net || 0;
-  if(pv >= 200) return 'A';
-  if(pv >= 100) return 'B';
+  if(m.completed) return 'C';
+  const xp = m.xp || 0;
+  if(xp >= 200) return 'A';
+  if(xp >= 100) return 'B';
   return 'C';
 }
 
@@ -1703,18 +2160,19 @@ function readCeggFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const data = JSON.parse(e.target.result);
-      // Accept both raw mission array or .cegg format
-      if(Array.isArray(data)) {
-        ceggData = { missions: data.map((m,i) => ({...m, priority: guessPrio(m)})), meta:{player:'externo'}, summary:{total:data.length, completed:data.filter(x=>x.status==='done').length, pv_net:0} };
+      const raw = e.target.result;
+      let data;
+      try { data = parseCeggText(raw); } catch(err) { data = JSON.parse(raw); }
+      if(!data.perfiles_usuarios) {
+        // Compat: formato antiguo ad-hoc de Warrior Log → envolver como usuario propio
+        ceggRaw = null;
       } else {
-        // Add priority if missing
-        ceggData = {...data, missions: (data.missions||[]).map(m=>({...m, priority: m.priority || guessPrio(m)})) };
+        ceggRaw = data;
       }
       ceggSelected = null;
       ceggFilter = 'all';
       renderCEGGView();
-      toast('CEGG CARGADO · '+ceggData.summary?.total+' misiones');
+      toast('CEGG CARGADO · '+Object.keys(ceggRaw?.perfiles_usuarios||{}).length+' usuarios');
     } catch(err) {
       toast('Error al leer el archivo', true);
     }
@@ -1722,28 +2180,27 @@ function readCeggFile(file) {
   reader.readAsText(file);
 }
 function clearCegg() {
-  ceggData = null; ceggSelected = null; ceggFilter = 'all';
+  ceggRaw = null; ceggSelected = null; ceggFilter = 'all';
   renderCEGGView();
 }
 
 function selectCeggMission(mJson) {
   const m = JSON.parse(mJson);
-  ceggSelected = m.id || m.name;
+  ceggSelected = m.id;
   renderCEGGView();
 }
 
 function attackCeggMission() {
-  // Find selected mission
-  const m = (ceggData?.missions||[]).find(x => (x.id||x.name) === ceggSelected);
+  let m = null;
+  Object.values(ceggRaw?.perfiles_usuarios||{}).forEach(prof => {
+    (prof.datos_cualitativos?.tareas_detalladas||[]).forEach(t => { if(t.id===ceggSelected) m = t; });
+  });
   if(!m) return;
-  // Pre-fill desafio input and switch to log
   document.getElementById('desafio-input').value = m.name || '';
-  if(m.zone) document.getElementById('zona-sel').value = m.zone;
-  // Set PV base from cegg mission if available
-  if(m.pv?.base) document.getElementById('pv-base').value = m.pv.base;
+  if(m.category) document.getElementById('zona-sel').value = m.category;
+  if(typeof m.xp === 'number') document.getElementById('pv-base').value = m.xp;
   syncDesafio(); updateNet();
   switchView('log');
-  // Scroll to top
   document.getElementById('desafio-input').focus();
   toast('⚔ MISIÓN CARGADA · configura el timer y despliega');
 }
@@ -1752,9 +2209,10 @@ function attackCeggMission() {
 // INIT
 // ══════════════════════════════════════════
 initTheme();
-cfgChanged(); // Initialize timer display
+cfgChanged();
 dbLoad();
 updateNet();
+driveLoadCfg().then(() => { if(driveClientId) driveSetStatus('','Listo para conectar'); });
 </script>
 </body>
 </html>
