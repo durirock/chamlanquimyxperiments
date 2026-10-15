@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Endofonía</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a listening instrument. Top-down field map on the left, the single "implosión" control on the right; color travels from exterior violet to interior amber as the sound collapses. Deliberately single dark theme: this is listened to with eyes half closed. */
+:root{
+  --bg:#0c0b13;
+  --panel:#15131f;
+  --line:#2a2638;
+  --fg:#ebe6f4;
+  --muted:#958ead;
+  --outer:#8b7bff;
+  --inner:#f0b44c;
+  --warn:#e8836a;
+  --display:"Syne","Avenir Next","Segoe UI",sans-serif;
+  --body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:28px 48px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+header{display:flex;flex-direction:column;gap:8px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(40px,7vw,76px);line-height:.95;margin:0;letter-spacing:-.02em;text-wrap:balance;
+  background:linear-gradient(90deg,var(--outer),var(--inner));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{max-width:62ch;color:var(--muted);margin:0}
+.lede strong{color:var(--fg);font-weight:700}
+.main{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:820px){.main{grid-template-columns:1fr}}
+.stage{position:relative;aspect-ratio:1/1;max-width:100%;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--bg)}
+canvas{display:block;width:100%;height:100%}
+.stage .tag{position:absolute;left:12px;top:10px;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.08em}
+.stage .front{position:absolute;left:50%;top:10px;transform:translateX(-50%);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.panel{display:flex;flex-direction:column;gap:20px;min-width:0}
+.phase{display:flex;flex-direction:column;gap:2px}
+.phase .name{font-family:var(--display);font-weight:700;font-size:34px;line-height:1.05}
+.phase .desc{color:var(--muted);min-height:3.1em}
+.big{display:flex;flex-direction:column;gap:8px}
+.big label{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.big output{font-size:22px;color:var(--fg);letter-spacing:0;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--inner);height:28px;cursor:pointer}
+#p{height:36px}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+button{font-family:var(--body);font-weight:700;font-size:14px;border-radius:999px;padding:10px 18px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--inner);outline-offset:3px}
+button.primary{background:linear-gradient(90deg,var(--outer),var(--inner));color:#120f1a;border:0}
+button[aria-pressed="true"]{border-color:var(--inner);color:var(--inner)}
+.meters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 18px;border-top:1px solid var(--line);padding-top:16px}
+.m{display:flex;flex-direction:column;gap:4px;min-width:0}
+.m span{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.04em}
+.bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--outer),var(--inner))}
+.fine{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 18px}
+.fine label{display:flex;flex-direction:column;gap:2px;font-size:13px;color:var(--muted)}
+.fine b{color:var(--fg);font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--muted);border-left:2px solid var(--warn);padding-left:12px;margin:0}
+.moves{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:720px){.moves{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.mv{border-top:2px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:4px;transition:border-color .4s,opacity .4s;opacity:.55;min-width:0}
+.mv.on{opacity:1;border-color:var(--inner)}
+.mv .r{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.mv h3{font-family:var(--display);font-size:18px;margin:0}
+.mv p{margin:0;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Prototipo · Web Audio · usar audífonos</div>
+    <h1>Endofonía</h1>
+    <p class="lede">El estéreo funde dos canales en un espacio que se abre <strong>hacia afuera</strong>. Esto hace lo inverso: toma un campo que te rodea y lo pliega hasta un punto <strong>dentro del cráneo</strong>, donde al final solo suena lo que tu propio oído construye.</p>
+  </header>
+
+  <section class="main">
+    <div class="stage">
+      <canvas id="cv" aria-label="Mapa cenital de las fuentes sonoras alrededor de la cabeza"></canvas>
+      <div class="tag">VISTA CENITAL · escala log en metros</div>
+      <div class="front">▲ frente</div>
+    </div>
+
+    <div class="panel">
+      <div class="phase">
+        <div class="name" id="phName">Mundo</div>
+        <div class="desc" id="phDesc"></div>
+      </div>
+
+      <div class="row">
+        <button class="primary" id="play">Iniciar sonido</button>
+        <button id="auto" aria-pressed="false">Viaje automático · 2 min</button>
+        <button id="shep" aria-pressed="false">Caída infinita</button>
+      </div>
+
+      <div class="big">
+        <label for="p">Implosión <output id="pOut">0,00</output></label>
+        <input id="p" type="range" min="0" max="1" step="0.001" value="0">
+      </div>
+
+      <div class="meters" aria-live="off">
+        <div class="m"><span id="mDist">Distancia · 8,0 m</span><div class="bar"><i id="bDist"></i></div></div>
+        <div class="m"><span id="mRev">Reverberación · 100 %</span><div class="bar"><i id="bRev"></i></div></div>
+        <div class="m"><span id="mSpat">Claves ITD/ILD/HRTF · 100 %</span><div class="bar"><i id="bSpat"></i></div></div>
+        <div class="m"><span id="mConv">Convergencia tonal · 0 %</span><div class="bar"><i id="bConv"></i></div></div>
+        <div class="m"><span id="mAnti">Antifase · 0 %</span><div class="bar"><i id="bAnti"></i></div></div>
+        <div class="m"><span id="mDich">Pulso binaural · 0 %</span><div class="bar"><i id="bDich"></i></div></div>
+      </div>
+
+      <div class="fine">
+        <label for="beat">Pulso binaural <b id="beatOut">6,0 Hz</b><input id="beat" type="range" min="1" max="14" step="0.5" value="6"></label>
+        <label for="vol">Volumen <b id="volOut">40 %</b><input id="vol" type="range" min="0" max="1" step="0.01" value="0.4"></label>
+        <label for="tart">Tonos cocleares <b id="tartOut">apagado</b><input id="tart" type="range" min="0" max="1" step="0.01" value="0"></label>
+      </div>
+
+      <p class="note">Empieza con volumen bajo. La antifase y los tonos cocleares se perciben solo con audífonos, nunca con parlantes. Los tonos cocleares (Tartini) necesitan algo más de nivel: súbelos con cuidado.</p>
+    </div>
+  </section>
+
+  <section class="moves" aria-label="Los cuatro movimientos">
+    <div class="mv" id="mv0"><span class="r">0,00 – 0,25</span><h3>Mundo</h3><p>Seis fuentes con HRTF a varios metros, en una sala reverberante. Afuera existe.</p></div>
+    <div class="mv" id="mv1"><span class="r">0,25 – 0,55</span><h3>Convergencia</h3><p>Las fuentes se acercan, la sala se seca y los armónicos se deslizan hacia un unísono de 220 Hz.</p></div>
+    <div class="mv" id="mv2"><span class="r">0,55 – 0,80</span><h3>Umbral</h3><p>Se borran las diferencias entre oídos. Un oído se invierte de fase: el sonido se vuelve difuso, dentro.</p></div>
+    <div class="mv" id="mv3"><span class="r">0,80 – 1,00</span><h3>Singularidad</h3><p>220 Hz a la izquierda, 220 + pulso a la derecha. El batido no existe en el aire; lo arma tu tronco encefálico.</p></div>
+  </section>
+</div>
+
+<script>
+(()=>{
+const N=6, F0=220, HARM=[2,3,4,5,6,7].map(h=>110*h);
+const ELEV=[0.25,-0.2,0.1,0.45,-0.35,0.0];
+const RFAR=8, RNEAR=0.35;
+const DESC=[
+ "Estás en un espacio. Las fuentes tienen dirección, distancia y una sala alrededor.",
+ "Todo se acerca. La sala se apaga, el acorde se estrecha hacia una sola nota.",
+ "Ya no hay izquierda ni derecha. Con un oído en antifase, el sonido llena el interior sin forma.",
+ "Solo quedan dos tonos puros, uno por oído. Lo que oyes latir lo genera tu sistema nervioso."
+];
+const $=id=>document.getElementById(id);
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const sm=(a,b,x)=>{const t=clamp((x-a)/(b-a));return t*t*(3-2*t)};
+const lerp=(a,b,t)=>a+(b-a)*t;
+const fmt=(x,d=2)=>x.toFixed(d).replace('.',',');
+
+let p=0, shepard=false, auto=null, beat=6, vol=0.4, tart=0;
+let ctx=null, A=null, running=false;
+
+function params(p){
+  return {
+    approach: sm(0.04,0.72,p),
+    wet: 1-sm(0.0,0.6,p),
+    spatial: 1-sm(0.5,0.84,p),
+    conv: sm(0.2,0.74,p),
+    q: lerp(0.7,14,sm(0.2,0.75,p)),
+    diotic: sm(0.45,0.8,p)*(1-0.9*sm(0.86,1,p)),
+    anti: sm(0.55,0.72,p)*(1-sm(0.82,0.95,p)),
+    dich: sm(0.78,0.98,p),
+  };
+}
+
+function impulse(c,secs=3.4){
+  const len=Math.floor(c.sampleRate*secs), b=c.createBuffer(2,len,c.sampleRate);
+  for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);for(let i=0;i<len;i++){d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.2)}}
+  return b;
+}
+function noiseBuf(c){
+  const len=c.sampleRate*2, b=c.createBuffer(1,len,c.sampleRate), d=b.getChannelData(0);
+  for(let i=0;i<len;i++)d[i]=Math.random()*2-1;return b;
+}
+
+function build(){
+  ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const c=ctx;
+  const master=c.createGain(); master.gain.value=0;
+  const comp=c.createDynamicsCompressor(); comp.threshold.value=-14; comp.ratio.value=4;
+  master.connect(comp).connect(c.destination);
+
+  const panBus=c.createGain();
+  const dry=c.createGain(); panBus.connect(dry).connect(master);
+  const conv=c.createConvolver(); conv.buffer=impulse(c);
+  const wet=c.createGain(); panBus.connect(conv).connect(wet).connect(master);
+
+  const monoBus=c.createGain(); monoBus.channelCount=1; monoBus.channelCountMode='explicit';
+  const merger=c.createChannelMerger(2);
+  const gL=c.createGain(), gR=c.createGain();
+  const dioticG=c.createGain(); dioticG.gain.value=0;
+  monoBus.connect(dioticG); dioticG.connect(gL); dioticG.connect(gR);
+  gL.connect(merger,0,0); gR.connect(merger,0,1);
+  merger.connect(master);
+
+  const nb=noiseBuf(c);
+  const src=[];
+  for(let i=0;i<N;i++){
+    const osc=c.createOscillator(); osc.type='triangle'; osc.frequency.value=HARM[i];
+    const oG=c.createGain(); oG.gain.value=0.11/Math.sqrt(i+1)*1.6;
+    const n=c.createBufferSource(); n.buffer=nb; n.loop=true; n.loopStart=Math.random();
+    const bp=c.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=HARM[i]; bp.Q.value=0.7;
+    const nG=c.createGain(); nG.gain.value=0.05;
+    const env=c.createGain(); env.gain.value=1;
+    const trem=c.createGain(); trem.gain.value=0.7;
+    const lfo=c.createOscillator(); lfo.frequency.value=0.07+i*0.037;
+    const lfoG=c.createGain(); lfoG.gain.value=0.3; lfo.connect(lfoG).connect(trem.gain);
+    osc.connect(oG).connect(trem); n.connect(bp).connect(nG).connect(trem);
+    trem.connect(env);
+    const pan=c.createPanner();
+    Object.assign(pan,{panningModel:'HRTF',distanceModel:'inverse',refDistance:1,rolloffFactor:0.7,maxDistance:60});
+    env.connect(pan).connect(panBus);
+    env.connect(monoBus);
+    osc.start(); n.start(); lfo.start();
+    src.push({osc,bp,pan,env,theta:i/N*Math.PI*2+0.3,phase:i/N});
+  }
+
+  const dL=c.createOscillator(), dR=c.createOscillator();
+  dL.type=dR.type='sine'; dL.frequency.value=F0; dR.frequency.value=F0+beat;
+  const dichG=c.createGain(); dichG.gain.value=0;
+  const dLg=c.createGain(), dRg=c.createGain(); dLg.gain.value=dRg.gain.value=0.22;
+  dL.connect(dLg).connect(dichG); dR.connect(dRg);
+  const dichR=c.createGain(); dichR.gain.value=0; dRg.connect(dichR);
+  const m2=c.createChannelMerger(2);
+  dichG.connect(m2,0,0); dichR.connect(m2,0,1); m2.connect(master);
+  dL.start(); dR.start();
+
+  const t1=c.createOscillator(), t2=c.createOscillator();
+  t1.frequency.value=2000; t2.frequency.value=2400;
+  const tG=c.createGain(); tG.gain.value=0;
+  t1.connect(tG); t2.connect(tG); tG.connect(master);
+  t1.start(); t2.start();
+
+  A={master,dry,wet,dioticG,gL,gR,dichG,dichR,dR,src,tG};
+}
+
+function updateAudio(now,P,positions){
+  if(!A) return;
+  const t=ctx.currentTime, k=0.06;
+  const set=(prm,v)=>prm.setTargetAtTime(v,t,k);
+  set(A.master.gain, running?vol:0);
+  set(A.dry.gain, P.spatial);
+  set(A.wet.gain, P.wet*0.75*P.spatial);
+  set(A.dioticG.gain, P.diotic*0.9);
+  set(A.gL.gain, 1);
+  set(A.gR.gain, 1-2*P.anti);
+  set(A.dichG.gain, P.dich);
+  set(A.dichR.gain, P.dich);
+  set(A.dR.frequency, F0+beat);
+  set(A.tG.gain, tart*0.05*sm(0.7,1,p));
+  A.src.forEach((s,i)=>{
+    const pos=positions[i];
+    set(s.osc.frequency, lerp(HARM[i],F0,P.conv));
+    set(s.bp.frequency, lerp(HARM[i],F0,P.conv));
+    set(s.bp.Q, P.q);
+    set(s.env.gain, pos.env*(1-0.85*sm(0.88,1,p)));
+    set(s.pan.positionX, pos.x); set(s.pan.positionY, pos.y); set(s.pan.positionZ, pos.z);
+  });
+}
+
+function positionsAt(time,P){
+  const out=[];
+  for(let i=0;i<N;i++){
+    const drift=time*0.035*(i%2?1:-1)*(1-P.approach*0.6);
+    const th=i/N*Math.PI*2+0.3+drift;
+    let r, env=1;
+    if(shepard){
+      const ph=((time/22)+i/N)%1;
+      r=RFAR*Math.pow(RNEAR/RFAR,ph);
+      env=Math.pow(Math.sin(Math.PI*ph),1.4);
+    }else{
+      r=RFAR*Math.pow(RNEAR/RFAR,P.approach);
+    }
+    const e=ELEV[i]*(1-P.approach*0.7);
+    out.push({r,th,env,x:r*Math.sin(th)*Math.cos(e),y:r*Math.sin(e),z:-r*Math.cos(th)*Math.cos(e)});
+  }
+  return out;
+}
+
+/* ---------- visual ---------- */
+const cv=$('cv'), g=cv.getContext('2d');
+let W=0,H=0,dpr=1;
+function resize(){
+  const r=cv.getBoundingClientRect(); dpr=Math.min(2,window.devicePixelRatio||1);
+  W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;g.setTransform(dpr,0,0,dpr,0,0);
+}
+new ResizeObserver(resize).observe(cv); resize();
+
+const dust=Array.from({length:220},()=>({a:Math.random()*Math.PI*2,r:Math.random(),s:0.2+Math.random()*0.8}));
+const mix=(c1,c2,t)=>{const a=c1.match(/\w\w/g).map(h=>parseInt(h,16)),b=c2.match(/\w\w/g).map(h=>parseInt(h,16));return a.map((v,i)=>Math.round(lerp(v,b[i],t)))};
+const rgba=(arr,a)=>`rgba(${arr[0]},${arr[1]},${arr[2]},${a})`;
+const OUT='8b7bff', IN='f0b44c';
+const mapR=(r,R)=>R*Math.log(1+r/RNEAR*0.6)/Math.log(1+RFAR/RNEAR*0.6);
+
+function draw(time,P,pos){
+  const cx=W/2, cy=H/2, R=Math.min(W,H)*0.44;
+  const col=mix(OUT,IN,sm(0.15,0.9,p));
+  g.clearRect(0,0,W,H);
+  const bg=g.createRadialGradient(cx,cy,0,cx,cy,R*1.2);
+  bg.addColorStop(0,rgba(col,0.10+0.18*p)); bg.addColorStop(1,'rgba(12,11,19,0)');
+  g.fillStyle=bg; g.fillRect(0,0,W,H);
+
+  // distance rings
+  g.font='10px "JetBrains Mono", monospace'; g.textAlign='left';
+  [[8,'8 m'],[4,'4 m'],[2,'2 m'],[1,'1 m'],[0.5,'0,5 m']].forEach(([m,l])=>{
+    const rr=mapR(m,R); g.strokeStyle='rgba(149,142,173,0.16)'; g.lineWidth=1;
+    g.beginPath(); g.arc(cx,cy,rr,0,Math.PI*2); g.stroke();
+    g.fillStyle='rgba(149,142,173,0.55)'; g.fillText(l,cx+rr*0.707+4,cy-rr*0.707-2);
+  });
+
+  // reverb dust
+  dust.forEach(d=>{
+    d.a+=0.0006*d.s;
+    const rr=R*(0.25+0.85*d.r)*lerp(1,0.4,P.approach);
+    g.fillStyle=rgba(mix(OUT,IN,0.1),0.5*P.wet*d.s);
+    g.fillRect(cx+Math.cos(d.a)*rr, cy+Math.sin(d.a)*rr, 1.6,1.6);
+  });
+
+  // sources
+  pos.forEach((s,i)=>{
+    const rr=mapR(s.r,R)*lerp(1,0.15,sm(0.55,0.85,p));
+    const x=cx+Math.sin(s.th)*rr, y=cy-Math.cos(s.th)*rr;
+    const a=s.env*P.spatial*(1-sm(0.88,1,p));
+    if(a<0.01) return;
+    g.strokeStyle=rgba(col,0.18*a); g.beginPath(); g.moveTo(x,y); g.lineTo(cx,cy); g.stroke();
+    const gl=g.createRadialGradient(x,y,0,x,y,14);
+    gl.addColorStop(0,rgba(col,0.9*a)); gl.addColorStop(1,rgba(col,0));
+    g.fillStyle=gl; g.beginPath(); g.arc(x,y,14,0,Math.PI*2); g.fill();
+  });
+
+  // head
+  const hr=R*0.085;
+  g.strokeStyle='rgba(235,230,244,0.55)'; g.lineWidth=1.2;
+  g.beginPath(); g.arc(cx,cy,hr,0,Math.PI*2); g.stroke();
+  g.beginPath(); g.moveTo(cx-hr*0.28,cy-hr*0.96); g.lineTo(cx,cy-hr*1.32); g.lineTo(cx+hr*0.28,cy-hr*0.96); g.stroke();
+  g.beginPath(); g.ellipse(cx-hr,cy,hr*0.14,hr*0.3,0,0,Math.PI*2); g.ellipse(cx+hr,cy,hr*0.14,hr*0.3,0,0,Math.PI*2); g.stroke();
+
+  // diotic center / antiphase halo
+  const diot=P.diotic;
+  if(diot>0.01){
+    const spread=lerp(hr*0.25,hr*1.6,P.anti);
+    const hg=g.createRadialGradient(cx,cy,0,cx,cy,spread);
+    hg.addColorStop(0,rgba(mix(OUT,IN,0.7),0.75*diot*(1-P.anti*0.5)));
+    hg.addColorStop(1,rgba(mix(OUT,IN,0.7),0));
+    g.fillStyle=hg; g.beginPath(); g.arc(cx,cy,spread,0,Math.PI*2); g.fill();
+  }
+  // dichotic singularity: two hemispheres, beat pulse
+  if(P.dich>0.01){
+    const ph=0.5+0.5*Math.cos(2*Math.PI*beat*time);
+    const rr=hr*0.55*(0.6+0.4*ph);
+    g.fillStyle=rgba(mix(OUT,IN,1),0.55*P.dich);
+    g.beginPath(); g.arc(cx,cy,rr,Math.PI/2,Math.PI*1.5); g.fill();
+    g.fillStyle=rgba(mix(OUT,IN,0.85),0.55*P.dich*(0.4+0.6*ph));
+    g.beginPath(); g.arc(cx,cy,rr,-Math.PI/2,Math.PI/2); g.fill();
+    const core=g.createRadialGradient(cx,cy,0,cx,cy,hr*0.35);
+    core.addColorStop(0,`rgba(255,240,210,${0.9*P.dich*ph})`); core.addColorStop(1,'rgba(255,240,210,0)');
+    g.fillStyle=core; g.beginPath(); g.arc(cx,cy,hr*0.35,0,Math.PI*2); g.fill();
+  }
+}
+
+/* ---------- UI ---------- */
+function phaseIdx(p){return p<0.25?0:p<0.55?1:p<0.8?2:3}
+let lastUI=0;
+function updateUI(P,pos){
+  const idx=phaseIdx(p);
+  $('phName').textContent=['Mundo','Convergencia','Umbral','Singularidad'][idx];
+  $('phDesc').textContent=DESC[idx];
+  for(let i=0;i<4;i++) $('mv'+i).classList.toggle('on',i===idx);
+  $('pOut').textContent=fmt(p);
+  const meanR=pos.reduce((a,s)=>a+s.r,0)/pos.length;
+  const bars=[['Dist',`Distancia · ${fmt(meanR,1)} m`,1-Math.log(meanR/RNEAR)/Math.log(RFAR/RNEAR)],
+    ['Rev',`Reverberación · ${Math.round(P.wet*100)} %`,P.wet],
+    ['Spat',`Claves ITD/ILD/HRTF · ${Math.round(P.spatial*100)} %`,P.spatial],
+    ['Conv',`Convergencia tonal · ${Math.round(P.conv*100)} %`,P.conv],
+    ['Anti',`Antifase · ${Math.round(P.anti*100)} %`,P.anti],
+    ['Dich',`Pulso binaural · ${Math.round(P.dich*100)} %`,P.dich]];
+  bars.forEach(([k,txt,v])=>{$('m'+k).textContent=txt;$('b'+k).style.width=(clamp(v)*100)+'%'});
+}
+
+let prev=performance.now();
+function frame(now){
+  const dt=(now-prev)/1000; prev=now;
+  if(auto){ p=clamp(p+dt/120); $('p').value=p; if(p>=1){stopAuto()} }
+  const time=ctx?ctx.currentTime:now/1000;
+  const P=params(p);
+  const pos=positionsAt(time,P);
+  updateAudio(now,P,pos);
+  draw(time,P,pos);
+  if(now-lastUI>80){updateUI(P,pos);lastUI=now}
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+function stopAuto(){auto=null;$('auto').setAttribute('aria-pressed','false');$('auto').textContent='Viaje automático · 2 min'}
+
+$('play').addEventListener('click',async()=>{
+  if(!ctx) build();
+  if(ctx.state==='suspended') await ctx.resume();
+  running=!running;
+  $('play').textContent=running?'Detener sonido':'Iniciar sonido';
+});
+$('auto').addEventListener('click',()=>{
+  if(auto){stopAuto();return}
+  if(p>=0.999){p=0;$('p').value=0}
+  auto=true;$('auto').setAttribute('aria-pressed','true');$('auto').textContent='Pausar viaje';
+  if(!running) $('play').click();
+});
+$('shep').addEventListener('click',()=>{
+  shepard=!shepard;$('shep').setAttribute('aria-pressed',String(shepard));
+});
+$('p').addEventListener('input',e=>{p=+e.target.value;if(auto)stopAuto()});
+$('beat').addEventListener('input',e=>{beat=+e.target.value;$('beatOut').textContent=fmt(beat,1)+' Hz'});
+$('vol').addEventListener('input',e=>{vol=+e.target.value;$('volOut').textContent=Math.round(vol*100)+' %'});
+$('tart').addEventListener('input',e=>{tart=+e.target.value;$('tartOut').textContent=tart<0.01?'apagado':Math.round(tart*100)+' %'});
+})();
+</script>
+</body>
+</html>
