@@ -1,0 +1,17 @@
+[Unit]
+Description=Arduinator · placa madre del invernadero
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=arduinator
+Group=dialout
+WorkingDirectory=/opt/arduinator/pi
+ExecStart=/usr/bin/python3 -m arduinator --config /etc/arduinator/arduinator.toml
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

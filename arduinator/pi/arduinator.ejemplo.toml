@@ -1,0 +1,37 @@
+# Arduinator · configuración de la placa madre
+# Copia este archivo como arduinator.toml y ajústalo a tu invernadero.
+
+[general]
+modo = "real"                 # "real" con los Arduinos conectados · "simulado" para probar sin hardware
+nombre = "LLQ-01"
+descripcion = "invernadero túnel de 30 m² con tomates"
+latitud = -41.3               # Llanquihue; define el sol, el día y la noche
+
+[red]
+host = "0.0.0.0"              # escucha en toda la red local
+puerto = 8080                 # el panel queda en http://arduinator.local:8080
+token = ""                    # si lo defines, quien abra el panel con ?token=... puede forzar efectores a mano
+
+[arduinos]
+autodetectar = true           # busca Arduinos en /dev/ttyACM* y /dev/ttyUSB*
+puertos = []                  # o fíjalos: ["/dev/ttyACM0", "/dev/ttyUSB0"]
+baudios = 115200
+ttl_ordenes_s = 180           # si un Arduino no recibe órdenes en este tiempo, vuelve a su autonomía local
+
+[invernadero]
+estanque_litros = 5000
+estanque_pct = 70             # nivel inicial si no hay sensor de nivel
+fertilizante_pct = 60
+caudal_riego_lh = 780         # para contar el agua aplicada
+biomasa_inicial = 0.4         # 0 = plántula, 1 = planta adulta
+
+[seguridad]
+pulso_max_min = 25            # un riego nunca dura más que esto
+pausa_min_min = 30            # tiempo mínimo entre riegos
+
+[memoria]
+ruta = "/var/lib/arduinator/arduinator.db"
+
+[sonido]
+activo = false                # true: el Canto suena por los parlantes de la Raspberry Pi
+frecuencia = 22050            # 22050 alivia la CPU de una Pi 4
