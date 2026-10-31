@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1210">
+<title>Killer Pendiente</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+
+<!-- ── entrada ─────────────────────────────────────────────── -->
+<section id="v-entrada" class="vista activa">
+  <div class="entrada">
+    <h1>Killer<br>Pendiente</h1>
+    <p class="sub">Entra con la cuenta de tu aspecto</p>
+    <form id="f-entrada">
+      <label>Correo<input id="e-correo" type="email" autocomplete="username" required></label>
+      <label>Contraseña<input id="e-clave" type="password" autocomplete="current-password" required></label>
+      <button type="submit" class="primario">Entrar</button>
+      <p id="e-error" class="error"></p>
+    </form>
+  </div>
+</section>
+
+<!-- ── app ─────────────────────────────────────────────────── -->
+<section id="v-app" class="vista">
+  <header class="cabecera">
+    <div class="quien"><span id="c-punto" class="punto"></span><span id="c-nombre"></span></div>
+    <div class="nivel">
+      <div class="nivel-fila"><span id="c-nivel">Nivel 1</span><span id="c-pv">0 Pv</span></div>
+      <div class="barra"><div id="c-barra"></div></div>
+    </div>
+    <div class="metricas"><span id="c-mu">0 Mu</span><span id="c-dhana">0 $D</span><span id="c-red" class="red">en línea</span></div>
+  </header>
+
+  <main>
+    <!-- tareas -->
+    <div id="p-tareas" class="panel activa">
+      <button id="b-nueva" class="primario ancho">+ Nueva tarea</button>
+      <ul id="l-tareas" class="lista"></ul>
+      <button id="b-ver-completadas" class="enlace"></button>
+      <ul id="l-completadas" class="lista completadas oculto"></ul>
+    </div>
+
+    <!-- chat -->
+    <div id="p-chat" class="panel">
+      <div id="chat-salas" class="salas"></div>
+      <div id="chat-mensajes" class="mensajes"></div>
+      <form id="f-chat" class="escribir">
+        <textarea id="chat-texto" rows="1" placeholder="Escribe…"></textarea>
+        <button class="primario">Enviar</button>
+      </form>
+    </div>
+
+    <!-- correo -->
+    <div id="p-correo" class="panel">
+      <div class="pestanas">
+        <button data-bandeja="entrada" class="activa">Recibidos</button>
+        <button data-bandeja="enviados">Enviados</button>
+        <button id="b-redactar" class="primario">Redactar</button>
+      </div>
+      <ul id="l-correos" class="lista"></ul>
+    </div>
+
+    <!-- zazen -->
+    <div id="p-zazen" class="panel">
+      <div class="zazen">
+        <div id="z-reloj" class="z-reloj">05:00</div>
+        <label class="z-min">Duración (min)<input id="z-minutos" type="number" min="1" value="5" inputmode="numeric"></label>
+        <div class="fila"><button id="z-iniciar" class="primario">Iniciar meditación</button><button id="z-detener">Detener</button></div>
+        <p id="z-resumen" class="sub"></p>
+      </div>
+    </div>
+
+    <!-- perfil -->
+    <div id="p-perfil" class="panel">
+      <div class="perfil">
+        <div id="pf-nombre" class="pf-nombre"></div>
+        <dl id="pf-datos"></dl>
+        <p class="sub">El huevo (.cegg) de tu aspecto se guarda solo en la nube con cada cambio.</p>
+        <button id="b-cegg">Descargar mi .cegg</button>
+        <button id="b-salir" class="peligro">Cerrar sesión</button>
+      </div>
+    </div>
+  </main>
+
+  <nav class="navegacion">
+    <button data-panel="tareas" class="activa">Tareas</button>
+    <button data-panel="chat">Chat<i id="n-chat" class="aviso oculto"></i></button>
+    <button data-panel="correo">Correo<i id="n-correo" class="aviso oculto"></i></button>
+    <button data-panel="zazen">Zazen</button>
+    <button data-panel="perfil">Nivel</button>
+  </nav>
+</section>
+
+<!-- ── timer (popup) ───────────────────────────────────────── -->
+<div id="timer" class="timer oculto">
+  <div class="t-barra"><span>Cuenta regresiva</span><button id="t-cerrar" aria-label="Cerrar">×</button></div>
+  <div id="t-nombre" class="t-nombre"></div>
+  <div id="t-reloj" class="t-reloj">00:00</div>
+  <div class="fila">
+    <button id="t-distraccion">distracción</button>
+    <button id="t-listo" class="primario">listo</button>
+  </div>
+</div>
+
+<!-- ── hoja / diálogo genérico ─────────────────────────────── -->
+<div id="velo" class="velo oculto"></div>
+<div id="hoja" class="hoja oculto"></div>
+<div id="aviso" class="aviso-flotante oculto"></div>
+
+<script src="vendor/firebase-app-compat.js"></script>
+<script src="vendor/firebase-auth-compat.js"></script>
+<script src="vendor/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

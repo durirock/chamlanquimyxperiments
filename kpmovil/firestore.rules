@@ -1,0 +1,56 @@
+rules_version = '2';
+// Reglas de Firestore para Killer Pendiente (PC + app web del celular).
+// Cada cuenta lleva el aspecto en su "claim" (lo pone: python kp_nube.py crear-cuenta).
+// El PC sincroniza con la cuenta de servicio (firebase_clave.json), que no pasa por estas reglas.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function dentro() { return request.auth != null && request.auth.token.aspecto is string; }
+    function yo() { return request.auth.token.aspecto; }
+    function soloCambia(campos) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos); }
+
+    match /aspectos/{nombre} {
+      allow read: if dentro();
+      allow create, update: if dentro() && yo() == nombre;
+      // objetivo semanal: cualquiera puede SUMAR Pv a los demás (nunca restar ni tocar otra cosa)
+      allow update: if dentro() && soloCambia(['pv', '_mod']) && request.resource.data.pv >= resource.data.pv;
+
+      match /tareas/{id} {
+        allow read, write: if dentro() && yo() == nombre;
+        // objetivo semanal: marcarla completada también en los demás aspectos
+        allow update: if dentro() && soloCambia(['completed', 'color', 'date_completed', '_mod']);
+      }
+    }
+
+    match /chat_general/{id} {
+      allow read: if dentro();
+      allow create: if dentro() && request.resource.data.sender == yo();
+    }
+
+    match /chat_privado/{id} {
+      allow read: if dentro() && (resource.data.sender == yo() || resource.data.recipient == yo());
+      allow create: if dentro() && request.resource.data.sender == yo();
+    }
+
+    match /correos/{id} {
+      allow read: if dentro() && (resource.data.sender == yo() || resource.data.recipient == yo());
+      allow create: if dentro() && request.resource.data.sender == yo();
+      allow update: if dentro() && resource.data.recipient == yo() && soloCambia(['read', '_mod']);
+    }
+
+    match /dhana/{id} {
+      allow read: if dentro() && resource.data.aspecto == yo();
+      allow create: if dentro() && request.resource.data.aspecto == yo();
+    }
+
+    match /huevos/{nombre} {
+      allow read: if dentro();
+      allow write: if dentro() && yo() == nombre;
+    }
+
+    match /pulsos/{id} {
+      allow read: if dentro();
+      allow create: if dentro() && request.resource.data.user == yo();
+    }
+  }
+}
