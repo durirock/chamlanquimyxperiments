@@ -1208,6 +1208,70 @@
     $('#bit-texto').value = ''; $('#bit-titulo').value = ''; $('#bit-claridad').value = 5; $('#bit-clar-n').textContent = '5';
     tic(); avisar(doc.type === 'dream' ? 'Sueño registrado en la Gran Bitácora' : 'Entrada guardada');
   };
+
+  // ── traer bitácoras desde KP del PC (.cegg o los json de KP). Ids fijos por entrada: importar dos veces no duplica ──
+  function hashTxt(str) {                 // cyrb53
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0; i < str.length; i++) { const ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0');
+  }
+  function leerJSONdeKP(txt) {
+    const a = txt.indexOf('<<<DATA-START>>>'), b = txt.indexOf('<<<DATA-END>>>');
+    return JSON.parse(a >= 0 ? txt.slice(a + 16, b > a ? b : undefined) : txt);
+  }
+  function entradasDeArchivo(nombre, datos) {
+    const out = { personal: [], cosmica: [], gran: [] };
+    const n = nombre.toLowerCase();
+    if (Array.isArray(datos)) {
+      if (n.includes('cosmic')) out.cosmica = datos;
+      else if (n.includes('gran') || datos.some((e) => e && e.type)) out.gran = datos;
+      else out.personal = datos;
+    } else if (datos && typeof datos === 'object') {
+      const pg = datos.perfil_global || {};
+      out.gran = pg.gran_bitacora_universal || datos.gran_bitacora_universal || [];
+      const pu = datos.perfiles_usuarios || {};
+      const mio = pu[yo] || {};
+      out.personal = ((mio.datos_cualitativos || {}).bitacora_personal || []).map((e) => Object.assign({ username: yo }, e));
+      if (Array.isArray(datos.bitacora_cosmica)) out.cosmica = datos.bitacora_cosmica;
+    }
+    out.personal = out.personal.filter((e) => e && e.entry && (e.username || yo) === yo);   // la personal es solo tuya
+    out.cosmica = out.cosmica.filter((e) => e && e.entry);
+    out.gran = out.gran.filter((e) => e && e.entry);
+    return out;
+  }
+  $('#bit-archivo').onchange = async (ev) => {
+    const archivos = [...ev.target.files]; ev.target.value = '';
+    if (!archivos.length) return;
+    const todo = { personal: [], cosmica: [], gran: [] };
+    for (const f of archivos) {
+      try {
+        const e = entradasDeArchivo(f.name, leerJSONdeKP(await f.text()));
+        Object.keys(todo).forEach((k) => todo[k].push(...e[k]));
+      } catch (e) { avisar(`No pude leer ${f.name}: ${e.message}`, 5000); }
+    }
+    const docs = [];
+    todo.personal.forEach((e) => docs.push(['bitacora', 'bitP', { username: yo, entry: String(e.entry), date: e.date || '' }]));
+    todo.cosmica.forEach((e) => docs.push(['bitacora_cosmica', 'bitC', { username: e.username || yo, entry: String(e.entry), date: e.date || '' }]));
+    todo.gran.forEach((e) => docs.push(['gran_bitacora', 'bitG', { username: e.username || 'Yo', entry: String(e.entry), date: e.date || '', type: e.type || 'general' }]));
+    let nuevas = 0, ya = 0, fallas = 0;
+    avisar(`Trayendo ${docs.length} entradas…`, 2500);
+    for (let i = 0; i < docs.length; i += 400) {
+      const lote = db.batch(); let enLote = 0;
+      docs.slice(i, i + 400).forEach(([col, clave, d]) => {
+        const id = 'kp-' + hashTxt(col + '|' + d.username + '|' + d.date + '|' + d.entry);
+        if (st[clave][id]) { ya++; return; }
+        lote.set(db.collection(col).doc(id), Object.assign(d, { importado: true, origen: 'kp-pc', _mod: ahoraMs() }));
+        enLote++;
+      });
+      if (!enLote) continue;
+      try { await lote.commit(); nuevas += enLote; } catch (e) { fallas += enLote; console.warn('[KP] importar', e.message); }
+    }
+    if (fallas && !nuevas) avisar('Firebase no aceptó las entradas: publica las reglas nuevas de firestore.rules y vuelve a intentar.', 7000);
+    else avisar(`Bitácoras: ${nuevas} entradas nuevas${ya ? ` · ${ya} ya estaban` : ''}${fallas ? ` · ${fallas} con error` : ''}`, 5000);
+    tic();
+  };
   $('#bit-lista').onclick = async (ev) => {
     const li = ev.target.closest('li[data-id]'); if (!li) return;
     if (ev.target.dataset.borrar) {

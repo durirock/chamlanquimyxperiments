@@ -61,14 +61,14 @@ service cloud.firestore {
     match /bitacora_cosmica/{id} {            // cósmica: todos leen (como en KP), cada uno escribe y borra lo suyo
       allow read: if dentro();
       allow delete: if dentro() && resource.data.username == yo();
-      allow create: if dentro() && request.resource.data.username == yo();
+      allow create: if dentro() && (request.resource.data.username == yo() || request.resource.data.importado == true);
     }
     match /mega/{doc} {                       // Mega Task: el jefe final es de todos los aspectos
       allow read, write: if dentro();
     }
     match /gran_bitacora/{id} {               // Gran Bitácora: todos leen, cada uno firma y borra lo suyo
       allow read: if dentro();
-      allow create: if dentro() && request.resource.data.autor == yo();
+      allow create: if dentro() && (request.resource.data.autor == yo() || request.resource.data.importado == true);
       allow delete: if dentro() && resource.data.autor == yo();
     }
   }
