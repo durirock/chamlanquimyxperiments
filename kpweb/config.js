@@ -9,3 +9,7 @@ window.KP_FIREBASE = {
   messagingSenderId: "862695509062",
   appId: "1:862695509062:web:7d1ade4296b962905a8e47"
 };
+
+// Tu Gmail base: permite entrar escribiendo solo el nombre del aspecto (Ralok → tucorreo+ralok@gmail.com).
+// Debe ser el mismo que usaste en crear_cuentas.py.
+window.KP_CORREO_BASE = "PEGA_TU_GMAIL";

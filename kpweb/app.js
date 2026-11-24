@@ -242,10 +242,10 @@
     noche: ['Noche', 'oscuro, el color de tu aspecto', ['#070b09', '#e6efe9', '#7dffb0']],
     amanecer: ['Amanecer', 'cálido y suave', ['#120b07', '#ffeedd', '#ffd27a']],
     sol: ['Sol · fósforo', 'alto contraste para el reflejo', ['#000000', '#b9ffcf', '#00ff66']],
-    washi: ['Washi', 'papel japonés, tinta sumi y bermellón', ['#f4ecdc', '#22201b', '#b7282e']],
-    morado: ['Morado', 'violeta profundo', ['#120a1f', '#efe6ff', '#b07cff']],
-    beskar: ['Beskar', 'acero frío del Warrior Log', ['#0c1014', '#dfe6ec', '#8fb8d0']],
-    ambar: ['Ámbar', 'terminal ámbar', ['#0d0904', '#ffd9a0', '#ffb347']]
+    washi: ['Washi', 'papel japonés, sumi y bermellón · tu color en los detalles', ['#f4ecdc', '#22201b', '#b7282e']],
+    morado: ['Morado', 'violeta profundo · tu color en los detalles', ['#120a1f', '#efe6ff', '#b07cff']],
+    beskar: ['Beskar', 'acero frío · tu color en los detalles', ['#0c1014', '#dfe6ec', '#8fb8d0']],
+    ambar: ['Ámbar', 'terminal ámbar · tu color en los detalles', ['#0d0904', '#ffd9a0', '#ffb347']]
   };
   function pintarSkins() {
     const c = $('#aj-skins'); if (!c) return;
@@ -286,6 +286,15 @@
     });
   }
   let entradaExplicita = false;
+  // "Ralok" → gmail+ralok@gmail.com (misma regla de alias que crear_cuentas.py y kpmovil)
+  function correoDe(txt) {
+    txt = (txt || '').trim();
+    const base = (window.KP_CORREO_BASE || '').trim();
+    if (txt.includes('@') || !base.includes('@')) return txt;
+    const alias = txt.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '') || 'aspecto';
+    const [local, dominio] = base.split('@');
+    return local.split('+')[0] + '+' + alias + '@' + dominio;
+  }
   function mostrarFormulario() {
     $('#e-recordado').classList.add('oculto'); $('#f-entrada').classList.remove('oculto');
   }
@@ -297,8 +306,8 @@
   }
   $('#f-entrada').onsubmit = async (ev) => {
     ev.preventDefault(); $('#e-error').textContent = ''; entradaExplicita = true;
-    try { await auth.signInWithEmailAndPassword($('#e-correo').value.trim(), $('#e-clave').value); }
-    catch (e) { $('#e-error').textContent = 'Correo o contraseña incorrectos.'; }
+    try { await auth.signInWithEmailAndPassword(correoDe($('#e-correo').value), $('#e-clave').value); }
+    catch (e) { $('#e-error').textContent = (window.KP_CORREO_BASE || '').includes('@') || $('#e-correo').value.includes('@') ? 'Aspecto o contraseña incorrectos.' : 'Para entrar con el nombre del aspecto falta KP_CORREO_BASE en config.js. Mientras tanto usa el correo completo.'; }
   };
   function salirDeApp() {
     st.desuscribir.forEach((f) => { try { f(); } catch (e) { } }); st.desuscribir = [];

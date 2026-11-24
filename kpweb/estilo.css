@@ -10,12 +10,12 @@
   color-scheme: dark;
 }
 [data-tema="amanecer"] { --fondo:#120b07; --fondo2:#1a110b; --capa:#22170f; --borde:#3a2817; --texto:#ffeedd; --tenue:#c8a98d; --apagado:#8a705a; --logro:#ffd27a; }
-[data-tema="morado"]   { --fondo:#0e0818; --fondo2:#150d23; --capa:#1b1130; --borde:#30204d; --texto:#efe6ff; --tenue:#ab98cf; --apagado:#6f5d92; --logro:#c9a4ff; --asp:#b07cff !important; --foco:#08040f; }
-[data-tema="beskar"]   { --fondo:#0c1014; --fondo2:#11171c; --capa:#161e25; --borde:#26323c; --texto:#dfe6ec; --tenue:#8a9aa8; --apagado:#56636e; --logro:#a8d4ea; --asp:#8fb8d0 !important; --foco:#06090c; }
-[data-tema="ambar"]    { --fondo:#0d0904; --fondo2:#140e06; --capa:#1b1308; --borde:#3a2a12; --texto:#ffd9a0; --tenue:#c79a5a; --apagado:#86663a; --logro:#ffc46b; --asp:#ffb347 !important; --foco:#070502; }
+[data-tema="morado"]   { --fondo:#0e0818; --fondo2:#150d23; --capa:#1b1130; --borde:#30204d; --texto:#efe6ff; --tenue:#ab98cf; --apagado:#6f5d92; --logro:#c9a4ff; --acento:#b07cff; --foco:#08040f; }
+[data-tema="beskar"]   { --fondo:#0c1014; --fondo2:#11171c; --capa:#161e25; --borde:#26323c; --texto:#dfe6ec; --tenue:#8a9aa8; --apagado:#56636e; --logro:#a8d4ea; --acento:#8fb8d0; --foco:#06090c; }
+[data-tema="ambar"]    { --fondo:#0d0904; --fondo2:#140e06; --capa:#1b1308; --borde:#3a2a12; --texto:#ffd9a0; --tenue:#c79a5a; --apagado:#86663a; --logro:#ffc46b; --acento:#ffb347; --foco:#070502; }
 [data-tema="washi"]    {
   --fondo:#f4ecdc; --fondo2:#efe5d1; --capa:#fbf6ec; --borde:#d8cbb2; --texto:#22201b; --tenue:#6b6256; --apagado:#9a8f7e;
-  --logro:#2f7d4f; --tension:#b7791f; --alerta:#b7282e; --asp:#b7282e !important; --foco:#f4ecdc; --sombra:0 8px 28px rgba(60,40,20,.12);
+  --logro:#2f7d4f; --tension:#b7791f; --alerta:#b7282e; --acento:#b7282e; --foco:#f4ecdc; --sombra:0 8px 28px rgba(60,40,20,.12);
   color-scheme: light;
 }
 [data-tema="sol"]      { --fondo:#000; --fondo2:#000; --capa:#03140a; --borde:#0f4d27; --texto:#b9ffcf; --tenue:#59e08e; --apagado:#2f9a5c; --logro:#00ff66; }
@@ -42,6 +42,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
 [data-tema="washi"] .detona .york { background:#22201b; color:#f4ecdc; }
 [data-tema="washi"] .foco-anillo { filter: none; }
 [data-tema="washi"] .carta::after { opacity: .05; }
+[data-tema="washi"] .cab-nombre, [data-tema="washi"] .navegacion button.activa, [data-tema="washi"] .filtros button.activa,
+[data-tema="washi"] .pestanas button.activa, [data-tema="washi"] .salas button.activa { color: color-mix(in srgb, var(--asp) 62%, #1a1209); }
 button {
   background: var(--capa); border: 1px solid var(--borde); border-radius: 12px;
   padding: 11px 16px; cursor: pointer; transition: transform .12s var(--suave), background .2s, border-color .2s;
@@ -50,7 +52,7 @@ button {
 button:hover { border-color: color-mix(in srgb, var(--asp) 45%, var(--borde)); }
 button:active { transform: scale(.97); }
 button:disabled { opacity: .45; }
-button.primario { background: var(--asp); color: #04110a; border-color: transparent; font-weight: 650; }
+button.primario { background: var(--acento, var(--asp)); color: #04110a; border-color: transparent; font-weight: 650; }
 button.peligro { color: var(--alerta); }
 button.enlace { background: none; border: 0; color: var(--tenue); text-decoration: underline; min-height: 0; padding: 8px 0; }
 button.icono { min-width: 44px; padding: 8px; font-size: 22px; color: var(--tenue); background: transparent; border-color: transparent; }
@@ -59,7 +61,7 @@ input, textarea, select {
   width: 100%; background: var(--fondo2); border: 1px solid var(--borde); border-radius: 12px;
   padding: 12px 14px; outline: none; transition: border-color .2s;
 }
-input:focus, textarea:focus, select:focus { border-color: var(--asp); }
+input:focus, textarea:focus, select:focus { border-color: var(--acento, var(--asp)); }
 label { display: block; color: var(--tenue); font-size: 14px; margin: 10px 0 6px; }
 label input, label select { margin-top: 6px; color: var(--texto); }
 label.marca { display: flex; gap: 10px; align-items: center; color: var(--texto); font-size: 15px; }
