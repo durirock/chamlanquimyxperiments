@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="es" data-tema="noche">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070b09">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Killer Pendiente</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icono-192.png">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<!-- ═══ ENTRADA ═══ -->
+<section id="v-entrada" class="vista activa">
+  <div class="entrada">
+    <div class="sello" aria-hidden="true"><span></span></div>
+    <h1>Killer<br>Pendiente</h1>
+    <p class="sub">Transmisión desde 2044 · entra con la cuenta de tu aspecto</p>
+    <form id="f-entrada" autocomplete="on">
+      <label>Correo<input id="e-correo" type="email" autocomplete="username" required></label>
+      <label>Contraseña<input id="e-clave" type="password" autocomplete="current-password" required></label>
+      <button type="submit" class="primario">Entrar</button>
+      <p id="e-error" class="error"></p>
+    </form>
+  </div>
+</section>
+
+<!-- ═══ APP ═══ -->
+<section id="v-app" class="vista">
+  <header class="cabecera">
+    <button class="quien" id="c-quien" aria-label="Ir a Ser">
+      <svg class="anillo-nivel" viewBox="0 0 44 44" aria-hidden="true">
+        <circle cx="22" cy="22" r="19" class="pista"/>
+        <circle cx="22" cy="22" r="19" class="avance" id="c-anillo"/>
+      </svg>
+      <span class="n-nivel" id="c-nivel">1</span>
+    </button>
+    <div class="cab-txt">
+      <div class="cab-nombre"><span id="c-nombre"></span><i id="c-red" class="red" title="en línea"></i></div>
+      <div class="cab-cifras"><span id="c-pv">0 Pv</span><span id="c-mu">0 Mu</span><span id="c-dhana">0 $D</span></div>
+    </div>
+    <button id="b-tema" class="icono" aria-label="Cambiar tema">◐</button>
+  </header>
+
+  <main id="principal">
+    <!-- AHORA -->
+    <div id="p-ahora" class="panel activa">
+      <p id="a-frase" class="frase"></p>
+
+      <article id="a-carta" class="carta">
+        <div class="carta-etq">La siguiente batalla</div>
+        <h2 id="a-nombre" class="carta-nombre"></h2>
+        <div id="a-datos" class="carta-datos"></div>
+        <div class="presion"><div id="a-presion"></div></div>
+        <div class="carta-botones">
+          <button id="a-desenvainar" class="primario grande">⚔ Desenvainar</button>
+          <div class="fila">
+            <button id="a-dos">Solo 2 minutos</button>
+            <button id="a-otra">Otra</button>
+          </div>
+        </div>
+      </article>
+
+      <form id="f-captura" class="captura" autocomplete="off">
+        <input id="cap-texto" placeholder="¿Qué te pesa?  ej: llamar al dentista !A 15m 40pv" aria-label="Nueva tarea rápida">
+        <button class="primario" aria-label="Añadir">+</button>
+        <div id="cap-vista" class="cap-vista"></div>
+      </form>
+
+      <section class="hoy">
+        <div class="hoy-tit"><span>Hoy</span><span id="h-resumen"></span></div>
+        <ul id="h-lista" class="hoy-lista"></ul>
+      </section>
+    </div>
+
+    <!-- CAMPO -->
+    <div id="p-campo" class="panel">
+      <div class="campo-cab">
+        <div class="filtros" id="filtros">
+          <button data-f="todas" class="activa">Todas</button>
+          <button data-f="A">A</button><button data-f="B">B</button><button data-f="C">C</button>
+          <button data-f="S">Semanales</button><button data-f="R">Premios</button>
+        </div>
+        <button id="b-nueva" class="primario">+ Tarea</button>
+      </div>
+      <ul id="l-tareas" class="lista"></ul>
+      <button id="b-ver-completadas" class="enlace"></button>
+      <ul id="l-completadas" class="lista completadas oculto"></ul>
+    </div>
+
+    <!-- SER -->
+    <div id="p-ser" class="panel">
+      <div class="sol-caja">
+        <canvas id="sol" width="320" height="320" aria-label="Sol de la voluntad"></canvas>
+        <div class="sol-txt"><div id="s-nivel" class="s-nivel"></div><div id="s-falta" class="sub"></div></div>
+      </div>
+      <div class="barra-nivel"><div id="s-barra"></div></div>
+      <dl id="pf-datos" class="datos"></dl>
+
+      <div class="bloque">
+        <h3>Zazen</h3>
+        <div class="zazen">
+          <div id="z-reloj" class="z-reloj">05:00</div>
+          <div class="fila">
+            <label class="z-min">min<input id="z-minutos" type="number" min="1" value="5" inputmode="numeric"></label>
+            <button id="z-iniciar" class="primario">Sentarse</button><button id="z-detener">Terminar</button>
+          </div>
+          <div id="z-semana" class="semana" aria-label="Práctica de los últimos 7 días"></div>
+          <p id="z-resumen" class="sub"></p>
+        </div>
+      </div>
+
+      <div class="bloque">
+        <h3>Ajustes</h3>
+        <label class="marca"><input type="checkbox" id="aj-flotar"> Abrir la ventana flotante al iniciar el timer</label>
+        <label class="marca"><input type="checkbox" id="aj-sonido"> Sonidos (gong y cierre)</label>
+        <label class="marca"><input type="checkbox" id="aj-pantalla"> Mantener la pantalla encendida durante el foco</label>
+        <p id="aj-pip-info" class="sub"></p>
+      </div>
+
+      <div class="bloque botones-ser">
+        <p class="sub">El huevo (.cegg) de tu aspecto se guarda solo en la nube con cada cambio.</p>
+        <button id="b-cegg">Descargar mi .cegg</button>
+        <button id="b-salir" class="peligro">Cerrar sesión</button>
+      </div>
+    </div>
+
+
+    <!-- BITÁCORA -->
+    <div id="p-bitacora" class="panel">
+      <div class="pestanas" id="bit-pestanas">
+        <button data-bit="personal" class="activa">Personal</button>
+        <button data-bit="cosmica">Cósmica</button>
+        <button data-bit="gran">Gran Bitácora</button>
+      </div>
+      <p id="bit-desc" class="sub"></p>
+      <div id="bit-modo" class="filtros oculto">
+        <button data-modo="general" class="activa">Nota</button><button data-modo="dream">Sueño</button>
+      </div>
+      <form id="f-bit" class="bit-form" autocomplete="off">
+        <div id="bit-sueno" class="oculto">
+          <input id="bit-titulo" placeholder="Título del sueño">
+          <label class="bit-claridad">Claridad <input id="bit-claridad" type="range" min="1" max="10" value="5"><b id="bit-clar-n">5</b>/10</label>
+        </div>
+        <textarea id="bit-texto" rows="4" placeholder="Escribe…"></textarea>
+        <button class="primario">Añadir</button>
+      </form>
+      <input id="bit-buscar" class="bit-buscar" placeholder="Buscar en la bitácora" aria-label="Buscar">
+      <ul id="bit-lista" class="bit-lista"></ul>
+    </div>
+    <!-- RED -->
+    <div id="p-red" class="panel">
+      <div class="pestanas" id="red-pestanas">
+        <button data-red="chat" class="activa">Chat<i id="n-chat2" class="aviso oculto"></i></button>
+        <button data-red="correo">Correo<i id="n-correo2" class="aviso oculto"></i></button>
+      </div>
+      <div id="red-chat">
+        <div id="chat-salas" class="salas"></div>
+        <div id="chat-mensajes" class="mensajes"></div>
+        <form id="f-chat" class="escribir">
+          <textarea id="chat-texto" rows="1" placeholder="Escribe…"></textarea>
+          <button class="primario">Enviar</button>
+        </form>
+      </div>
+      <div id="red-correo" class="oculto">
+        <div class="pestanas">
+          <button data-bandeja="entrada" class="activa">Recibidos</button>
+          <button data-bandeja="enviados">Enviados</button>
+          <button id="b-redactar" class="primario">Redactar</button>
+        </div>
+        <ul id="l-correos" class="lista"></ul>
+      </div>
+    </div>
+  </main>
+
+  <nav class="navegacion">
+    <button data-panel="ahora" class="activa"><b>◉</b>Ahora</button>
+    <button data-panel="campo"><b>☷</b>Campo</button>
+    <button data-panel="ser"><b>☀</b>Ser</button>
+    <button data-panel="bitacora"><b>✎</b>Bitácora</button>
+    <button data-panel="red"><b>✉</b>Red<i id="n-red" class="aviso oculto"></i></button>
+  </nav>
+</section>
+
+<!-- ═══ FOCO (timer a pantalla completa) ═══ -->
+<div id="foco" class="foco oculto" role="dialog" aria-label="Timer de foco">
+  <div class="foco-cab">
+    <span id="f-tipo" class="f-tipo">Combate</span>
+    <div class="fila-min">
+      <button id="f-flotar" class="icono" title="Ventana flotante sobre todo">⧉</button>
+      <button id="f-minimizar" class="icono" title="Minimizar">▁</button>
+      <button id="f-cerrar" class="icono" title="Abandonar timer">×</button>
+    </div>
+  </div>
+  <div class="foco-centro">
+    <svg viewBox="0 0 240 240" class="foco-anillo" aria-hidden="true">
+      <circle cx="120" cy="120" r="108" class="pista"/>
+      <circle cx="120" cy="120" r="108" class="avance" id="f-arco"/>
+    </svg>
+    <div class="foco-dentro">
+      <div id="f-reloj" class="f-reloj">00:00</div>
+      <div id="fo-nombre" class="f-nombre"></div>
+    </div>
+  </div>
+  <p id="f-aliento" class="f-aliento"></p>
+  <div class="foco-botones">
+    <button id="f-distraccion">me distraje</button>
+    <button id="f-listo" class="primario">listo</button>
+  </div>
+</div>
+
+<!-- píldora del timer minimizado -->
+<button id="pildora" class="pildora oculto" aria-label="Volver al timer">
+  <span id="p-punto" class="punto"></span><span id="p-reloj">00:00</span><span id="p-nombre"></span>
+</button>
+
+<!-- hoja / diálogo genérico -->
+<div id="velo" class="velo oculto"></div>
+<div id="hoja" class="hoja oculto" role="dialog"></div>
+<div id="aviso" class="aviso-flotante oculto" role="status"></div>
+
+<script src="vendor/firebase-app-compat.js"></script>
+<script src="vendor/firebase-auth-compat.js"></script>
+<script src="vendor/firebase-firestore-compat.js"></script>
+<script src="config.js"></script>
+<script src="flotante.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
