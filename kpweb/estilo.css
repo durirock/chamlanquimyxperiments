@@ -200,6 +200,24 @@ main { max-width: 620px; margin: 0 auto; padding: 16px; }
 .asunto { font-weight: 600; } .cuerpo-correo { white-space: pre-wrap; background: var(--fondo2); border-radius: 10px; padding: 12px; margin: 10px 0; }
 .aviso { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--alerta); margin-left: 4px; vertical-align: top; }
 
+/* MEGA TASK: franja negra con la paleta del jefe (kp828: #FF00FF #00FFFF #FFFF00 #FF3366 #33FF99 #FF9900 #9D4DFF) */
+@keyframes mega-color { 0%{color:#FF00FF;border-color:#00FFFF} 14%{color:#00FFFF;border-color:#FFFF00} 28%{color:#FFFF00;border-color:#FF3366}
+  42%{color:#FF3366;border-color:#33FF99} 57%{color:#33FF99;border-color:#FF9900} 71%{color:#FF9900;border-color:#9D4DFF} 85%{color:#9D4DFF;border-color:#FF00FF} 100%{color:#FF00FF;border-color:#00FFFF} }
+@keyframes mega-fondo { 0%{background:#FF00FF} 14%{background:#00FFFF} 28%{background:#FFFF00} 42%{background:#FF3366} 57%{background:#33FF99} 71%{background:#FF9900} 85%{background:#9D4DFF} 100%{background:#FF00FF} }
+.mega-franja { display: grid; gap: 4px; width: 100%; text-align: center; background: #000; border: 2px solid #FF00FF; border-radius: 14px; padding: 12px 14px 10px; margin: 0 0 14px; color: #FF00FF; animation: mega-color 10.5s steps(1) infinite; cursor: pointer; }
+.mega-tit { font-weight: 900; font-size: 16px; letter-spacing: .02em; text-shadow: 1px 1px 0 #000, 0 0 14px currentColor; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.mega-sub { color: #ddd; font-size: 12px; }
+.mega-barra { display: block; height: 7px; background: #1a0000; border: 1px solid #444; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+.mega-barra i { display: block; height: 100%; width: 100%; background: #FF00FF; animation: mega-fondo 10.5s steps(1) infinite; transition: width .8s var(--suave); }
+.mega-hoja .mega-barra { height: 10px; margin: 10px 0 4px; }
+.mega-fases { list-style: none; padding: 0; margin: 4px 0 10px; display: grid; gap: 6px; }
+.mega-fases li { display: flex; align-items: center; gap: 10px; background: var(--capa); border: 1px solid var(--borde); border-radius: 10px; padding: 6px 6px 6px 12px; }
+.mega-fases li span { flex: 1; overflow-wrap: anywhere; } .mega-fases li.hecha span { text-decoration: line-through; color: var(--tenue); }
+.mega-fases li b { color: var(--logro); padding: 0 10px; } .mega-fases button { min-height: 36px; padding: 4px 12px; }
+.mega-victoria .toro { color: #FF00FF; animation: mega-color 3s steps(1) infinite; }
+.mega-victoria .mult { font-size: 72px; }
+@media (prefers-reduced-motion: reduce) { .mega-franja, .mega-barra i, .mega-victoria .toro { animation: none !important; } }
+
 /* skins */
 .skins { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .skin { display: grid; gap: 2px; text-align: left; padding: 10px 12px; }
