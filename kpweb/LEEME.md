@@ -3,16 +3,10 @@
 Usa los mismos datos de Firebase que kpmovil (`config.js`, `firestore.rules` y `vendor/` vienen de ahí, sin cambios).
 Reglas de Pv, niveles, extensiones, cierre "en mi vida", objetivos semanales y recompensas: idénticas a kp828.py.
 
-## Dónde está
-https://chamalnquimyst.com/kpweb/ — mismo dominio que kpmovil, así que Firebase ya lo acepta.
-Ábrela en Chrome y elige "Instalar app" / "Agregar a pantalla de inicio".
-
-## Bitácoras (personal, cósmica y Gran Bitácora)
-Usan tres colecciones nuevas: `bitacora`, `bitacora_cosmica` y `gran_bitacora`, con el mismo formato que
-history.json, cosmic_history.json y gran_history.json de KP. Para que funcionen hay que publicar las reglas
-de `firestore.rules` de esta carpeta (Firebase → Firestore → Reglas → pegar → Publicar). Sin eso, todo lo
-demás funciona y la bitácora avisa "No se pudo guardar".
-Para que el PC las vea, kp_nube.py debe sincronizar esas tres colecciones con sus archivos.
+## Publicar
+1. Copia esta carpeta al repo (por ejemplo `chamlanquimyxperiments/kp/`) y súbela a GitHub Pages.
+2. Si el dominio es nuevo, agrégalo en Firebase → Authentication → Settings → Authorized domains.
+3. Ábrela en Chrome y elige "Instalar app" / "Agregar a pantalla de inicio".
 
 ## Ventana flotante
 - PC (Chrome / Edge): al iniciar el timer se abre una ventana siempre encima, con "listo", "me distraje"

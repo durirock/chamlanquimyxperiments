@@ -23,6 +23,10 @@
     <div class="sello" aria-hidden="true"><span></span></div>
     <h1>Killer<br>Pendiente</h1>
     <p class="sub">Transmisión desde 2044 · entra con la cuenta de tu aspecto</p>
+    <div id="e-recordado" class="recordado oculto">
+      <button id="e-continuar" class="primario grande">Continuar como <b id="e-nombre"></b></button>
+      <button id="e-otro">Entrar con otro aspecto</button>
+    </div>
     <form id="f-entrada" autocomplete="on">
       <label>Correo<input id="e-correo" type="email" autocomplete="username" required></label>
       <label>Contraseña<input id="e-clave" type="password" autocomplete="current-password" required></label>
@@ -46,7 +50,7 @@
       <div class="cab-nombre"><span id="c-nombre"></span><i id="c-red" class="red" title="en línea"></i></div>
       <div class="cab-cifras"><span id="c-pv">0 Pv</span><span id="c-mu">0 Mu</span><span id="c-dhana">0 $D</span></div>
     </div>
-    <button id="b-tema" class="icono" aria-label="Cambiar tema">◐</button>
+    <button id="b-tema" class="icono" aria-label="Cambiar skin">◐</button>
   </header>
 
   <main id="principal">
@@ -118,6 +122,11 @@
       </div>
 
       <div class="bloque">
+        <h3>Skin</h3>
+        <div id="aj-skins" class="skins"></div>
+      </div>
+
+      <div class="bloque">
         <h3>Ajustes</h3>
         <label class="marca"><input type="checkbox" id="aj-flotar"> Abrir la ventana flotante al iniciar el timer</label>
         <label class="marca"><input type="checkbox" id="aj-sonido"> Sonidos (gong y cierre)</label>
@@ -128,6 +137,7 @@
       <div class="bloque botones-ser">
         <p class="sub">El huevo (.cegg) de tu aspecto se guarda solo en la nube con cada cambio.</p>
         <button id="b-cegg">Descargar mi .cegg</button>
+        <button id="b-cambiar">Cambiar de aspecto</button>
         <button id="b-salir" class="peligro">Cerrar sesión</button>
       </div>
     </div>
@@ -185,7 +195,7 @@
     <button data-panel="campo"><b>☷</b>Campo</button>
     <button data-panel="ser"><b>☀</b>Ser</button>
     <button data-panel="bitacora"><b>✎</b>Bitácora</button>
-    <button data-panel="red"><b>✉</b>Red<i id="n-red" class="aviso oculto"></i></button>
+    <button data-panel="red"><b>❝</b>Chat<i id="n-red" class="aviso oculto"></i></button>
   </nav>
 </section>
 

@@ -236,15 +236,32 @@
   }
 
   // ══ tema ═════════════════════════════════════════════════════════
-  const TEMAS = ['auto', 'noche', 'amanecer', 'sol'];
+  const TEMAS = ['auto', 'noche', 'amanecer', 'sol', 'washi', 'morado', 'beskar', 'ambar'];
+  const SKINS = {
+    auto: ['Según la hora', 'amanecer · sol · noche', ['#070b09', '#7dffb0', '#ffd27a']],
+    noche: ['Noche', 'oscuro, el color de tu aspecto', ['#070b09', '#e6efe9', '#7dffb0']],
+    amanecer: ['Amanecer', 'cálido y suave', ['#120b07', '#ffeedd', '#ffd27a']],
+    sol: ['Sol · fósforo', 'alto contraste para el reflejo', ['#000000', '#b9ffcf', '#00ff66']],
+    washi: ['Washi', 'papel japonés, tinta sumi y bermellón', ['#f4ecdc', '#22201b', '#b7282e']],
+    morado: ['Morado', 'violeta profundo', ['#120a1f', '#efe6ff', '#b07cff']],
+    beskar: ['Beskar', 'acero frío del Warrior Log', ['#0c1014', '#dfe6ec', '#8fb8d0']],
+    ambar: ['Ámbar', 'terminal ámbar', ['#0d0904', '#ffd9a0', '#ffb347']]
+  };
+  function pintarSkins() {
+    const c = $('#aj-skins'); if (!c) return;
+    c.innerHTML = TEMAS.map((k) => { const [n, d, col] = SKINS[k];
+      return `<button data-skin="${k}" class="skin ${pref.tema === k ? 'activa' : ''}" aria-pressed="${pref.tema === k}">
+        <span class="muestra">${col.map((x) => `<i style="background:${x}"></i>`).join('')}</span><b>${n}</b><small>${d}</small></button>`; }).join('');
+    c.querySelectorAll('[data-skin]').forEach((b) => b.onclick = () => { pref.tema = b.dataset.skin; guardarPref(); aplicarTema(); pintarSkins(); tic(); });
+  }
   function temaPorHora() { const h = new Date().getHours(); return h >= 5 && h < 9 ? 'amanecer' : h >= 9 && h < 18 ? 'sol' : 'noche'; }
   function aplicarTema() {
-    const t = pref.tema === 'auto' ? temaPorHora() : pref.tema;
+    const t = pref.tema === 'auto' || !TEMAS.includes(pref.tema) ? temaPorHora() : pref.tema;
     document.documentElement.dataset.tema = t;
-    $('#b-tema').title = 'Tema: ' + pref.tema + (pref.tema === 'auto' ? ' (' + t + ')' : '');
+    $('#b-tema').title = 'Skin: ' + (SKINS[pref.tema] || SKINS.auto)[0] + (pref.tema === 'auto' ? ' (' + t + ')' : '');
   }
-  $('#b-tema').onclick = () => { pref.tema = TEMAS[(TEMAS.indexOf(pref.tema) + 1) % TEMAS.length]; guardarPref(); aplicarTema(); avisar('Tema: ' + pref.tema); };
-  aplicarTema(); setInterval(aplicarTema, 10 * 60000);
+  $('#b-tema').onclick = () => { if (!TEMAS.includes(pref.tema)) pref.tema = 'auto'; pref.tema = TEMAS[(TEMAS.indexOf(pref.tema) + 1) % TEMAS.length]; guardarPref(); aplicarTema(); pintarSkins(); avisar('Skin: ' + SKINS[pref.tema][0]); };
+  aplicarTema(); pintarSkins(); setInterval(aplicarTema, 10 * 60000);
 
   // ══ entrada ══════════════════════════════════════════════════════
   function iniciar() {
@@ -253,18 +270,33 @@
     firebase.initializeApp(cfg);
     auth = firebase.auth(); db = firebase.firestore(); FV = firebase.firestore.FieldValue;
     db.enablePersistence({ synchronizeTabs: true }).catch(() => { });
+    // La sesión de Firebase se comparte con kpmovil (mismo dominio). Al abrir la app no se entra sola:
+    // se pregunta "Continuar como X" o "Entrar con otro aspecto". Tras escribir correo y clave, se entra directo.
+    let primera = true;
     auth.onAuthStateChanged(async (u) => {
-      if (!u) { salirDeApp(); return; }
+      const alAbrir = primera; primera = false;
+      if (!u) { salirDeApp(); mostrarFormulario(); return; }
       try {
         const tok = await u.getIdTokenResult(true);
         const asp = tok.claims && tok.claims.aspecto;
         if (!asp) { $('#e-error').textContent = 'Esta cuenta no está ligada a un aspecto. Créala con: python kp_nube.py crear-cuenta'; auth.signOut(); return; }
+        if (alAbrir && !entradaExplicita) { ofrecerContinuar(asp); return; }
         entrarApp(asp);
       } catch (e) { $('#e-error').textContent = 'No se pudo entrar: ' + e.message; }
     });
   }
+  let entradaExplicita = false;
+  function mostrarFormulario() {
+    $('#e-recordado').classList.add('oculto'); $('#f-entrada').classList.remove('oculto');
+  }
+  function ofrecerContinuar(asp) {
+    $('#e-nombre').textContent = asp;
+    $('#e-recordado').classList.remove('oculto'); $('#f-entrada').classList.add('oculto');
+    $('#e-continuar').onclick = () => { entradaExplicita = true; entrarApp(asp); };
+    $('#e-otro').onclick = async () => { entradaExplicita = true; await auth.signOut(); mostrarFormulario(); setTimeout(() => $('#e-correo').focus(), 50); };
+  }
   $('#f-entrada').onsubmit = async (ev) => {
-    ev.preventDefault(); $('#e-error').textContent = '';
+    ev.preventDefault(); $('#e-error').textContent = ''; entradaExplicita = true;
     try { await auth.signInWithEmailAndPassword($('#e-correo').value.trim(), $('#e-clave').value); }
     catch (e) { $('#e-error').textContent = 'Correo o contraseña incorrectos.'; }
   };
@@ -365,6 +397,10 @@
     $('#pf-datos').innerHTML = filas.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
     solDatos = { nv, rayos: hoy.length, color: colorDe(yo) };
   }
+  $('#b-cambiar').onclick = async () => {
+    if (timer) { avisar('Cierra el timer antes de cambiar de aspecto'); return; }
+    entradaExplicita = true; await auth.signOut(); mostrarFormulario(); setTimeout(() => $('#e-correo').focus(), 50);
+  };
   $('#b-salir').onclick = async () => { if (await opcionesHoja('Cerrar sesión', '¿Salir de ' + yo + '?', [{ t: 'Salir', v: 1, pri: 1 }, { t: 'Quedarme', v: 0 }])) auth.signOut(); };
 
   // Sol de la Voluntad: el núcleo crece con el nivel, el halo marca el avance, cada rayo es una tarea cerrada hoy.
