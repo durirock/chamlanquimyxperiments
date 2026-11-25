@@ -6,6 +6,8 @@
   --logro: #7dffb0; --tension: #ffc35a; --alerta: #ff5d6c;
   --asp: #7dffb0;                       /* color del aspecto (lo pone app.js) */
   --radio: 16px; --sombra: 0 10px 40px rgba(0,0,0,.45);
+  /* matices de los estratos de presión (r g b) */
+  --hA: 255 93 108; --hB: 255 195 90; --hC: 125 255 176; --hS: 255 77 255; --hR: 255 225 77;
   --suave: cubic-bezier(.2,.8,.2,1);
   color-scheme: dark;
 }
@@ -16,6 +18,7 @@
 [data-tema="washi"]    {
   --fondo:#f4ecdc; --fondo2:#efe5d1; --capa:#fbf6ec; --borde:#d8cbb2; --texto:#22201b; --tenue:#6b6256; --apagado:#9a8f7e;
   --logro:#2f7d4f; --tension:#b7791f; --alerta:#b7282e; --acento:#b7282e; --foco:#f4ecdc; --sombra:0 8px 28px rgba(60,40,20,.12);
+  --hA: 183 40 46; --hB: 183 121 31; --hC: 47 125 79; --hS: 123 63 160; --hR: 176 138 16;
   color-scheme: light;
 }
 [data-tema="sol"]      { --fondo:#000; --fondo2:#000; --capa:#03140a; --borde:#0f4d27; --texto:#b9ffcf; --tenue:#59e08e; --apagado:#2f9a5c; --logro:#00ff66; }
@@ -156,6 +159,40 @@ main { max-width: 620px; margin: 0 auto; padding: 16px; }
   border-radius: 14px; padding: 12px 14px; cursor: pointer; transition: transform .15s var(--suave), border-color .2s;
 }
 .tarea:hover { transform: translateX(2px); }
+
+/* ── Orden ── */
+.orden { display: flex; align-items: center; gap: 6px; margin: -4px 0 14px; flex-wrap: wrap; }
+.orden-tit { color: var(--apagado); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; margin-right: 2px; }
+.orden button { min-height: 34px; padding: 5px 12px; border-radius: 999px; font-size: 13px; color: var(--tenue); background: transparent; }
+.orden button.activa { color: var(--texto); border-color: color-mix(in srgb, var(--asp) 70%, var(--borde)); background: color-mix(in srgb, var(--asp) 10%, transparent); }
+.orden button.activa::after { content: attr(data-flecha); margin-left: 6px; color: var(--asp); display: inline-block; transition: transform .25s var(--suave); }
+.orden-dir { color: var(--apagado); font-size: 12px; margin-left: 4px; }
+
+/* ── Termoclina de presión ──
+   --ph: matiz del estrato · --pk: presión 0→1 (escala absoluta) · --ph2: hondura más allá del techo */
+.tarea.pA { --ph: var(--hA); } .tarea.pB { --ph: var(--hB); } .tarea.pC { --ph: var(--hC); }
+.tarea.pS { --ph: var(--hS); } .tarea.pR { --ph: var(--hR); }
+.tarea[class*=" p"] {
+  position: relative; overflow: hidden;
+  background:
+    linear-gradient(100deg, rgb(var(--ph) / calc(.03 + var(--pk) * .26)) 0%, rgb(var(--ph) / calc(.01 + var(--pk) * .08)) 58%, transparent 100%),
+    var(--capa);
+  border-left: calc(3px + var(--pk) * 2px + var(--ph2) * 8px) solid rgb(var(--ph) / calc(.35 + var(--pk) * .65));
+  box-shadow: 0 0 calc(var(--ph2) * 36px) rgb(var(--ph) / calc(var(--ph2) * .55));
+}
+.tarea .p-num { color: rgb(var(--ph) / calc(.55 + var(--pk) * .45)); font-variant-numeric: tabular-nums; }
+.p-barra { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: rgb(var(--ph) / .08); }
+.p-barra i { display: block; height: 100%; border-radius: 0 2px 2px 0;
+  background: linear-gradient(90deg, rgb(var(--ph) / .35), rgb(var(--ph) / calc(.6 + var(--pk) * .4))); }
+.tarea.respira { animation: respira 5.5s ease-in-out infinite; }
+@keyframes respira {
+  0%, 100% { box-shadow: 0 0 calc(var(--ph2) * 30px) rgb(var(--ph) / calc(var(--ph2) * .35)); }
+  50%      { box-shadow: 0 0 calc(var(--ph2) * 52px) rgb(var(--ph) / calc(var(--ph2) * .75)); }
+}
+.lista .estrato { display: flex; align-items: center; gap: 10px; padding: 8px 4px 0; color: rgb(var(--h) / .85); font-size: 12px; letter-spacing: .14em; cursor: default; }
+.lista .estrato.pA { --h: var(--hA); } .lista .estrato.pB { --h: var(--hB); } .lista .estrato.pC { --h: var(--hC); }
+.lista .estrato i { flex: 1; height: 1px; background: linear-gradient(90deg, rgb(var(--h) / .45), transparent); }
+.lista .estrato span { color: var(--apagado); letter-spacing: 0; }
 .tarea .t1 { display: flex; gap: 10px; align-items: center; }
 .tarea .nombre { font-weight: 600; overflow-wrap: anywhere; }
 .tarea .t2 { display: flex; gap: 12px; color: var(--tenue); font-size: 13px; margin-top: 4px; flex-wrap: wrap; }
@@ -216,7 +253,7 @@ main { max-width: 620px; margin: 0 auto; padding: 16px; }
 .mega-fases li b { color: var(--logro); padding: 0 10px; } .mega-fases button { min-height: 36px; padding: 4px 12px; }
 .mega-victoria .toro { color: #FF00FF; animation: mega-color 3s steps(1) infinite; }
 .mega-victoria .mult { font-size: 72px; }
-@media (prefers-reduced-motion: reduce) { .mega-franja, .mega-barra i, .mega-victoria .toro { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .tarea.respira { animation: none; } .mega-franja, .mega-barra i, .mega-victoria .toro { animation: none !important; } }
 
 /* skins */
 .skins { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }

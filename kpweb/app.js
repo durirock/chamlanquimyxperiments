@@ -39,7 +39,7 @@
   };
 
   // ══ preferencias locales ═════════════════════════════════════════
-  const PREF0 = { flotar: true, sonido: true, pantalla: true, tema: 'auto' };
+  const PREF0 = { flotar: true, sonido: true, pantalla: true, tema: 'auto', orden: 'priority', ordenDesc: true };
   let pref = Object.assign({}, PREF0);
   try { pref = Object.assign(pref, JSON.parse(localStorage.getItem('kp_prefs') || '{}')); } catch (e) { }
   const guardarPref = () => { try { localStorage.setItem('kp_prefs', JSON.stringify(pref)); } catch (e) { } };
@@ -466,12 +466,18 @@
   }
 
   // ══ tareas ═══════════════════════════════════════════════════════
+  // Orden igual que KP del PC: Prioridad / Presión / Fecha; un segundo toque invierte.
+  // Semanales y premios van siempre arriba, en su lugar fijo (no compiten por urgencia).
+  const edad = (t) => { const d = leerFecha(t.date_added); return d ? Date.now() - d.getTime() : 0; };
   function ordenarPendientes(lista) {
-    const dias = (t) => diasDesde(t.date_added);
-    const semanales = lista.filter((t) => t.weekly_goal).sort((a, b) => dias(b) - dias(a));
-    const premios = lista.filter((t) => !t.weekly_goal && esPremio(t)).sort((a, b) => dias(b) - dias(a));
-    const resto = lista.filter((t) => !t.weekly_goal && !esPremio(t))
-      .sort((a, b) => ('ABC'.indexOf(a.priority) - 'ABC'.indexOf(b.priority)) || (dias(b) - dias(a)));
+    const desc = pref.ordenDesc !== false, sg = desc ? 1 : -1;
+    const semanales = lista.filter((t) => t.weekly_goal).sort((a, b) => edad(b) - edad(a));
+    const premios = lista.filter((t) => !t.weekly_goal && esPremio(t)).sort((a, b) => edad(b) - edad(a));
+    const resto = lista.filter((t) => !t.weekly_goal && !esPremio(t));
+    const ord = { A: 0, B: 1, C: 2 };
+    if (pref.orden === 'pressure') resto.sort((a, b) => sg * (presion(b) - presion(a)) || (edad(b) - edad(a)));
+    else if (pref.orden === 'date') resto.sort((a, b) => sg * (edad(b) - edad(a)));
+    else resto.sort((a, b) => sg * ((ord[a.priority] ?? 2) - (ord[b.priority] ?? 2)) || sg * (edad(b) - edad(a)));
     return semanales.concat(premios, resto);
   }
   function chipDe(t) {
@@ -479,13 +485,51 @@
     if (esPremio(t)) return '<span class="chip R">Premio</span>';
     return `<span class="chip ${esc(t.priority)}">${esc(t.priority || 'C')}</span>`;
   }
+  // ── Termoclina de presión (como KP del PC) ──
+  // Escala absoluta: hasta PRESION_TECHO el tinte de su prioridad crece; más allá
+  // no se queda clavado: el borde se ensancha y la tarea empieza a respirar.
+  const PRESION_TECHO = 90, RANGO_HONDO = 3000, HONDO_MAX = 0.5;
+  function estrato(t) {
+    if (t.completed) return '';
+    if (t.weekly_goal) return 'pS';
+    if (esPremio(t)) return 'pR';
+    return 'p' + (['A', 'B', 'C'].includes(t.priority) ? t.priority : 'C');
+  }
   function itemTarea(t) {
     const d = diasDesde(t.date_added), p = presion(t);
     const sub = Array.isArray(t.subtasks) && t.subtasks.length ? `<span>${t.subtasks.filter((s) => s.completed).length}/${t.subtasks.length} sub</span>` : '';
-    return `<li class="tarea" data-id="${esc(t.id)}" style="--presion:${t.completed ? '' : colorPresion(p)}">
+    const fijo = t.weekly_goal || esPremio(t);
+    const conPresion = !t.completed && !fijo;
+    const k = conPresion ? Math.min(1, p / PRESION_TECHO) : (t.completed ? 0 : 0.18);
+    const hondo = conPresion && p > PRESION_TECHO ? Math.min(HONDO_MAX, (p - PRESION_TECHO) / RANGO_HONDO) : 0;
+    const barra = Math.max(4, Math.min(100, Math.log1p(p) / Math.log1p(400) * 100));
+    const est = estrato(t);
+    return `<li class="tarea ${est}${hondo > 0.2 ? ' respira' : ''}" data-id="${esc(t.id)}" style="--pk:${k.toFixed(3)};--ph2:${hondo.toFixed(3)}">
       <div class="t1">${chipDe(t)}<span class="nombre">${esc(t.name)}</span></div>
-      <div class="t2">${esPremio(t) ? '' : `<span>${t.completed ? pvDe(t) : (t.xp || 0)} Pv</span>`}<span>${t.time || 0} min</span><span>${d} ${d === 1 ? 'día' : 'días'}</span>${t.delays ? `<span>${t.delays} ext.</span>` : ''}${sub}</div></li>`;
+      <div class="t2">${esPremio(t) ? '' : `<span>${t.completed ? pvDe(t) : (t.xp || 0)} Pv</span>`}<span>${t.time || 0} min</span><span>${d} ${d === 1 ? 'día' : 'días'}</span>${t.delays ? `<span>${t.delays} ext.</span>` : ''}${sub}${conPresion ? `<span class="p-num" title="Presión">◈ ${p}</span>` : ''}</div>
+      ${conPresion ? `<div class="p-barra" aria-hidden="true"><i style="width:${barra.toFixed(1)}%"></i></div>` : ''}</li>`;
   }
+  const DIR_TXT = {
+    priority: ['A → C', 'C → A'],
+    pressure: ['más presión primero', 'menos presión primero'],
+    date: ['antiguas primero', 'nuevas primero'],
+  };
+  function pintarOrden() {
+    const modo = DIR_TXT[pref.orden] ? pref.orden : 'priority', desc = pref.ordenDesc !== false;
+    $$('#orden [data-o]').forEach((b) => {
+      const activo = b.dataset.o === modo;
+      b.classList.toggle('activa', activo);
+      b.setAttribute('aria-pressed', activo ? 'true' : 'false');
+      b.dataset.flecha = activo ? (desc ? '↓' : '↑') : '';
+    });
+    $('#orden-dir').textContent = DIR_TXT[modo][desc ? 0 : 1];
+  }
+  $('#orden').onclick = (ev) => {
+    const b = ev.target.closest('[data-o]'); if (!b) return;
+    if (pref.orden === b.dataset.o) pref.ordenDesc = pref.ordenDesc === false;
+    else { pref.orden = b.dataset.o; pref.ordenDesc = true; }
+    guardarPref(); pintarOrden(); pintarCampo();
+  };
   function pasaFiltro(t) {
     const f = st.filtro;
     if (f === 'todas') return true;
@@ -497,7 +541,18 @@
     const todas = Object.values(st.tareas);
     const pend = ordenarPendientes(todas.filter((t) => !t.completed && pasaFiltro(t)));
     const hechas = todas.filter((t) => t.completed).sort((a, b) => (leerFecha(b.date_completed) || 0) - (leerFecha(a.date_completed) || 0));
-    $('#l-tareas').innerHTML = pend.length ? pend.map(itemTarea).join('') : '<li class="sub">Nada aquí. El campo está despejado.</li>';
+    // en modo Prioridad, un hilo fino separa los estratos A · B · C
+    let previo = null;
+    const html = pend.map((t) => {
+      let cab = '';
+      if (pref.orden !== 'pressure' && pref.orden !== 'date' && !t.weekly_goal && !esPremio(t) && st.filtro === 'todas') {
+        const e = ['A', 'B', 'C'].includes(t.priority) ? t.priority : 'C';
+        if (e !== previo) { const n = pend.filter((x) => !x.weekly_goal && !esPremio(x) && (['A', 'B', 'C'].includes(x.priority) ? x.priority : 'C') === e).length; cab = `<li class="estrato p${e}" aria-hidden="true"><b>${e}</b><i></i><span>${n}</span></li>`; previo = e; }
+      }
+      return cab + itemTarea(t);
+    }).join('');
+    $('#l-tareas').innerHTML = pend.length ? html : '<li class="sub">Nada aquí. El campo está despejado.</li>';
+    pintarOrden();
     $('#b-ver-completadas').textContent = hechas.length ? `${st.verCompletadas ? 'Ocultar' : 'Ver'} completadas (${hechas.length})` : '';
     $('#l-completadas').innerHTML = hechas.slice(0, 100).map(itemTarea).join('');
     $('#l-completadas').classList.toggle('oculto', !st.verCompletadas);
