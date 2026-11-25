@@ -739,6 +739,75 @@
     tic(); avisar('Sembrada: ' + base.name);
   };
 
+  // ══ CONEXIONES · el eneagrama de los universos ═══════════════════
+  // Cada universo vive en un punto del eneagrama. Se abre en su propia ventana:
+  // Killer Pendiente sigue funcionando detrás (el timer, el chat, todo).
+  const UNIVERSOS_BASE = (window.KP_UNIVERSOS_BASE || 'https://www.musicosmosonline.com/').replace(/\/?$/, '/');
+  const ENEAGRAMA = {
+    9: { id: 'musicosmos', nombre: 'Musicosmos', archivo: 'index.html', color: '#A87FFF', c2: '#3FD0FF', txt: 'El universo musical. El centro de todo.' },
+    1: null,
+    2: { id: 'kairos', nombre: 'Kairós', archivo: 'tiempo.html', color: '#5AD1FF', c2: '#C8A2FF', txt: 'La cápsula del tiempo: hablarle a tu yo futuro.' },
+    3: { id: 'planetafunk', nombre: 'Planeta Funk', archivo: 'aerocosmos.html', color: '#66FF99', c2: '#FFB347', txt: 'Vuelo libre sobre el núcleo funk.' },
+    4: { id: 'kalpa', nombre: 'Kalpa', archivo: 'kalpa.html', color: '#FF6A5A', c2: '#38E1FF', txt: 'El túnel: dejarse llevar a la deriva.' },
+    5: { id: 'sagitario', nombre: 'Sagitario A*', archivo: 'sinfonia_gravitacional.html', color: '#D9C8FF', c2: '#FF9A3C', txt: 'La sinfonía gravitacional del agujero negro.' },
+    6: { id: 'mundointerior', nombre: 'Mundo Interior', archivo: 'mundointerior_completo.html', color: '#00E5CC', c2: '#7B3FE4', txt: 'Los paneles del mundo interior.' },
+    7: { id: 'pikitipu', nombre: 'Pikitipu', archivo: 'pikitipu2.html', color: '#B8FF5A', c2: '#FF6FD8', txt: '' },
+    8: { id: 'sol', nombre: 'Sol de Voluntad', archivo: 'chamalnquimyst.html', color: '#FFCC55', c2: '#FF7A2A', txt: 'Durakinesis: el sol de la voluntad.' },
+  };
+  const LINEAS_ENEA = [[9, 3], [3, 6], [6, 9], [1, 4], [4, 2], [2, 8], [8, 5], [5, 7], [7, 1]];
+  function puntoEnea(n, r) { const a = (-90 + 40 * (n % 9)) * Math.PI / 180; return [200 + r * Math.cos(a), 200 + r * Math.sin(a)]; }
+  function urlUniverso(u) {
+    const p = new URLSearchParams();
+    if (yo) p.set('aspecto', yo);
+    const a = st.aspectos && st.aspectos[yo]; if (a && a.pv != null) p.set('pv', String(Math.round(a.pv)));
+    return UNIVERSOS_BASE + u.archivo + (p.toString() ? '?' + p : '');
+  }
+  function irAUniverso(u) {
+    window.open(urlUniverso(u), '_blank', 'noopener');
+    avisar('✶ ' + u.nombre + ' se abrió en otra ventana', 3500);
+  }
+  function abrirConexiones() {
+    const R = 150;
+    const lineas = LINEAS_ENEA.map(([a, b]) => { const [x1, y1] = puntoEnea(a, R), [x2, y2] = puntoEnea(b, R);
+      return `<line class="en-linea" data-a="${a}" data-b="${b}" x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`; }).join('');
+    const grads = [], nodos = [];
+    for (let n = 1; n <= 9; n++) {
+      const u = ENEAGRAMA[n], [x, y] = puntoEnea(n, R), [lx, ly] = puntoEnea(n, R + 30), [nx, ny] = puntoEnea(n, R - 27);
+      const ancla = lx < 185 ? 'end' : lx > 215 ? 'start' : 'middle';
+      if (!u) { nodos.push(`<g class="en-vacio"><circle cx="${x}" cy="${y}" r="7"/><text class="en-num" x="${nx}" y="${ny + 4}">${n}</text></g>`); continue; }
+      grads.push(`<radialGradient id="eg${n}" cx="38%" cy="35%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".35" stop-color="${u.color}"/><stop offset="1" stop-color="${u.c2}"/></radialGradient>`);
+      nodos.push(`<g class="en-nodo" data-n="${n}" tabindex="0" role="button" aria-label="${esc(u.nombre)}" style="--c:${u.color};--d:${(n * 0.61).toFixed(2)}s">
+        <circle class="en-halo" cx="${x}" cy="${y}" r="24" fill="${u.color}"/>
+        <circle class="en-bola" cx="${x}" cy="${y}" r="15" fill="url(#eg${n})"/>
+        <text class="en-num" x="${nx}" y="${ny + 4}">${n}</text>
+        <text class="en-nombre" x="${lx}" y="${ly + 5}" text-anchor="${ancla}">${esc(u.nombre)}</text></g>`);
+    }
+    abrirHoja(`<h2>Conexiones</h2><p class="sub">Elige un universo. Se abre en otra ventana; Killer Pendiente sigue aquí.</p>
+      <svg class="eneagrama" viewBox="-70 -20 540 440" role="group" aria-label="Eneagrama de los universos">
+        <defs>${grads.join('')}</defs>
+        <circle class="en-circulo" cx="200" cy="200" r="${R}"/>${lineas}${nodos.join('')}
+      </svg>
+      <div class="en-elegido" id="en-elegido"><span class="sub">Toca un punto del eneagrama</span></div>`, (h) => {
+      let sel = null;
+      const elegir = (n) => {
+        sel = n; const u = ENEAGRAMA[n];
+        h.querySelectorAll('.en-nodo').forEach((g) => g.classList.toggle('sel', +g.dataset.n === n));
+        h.querySelectorAll('.en-linea').forEach((l) => l.classList.toggle('viva', +l.dataset.a === n || +l.dataset.b === n));
+        h.querySelector('.eneagrama').style.setProperty('--sel', u.color);
+        h.querySelector('#en-elegido').innerHTML = `<div class="en-tit" style="--c:${u.color}"><b>${n}</b>${esc(u.nombre)}</div>${u.txt ? `<p class="sub">${esc(u.txt)}</p>` : ''}
+          <button class="primario" id="en-ir">Entrar a ${esc(u.nombre)} ↗</button>`;
+        h.querySelector('#en-ir').onclick = () => irAUniverso(u);
+      };
+      h.querySelectorAll('.en-nodo').forEach((g) => {
+        const n = +g.dataset.n;
+        g.onclick = () => { if (sel === n) irAUniverso(ENEAGRAMA[n]); else elegir(n); };   // segundo toque: entrar
+        g.onkeydown = (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); g.onclick(); } };
+      });
+    });
+  }
+  $('#b-conexiones').onclick = abrirConexiones;
+  $('#b-conexiones-ser').onclick = abrirConexiones;
+
   // ══ TIMER ════════════════════════════════════════════════════════
   // timer = {id, total, fin, tipo:'tarea'|'dos'|'recompensa', nombre, sono}
   // sesiones[id] = {inicio, distracciones}  — una extensión no reinicia la sesión (igual que KP)
