@@ -269,6 +269,8 @@
     if (!cfg.apiKey || String(cfg.apiKey).indexOf('PEGA') === 0) { $('#e-error').textContent = 'Falta configurar Firebase en config.js.'; return; }
     firebase.initializeApp(cfg);
     auth = firebase.auth(); db = firebase.firestore(); FV = firebase.firestore.FieldValue;
+    // En celulares y redes con proxy el canal en vivo a veces se queda mudo: que detecte solo si debe usar long-polling
+    try { db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) { }
     db.enablePersistence({ synchronizeTabs: true }).catch(() => { });
     // La sesión de Firebase se comparte con kpmovil (mismo dominio). Al abrir la app no se entra sola:
     // se pregunta "Continuar como X" o "Entrar con otro aspecto". Tras escribir correo y clave, se entra directo.
@@ -342,6 +344,7 @@
       st.tareas = {}; s.docs.forEach((d) => { const t = d.data(); if (!t._borrada) st.tareas[d.id] = Object.assign({ id: d.id }, t); });
       pintarCampo(); pintarAhora(); pintarSer(); guardarHuevoLuego(); red();
       if (timer) pintarTimer();
+      ordenesDeInicio();
     });
     oir(db.collection('chat_general').orderBy('timestamp').limitToLast(300), (s) => { st.general = s.docs.map((d) => d.data()); pintarChat(); pintarSalas(); });
     oir(db.collection('chat_privado').where('sender', '==', yo), (s) => { st.privEnv = mapa(s); pintarChat(); });
@@ -704,6 +707,38 @@
     const seg = tipo === 'dos' ? SEG_CALENTAMIENTO : Math.max(1, (t.time || 25)) * 60;
     abrirTimer({ id: t.id, total: seg, fin: ahoraMs() + seg * 1000, tipo, nombre: t.name });
   }
+  // Orden "inicia …" que llega desde fuera (voz por Google, el puente): la tarea trae iniciar:{ms, origen}.
+  // El primer dispositivo con kpweb abierto la toma, arranca el timer desde el momento en que se dijo y la borra.
+  const VIGENCIA_ORDEN = 30 * 60000;
+  function ordenesDeInicio() {
+    Object.values(st.tareas).forEach((t) => {
+      const o = t.iniciar;
+      if (!o || !o.ms || t.completed) return;
+      const k = 'kp_orden_' + t.id + '_' + o.ms;
+      let vista = false; try { vista = !!localStorage.getItem(k); localStorage.setItem(k, '1'); } catch (e) { }
+      refTarea(t.id).update({ iniciar: FV.delete(), _mod: ahoraMs() }).catch(() => { });
+      if (vista || ahoraMs() - o.ms > VIGENCIA_ORDEN) return;
+      if (timer) { avisar('Llegó «inicia ' + t.name + '», pero ya hay un timer corriendo', 6000); return; }
+      const s0 = sesiones[t.id];
+      if (!s0 || ahoraMs() - s0.inicio > 12 * 3600000) { sesiones[t.id] = { inicio: o.ms, distracciones: 0 }; guardarSesiones(); }
+      const seg = Math.max(1, (t.time || 25)) * 60;
+      let fin = o.ms + seg * 1000;
+      if (fin - ahoraMs() < 60000) fin = ahoraMs() + seg * 1000;   // si llegó muy tarde, parte de cero
+      abrirTimer({ id: t.id, total: seg, fin, tipo: 'tarea', nombre: t.name });
+      avisar('◆ Iniciada por voz: ' + t.name, 5000);
+    });
+  }
+  // Al volver a la app (pantalla encendida, otra pestaña, vuelve la red): despertar el canal en vivo
+  let ultimoDespertar = 0;
+  function despertarRed() {
+    if (!db || !yo || ahoraMs() - ultimoDespertar < 5000) return;
+    ultimoDespertar = ahoraMs();
+    db.disableNetwork().then(() => db.enableNetwork()).catch(() => { });
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') despertarRed(); });
+  window.addEventListener('online', despertarRed);
+  window.addEventListener('focus', despertarRed);
+
   function abrirTimer(tm) {
     timer = tm; guardarTimer();
     pedirPermisos();
