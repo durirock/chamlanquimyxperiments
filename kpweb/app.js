@@ -1078,7 +1078,8 @@
     const abajo = alFinal || caja.scrollHeight - caja.scrollTop - caja.clientHeight < 60;
     caja.innerHTML = mensajesSala(st.sala).map((m) => `<div class="msj ${m.sender === yo ? 'mio' : ''}">
       ${m.sender === yo ? '' : `<div class="de" style="color:${esc(colorDe(m.sender))}">${esc(m.sender)}</div>`}
-      <div>${esc(m.message)}</div><div class="hora">${esc(String(m.timestamp).slice(5, 16))}</div></div>`).join('') || '<p class="sub">Sin mensajes todavía.</p>';
+      ${m.imagen && /^data:image\//.test(m.imagen) ? `<img class="foto" src="${esc(m.imagen)}" alt="imagen" loading="lazy">` : ''}
+      ${m.message ? `<div>${esc(m.message)}</div>` : ''}<div class="hora">${esc(String(m.timestamp).slice(5, 16))}</div></div>`).join('') || '<p class="sub">Sin mensajes todavía.</p>';
     if (abajo) caja.scrollTop = caja.scrollHeight;
     if (chatVisible() && noLeidos(st.sala)) marcarLeido(st.sala);
     avisosRed();
@@ -1088,11 +1089,57 @@
     if (!ult || (((miAspecto().leidos) || {})[sala] || '') >= ult) return;
     refYo().set({ leidos: { [sala]: ult } }, { merge: true });
   }
+  // ── imágenes en el chat: botón, Ctrl+V (pantallazo) o arrastrar. Viajan dentro del mensaje
+  //    como JPEG liviano (máx. 1280 px), igual que en KP del PC, para no depender de otro servicio.
+  let adjunto = null;
+  async function comprimirImagen(blob) {
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = url; });
+      const k = Math.min(1, 1280 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+      let q = 0.85, d = c.toDataURL('image/jpeg', q);
+      while (d.length > 600000 && q > 0.4) { q -= 0.1; d = c.toDataURL('image/jpeg', q); }
+      return d;
+    } finally { URL.revokeObjectURL(url); }
+  }
+  function ponerAdjunto(d) {
+    adjunto = d || null;
+    const a = $('#chat-adjunto');
+    a.innerHTML = d ? `<img src="${d}" alt=""><span>Imagen lista para enviar</span><button type="button" id="chat-quitar">Quitar</button>` : '';
+    a.classList.toggle('oculto', !d);
+    if (d) a.querySelector('#chat-quitar').onclick = () => ponerAdjunto(null);
+  }
+  async function tomarImagen(blob) {
+    if (!blob || !/^image\//.test(blob.type)) return false;
+    try { ponerAdjunto(await comprimirImagen(blob)); $('#chat-texto').focus(); } catch (e) { avisar('No se pudo leer la imagen'); }
+    return true;
+  }
+  $('#chat-img').onclick = () => $('#chat-archivo').click();
+  $('#chat-archivo').onchange = (ev) => { const f = ev.target.files[0]; ev.target.value = ''; tomarImagen(f); };
+  $('#chat-texto').addEventListener('paste', (ev) => {
+    const it = Array.from((ev.clipboardData && ev.clipboardData.items) || []).find((i) => i.type.startsWith('image/'));
+    if (it) { ev.preventDefault(); tomarImagen(it.getAsFile()); }
+  });
+  $('#red-chat').addEventListener('dragover', (ev) => { if (Array.from(ev.dataTransfer.items || []).some((i) => i.type.startsWith('image/'))) ev.preventDefault(); });
+  $('#red-chat').addEventListener('drop', (ev) => {
+    const f = Array.from(ev.dataTransfer.files || []).find((x) => x.type.startsWith('image/'));
+    if (f) { ev.preventDefault(); tomarImagen(f); }
+  });
+  $('#chat-mensajes').addEventListener('click', (ev) => {
+    const img = ev.target.closest('img.foto'); if (!img) return;
+    abrirHoja(`<img class="foto-grande" src="${img.getAttribute('src')}" alt="imagen"><div class="botones"><button id="i-cerrar">Cerrar</button></div>`,
+      (h) => { h.querySelector('#i-cerrar').onclick = cerrarHoja; h.querySelector('.foto-grande').onclick = cerrarHoja; });
+  });
+
   $('#f-chat').onsubmit = async (ev) => {
     ev.preventDefault();
-    const txt = $('#chat-texto').value.trim(); if (!txt) return;
+    const txt = $('#chat-texto').value.trim(); if (!txt && !adjunto) return;
     $('#chat-texto').value = '';
     const m = { sender: yo, timestamp: fechaISO(), message: txt, read: false, _mod: ahoraMs() };
+    if (adjunto) { m.imagen = adjunto; ponerAdjunto(null); }
     if (st.sala === 'General') await db.collection('chat_general').add(m);
     else await db.collection('chat_privado').add(Object.assign(m, { chat_id: [yo, st.sala].sort().join('_'), recipient: st.sala }));
   };

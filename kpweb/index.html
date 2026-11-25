@@ -181,8 +181,11 @@
       <div id="red-chat">
         <div id="chat-salas" class="salas"></div>
         <div id="chat-mensajes" class="mensajes"></div>
+        <div id="chat-adjunto" class="adjunto oculto"></div>
         <form id="f-chat" class="escribir">
-          <textarea id="chat-texto" rows="1" placeholder="Escribe…"></textarea>
+          <button type="button" id="chat-img" class="icono" title="Adjuntar imagen (también puedes pegar un pantallazo con Ctrl+V)">◫</button>
+          <input type="file" id="chat-archivo" accept="image/*" hidden>
+          <textarea id="chat-texto" rows="1" placeholder="Escribe… (Ctrl+V pega un pantallazo)"></textarea>
           <button class="primario">Enviar</button>
         </form>
       </div>
