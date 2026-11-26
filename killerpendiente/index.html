@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Killer Pendiente · Gamificación del Ser</title>
+<meta name="description" content="Killer Pendiente: una herramienta para cruzar el umbral de lo que postergas. Descarga para Windows, instrucciones, la epopeya y condiciones de uso.">
+<meta name="theme-color" content="#060908">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<style>
+:root {
+  --fondo: #060908; --fondo2: #0b120f; --capa: #101915; --capa2: #15211c; --borde: #1f2d27;
+  --texto: #e6efe9; --tenue: #9db0a7; --apagado: #5f7169;
+  --logro: #7dffb0; --tension: #ffc35a; --alerta: #ff6b78; --violeta: #b48cff;
+  --radio: 18px; --suave: cubic-bezier(.2,.8,.2,1);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Noto Serif", Georgia, serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; color: var(--texto); background: var(--fondo);
+  font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased;
+  background-image: radial-gradient(90% 60% at 50% -10%, #0f2a1d 0%, transparent 60%), radial-gradient(60% 50% at 100% 100%, #1a1230 0%, transparent 60%);
+  background-attachment: fixed; min-height: 100vh;
+}
+a { color: var(--logro); }
+button { font: inherit; color: inherit; cursor: pointer; }
+.envoltura { max-width: 880px; margin: 0 auto; padding: 0 20px 80px; }
+
+/* ── cabecera y pestañas ── */
+header.cab { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--fondo) 78%, transparent); border-bottom: 1px solid var(--borde); }
+.cab-in { max-width: 880px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; gap: 14px; }
+.marca { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; text-decoration: none; color: var(--texto); }
+.marca img { width: 30px; height: 30px; border-radius: 8px; }
+nav.pestanas { display: flex; gap: 4px; margin-left: auto; overflow-x: auto; scrollbar-width: none; }
+nav.pestanas::-webkit-scrollbar { display: none; }
+nav.pestanas button { background: none; border: 1px solid transparent; border-radius: 999px; padding: 8px 14px; color: var(--tenue); white-space: nowrap; font-size: 15px; transition: color .2s, border-color .2s, background .2s; }
+nav.pestanas button:hover { color: var(--texto); }
+nav.pestanas .corto { display: none; }
+nav.pestanas button.activa { color: var(--texto); border-color: color-mix(in srgb, var(--logro) 55%, var(--borde)); background: color-mix(in srgb, var(--logro) 9%, transparent); }
+
+section.panel { display: none; animation: aparecer .5s var(--suave); }
+section.panel.activa { display: block; }
+@keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ── portada / descarga ── */
+.portada { position: relative; text-align: center; padding: 92px 0 36px; }
+.portada svg.enea { position: absolute; left: 50%; top: 8px; width: 520px; max-width: 120vw; transform: translateX(-50%); opacity: .22; pointer-events: none; z-index: -1; }
+.enea .gira { transform-origin: 200px 200px; animation: girar 160s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+.portada .sello { width: 92px; height: 92px; border-radius: 24px; box-shadow: 0 0 60px #7dffb033; }
+h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(40px, 7vw, 64px); line-height: 1.05; margin: 22px 0 6px; letter-spacing: -.01em; }
+.lema { color: var(--tenue); font-size: clamp(17px, 2.4vw, 20px); margin: 0 auto 30px; max-width: 34em; }
+.boton-grande { display: inline-flex; align-items: center; gap: 12px; padding: 18px 30px; border-radius: 16px; border: 0;
+  background: linear-gradient(135deg, #7dffb0, #4fd8a0); color: #03140b; font-weight: 800; font-size: 19px; text-decoration: none;
+  box-shadow: 0 10px 40px #7dffb040, inset 0 1px 0 #ffffff80; transition: transform .2s var(--suave), box-shadow .2s; }
+.boton-grande:hover { transform: translateY(-2px); box-shadow: 0 16px 50px #7dffb055, inset 0 1px 0 #ffffff80; }
+.boton-grande .flecha { font-size: 22px; }
+.bajo-boton { color: var(--apagado); font-size: 14px; margin-top: 14px; }
+.estado-umbral { display: inline-block; margin-top: 10px; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--borde); color: var(--tenue); }
+.estado-umbral.verde { color: var(--logro); border-color: #7dffb055; }
+.estado-umbral.ambar { color: var(--tension); border-color: #ffc35a55; }
+.estado-umbral.pausa { color: var(--alerta); border-color: #ff6b7855; }
+
+.tres { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 44px 0 10px; }
+.tarjeta { background: linear-gradient(180deg, var(--capa), var(--fondo2)); border: 1px solid var(--borde); border-radius: var(--radio); padding: 20px; }
+.tarjeta b { display: block; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--logro); margin-bottom: 6px; }
+.tarjeta p { margin: 0; color: var(--tenue); font-size: 15.5px; }
+.tarjeta.t2 b { color: var(--tension); } .tarjeta.t3 b { color: var(--violeta); }
+.otra { margin-top: 26px; text-align: center; color: var(--tenue); font-size: 15px; }
+
+/* ── texto largo ── */
+.texto h2 { font-family: var(--serif); font-weight: 600; font-size: 34px; margin: 46px 0 6px; }
+.texto h3 { font-size: 15px; letter-spacing: .14em; text-transform: uppercase; color: var(--logro); margin: 36px 0 8px; }
+.texto p, .texto li { color: #d6e2dc; }
+.texto .sub { color: var(--tenue); }
+.pasos { counter-reset: paso; list-style: none; padding: 0; display: grid; gap: 12px; }
+.pasos li { counter-increment: paso; position: relative; background: var(--capa); border: 1px solid var(--borde); border-radius: 14px; padding: 14px 16px 14px 58px; }
+.pasos li::before { content: counter(paso); position: absolute; left: 16px; top: 13px; width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 800; font-size: 14px; color: #03140b; background: var(--logro); }
+.nota { border-left: 3px solid var(--tension); background: #ffc35a0d; padding: 12px 16px; border-radius: 0 12px 12px 0; color: #eadcc0; }
+kbd { font: 13px ui-monospace, Consolas, monospace; background: var(--capa2); border: 1px solid var(--borde); border-bottom-width: 2px; border-radius: 6px; padding: 1px 6px; }
+.glosario { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 10px 0; }
+.glosario dt { color: var(--logro); font-weight: 700; } .glosario dd { margin: 0; color: #d6e2dc; }
+
+/* ── epopeya ── */
+.epopeya { font-family: var(--serif); font-size: 19px; line-height: 1.75; }
+.epopeya p { color: #dfe8e3; }
+.epopeya h3 { font-family: system-ui, sans-serif; }
+.epopeya .capitular::first-letter { float: left; font-size: 64px; line-height: .9; padding: 6px 10px 0 0; color: var(--logro); }
+.epopeya blockquote { margin: 26px 0; padding: 4px 0 4px 22px; border-left: 2px solid var(--violeta); color: #cbbcf0; font-style: italic; }
+.estacion { display: flex; gap: 14px; align-items: baseline; }
+.estacion i { font-style: normal; font-family: system-ui, sans-serif; font-size: 12px; letter-spacing: .14em; color: var(--apagado); min-width: 2.4em; }
+.ciencia { font-family: system-ui, sans-serif; font-size: 16.5px; line-height: 1.65; }
+.ciencia .item { background: var(--capa); border: 1px solid var(--borde); border-radius: 14px; padding: 14px 18px; margin: 10px 0; }
+.ciencia .item b { color: var(--logro); }
+.referencias { font-family: system-ui, sans-serif; font-size: 14px; color: var(--tenue); }
+.referencias li { color: var(--tenue); margin: 4px 0; }
+
+/* ── condiciones y umbral ── */
+.cond h3 { color: var(--tension); }
+.ayuda { border: 1px solid #ff6b7855; background: linear-gradient(180deg, #2a0f14, #160a0d); border-radius: var(--radio); padding: 18px 20px; margin: 22px 0; }
+.ayuda b { color: #ffb3ba; }
+.ayuda .tel { font-size: 26px; font-weight: 800; color: #fff; letter-spacing: .02em; }
+.umbral { background: linear-gradient(180deg, var(--capa), var(--fondo2)); border: 1px solid var(--borde); border-radius: 22px; padding: 22px; margin-top: 30px; }
+.umbral h2 { margin-top: 0; }
+.bloque-q { margin: 22px 0; }
+.bloque-q > .tit { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--apagado); margin-bottom: 6px; }
+.preg { padding: 14px 0; border-top: 1px solid var(--borde); }
+.preg .p { margin-bottom: 10px; }
+.opciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.opciones label { position: relative; }
+.opciones input { position: absolute; opacity: 0; pointer-events: none; }
+.opciones span { display: inline-block; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--borde); background: var(--fondo2); color: var(--tenue); font-size: 15px; transition: all .18s; }
+.opciones input:checked + span { color: #03140b; background: var(--logro); border-color: transparent; font-weight: 700; }
+.opciones input:focus-visible + span { outline: 2px solid var(--logro); outline-offset: 2px; }
+.acepto { display: flex; gap: 12px; align-items: flex-start; margin: 12px 0; color: #d6e2dc; }
+.acepto input { width: 20px; height: 20px; margin-top: 4px; accent-color: #7dffb0; flex: 0 0 auto; }
+.privado { color: var(--apagado); font-size: 14px; }
+.boton { padding: 13px 22px; border-radius: 12px; border: 1px solid var(--borde); background: var(--capa2); }
+.boton.primario { background: var(--logro); color: #03140b; border: 0; font-weight: 800; }
+.boton:disabled { opacity: .45; cursor: not-allowed; }
+.resultado { margin-top: 22px; border-radius: 18px; padding: 20px; border: 1px solid var(--borde); display: none; }
+.resultado.ver { display: block; animation: aparecer .5s var(--suave); }
+.resultado.verde { background: #7dffb00d; border-color: #7dffb055; }
+.resultado.ambar { background: #ffc35a0d; border-color: #ffc35a55; }
+.resultado.pausa { background: #ff6b780d; border-color: #ff6b7855; }
+.resultado h3 { margin-top: 0; letter-spacing: .02em; text-transform: none; font-size: 22px; }
+.resultado.verde h3 { color: var(--logro); } .resultado.ambar h3 { color: var(--tension); } .resultado.pausa h3 { color: var(--alerta); }
+.faltan { color: var(--tension); font-size: 14px; min-height: 1.4em; }
+
+footer { border-top: 1px solid var(--borde); color: var(--apagado); font-size: 14px; text-align: center; padding: 28px 20px 40px; }
+@media (prefers-reduced-motion: reduce) { .enea .gira, section.panel, .resultado.ver { animation: none; } html { scroll-behavior: auto; } }
+@media (max-width: 560px) { .marca { display: none; } .cab-in { padding: 8px 10px; }
+  nav.pestanas { margin: 0; width: 100%; justify-content: space-between; } nav.pestanas button { padding: 7px 10px; font-size: 14px; } nav.pestanas .largo { display: none; } nav.pestanas .corto { display: inline; } .portada svg.enea { opacity: .13; } .glosario { grid-template-columns: 1fr; } .glosario dt { margin-top: 8px; } .epopeya { font-size: 18px; } }
+</style>
+</head>
+<body>
+
+<header class="cab">
+  <div class="cab-in">
+    <a class="marca" href="#descargar"><img src="icono.svg" alt=""><span>Killer Pendiente</span></a>
+    <nav class="pestanas" aria-label="Secciones">
+      <button data-p="descargar"><span class="largo">Descargar</span><span class="corto">Descarga</span></button>
+      <button data-p="instrucciones"><span class="largo">Instrucciones</span><span class="corto">Guía</span></button>
+      <button data-p="epopeya">Epopeya</button>
+      <button data-p="condiciones">Condiciones</button>
+    </nav>
+  </div>
+</header>
+
+<main class="envoltura">
+
+<!-- ═══════════════ DESCARGAR ═══════════════ -->
+<section id="descargar" class="panel">
+  <div class="portada">
+    <svg class="enea" viewBox="0 0 400 400" aria-hidden="true">
+      <g class="gira" fill="none" stroke="#7dffb0" stroke-width="1">
+        <circle cx="200" cy="200" r="170"/>
+        <polygon points="200.0,30.0 347.2,285.0 52.8,285.0"/>
+        <polyline points="309.3,69.8 258.1,359.7 367.4,170.5 90.7,69.8 141.9,359.7 32.6,170.5 309.3,69.8" opacity=".7"/>
+      </g>
+    </svg>
+    <img class="sello" src="icono.svg" alt="Killer Pendiente">
+    <h1>Killer Pendiente</h1>
+    <p class="lema">Para cruzar el umbral de lo que postergas. Un taller de la voluntad que premia empezar, no castiga el retraso, y refleja lo que haces sin juzgarte.</p>
+    <a id="b-descargar" class="boton-grande" href="#condiciones"><span class="flecha">↓</span><span id="b-descargar-txt">Descargar para Windows</span></a>
+    <div class="bajo-boton">Windows 10 / 11 · 64 bits · gratis · <span id="version">versión 8.31</span></div>
+    <div id="estado-umbral" class="estado-umbral">Antes de descargar: cruzar «El Umbral» (3 minutos)</div>
+  </div>
+
+  <div class="tres">
+    <div class="tarjeta"><b>Empezar</b><p>El primer paso es el que cuesta. KP premia cruzar el umbral: iniciar una tarea ya es una victoria.</p></div>
+    <div class="tarjeta t2"><b>Sostener</b><p>Un timer, tus aspectos, la presión que crece con los días, sin castigo. El Sol de la Voluntad crece contigo.</p></div>
+    <div class="tarjeta t3"><b>Reflejar</b><p>Lo hecho en tu vida queda registrado. Patrones, distracciones y logros: un espejo para conocerte.</p></div>
+  </div>
+  <p class="otra">¿En el celular? Usa la versión web: <a href="../kpweb/">chamalnquimyst.com/kpweb</a></p>
+</section>
+
+<!-- ═══════════════ INSTRUCCIONES ═══════════════ -->
+<section id="instrucciones" class="panel texto">
+  <h2>Instrucciones</h2>
+  <p class="sub">De la descarga a tu primera tarea cumplida.</p>
+
+  <h3>Instalar</h3>
+  <ol class="pasos">
+    <li>Cruza <a href="#condiciones" data-ir="condiciones">El Umbral</a> (condiciones y un cuestionario breve) y descarga <b>KillerPendiente-Setup.exe</b>.</li>
+    <li>Ábrelo. Como Killer Pendiente es nuevo y aún no tiene firma digital, Windows puede mostrar <b>«Windows protegió su PC»</b>: toca <b>Más información</b> → <b>Ejecutar de todas formas</b>.</li>
+    <li>Lee y acepta las condiciones, elige si quieres un acceso en el escritorio y pulsa <b>Instalar</b>. No pide permisos de administrador: se instala en tu carpeta de usuario.</li>
+    <li>La primera vez, Windows puede preguntar si KP puede usar la red: elige <b>Permitir</b> en redes privadas. KP abre una conexión local para hablar con sus universos.</li>
+  </ol>
+
+  <h3>Tu primera tarea</h3>
+  <ol class="pasos">
+    <li><b>Crea tu aspecto.</b> Un aspecto es una faceta tuya con nombre propio (la que estudia, la que crea, la que cuida). Puedes tener varios.</li>
+    <li><b>Agrega un pendiente</b> con su prioridad (<b>A</b> urgente e importante, <b>B</b> importante, <b>C</b> cuando se pueda), su tiempo estimado y sus <b>Pv</b> (Puntos de Voluntad: cuánto te cuesta).</li>
+    <li><b>Inicia.</b> El timer corre. Empezar ya cuenta: el umbral es la parte más difícil.</li>
+    <li><b>Termina.</b> Marca la tarea como hecha y suma sus Pv. Si la hiciste fuera de la app, márcala como <b>hecha en mi vida</b>: también cuenta.</li>
+  </ol>
+
+  <h3>El lenguaje de KP</h3>
+  <dl class="glosario">
+    <dt>Pv</dt><dd>Puntos de Voluntad. Lo que ganas al cumplir. Hacen crecer tu nivel y tu Sol.</dd>
+    <dt>Presión</dt><dd>Cada día que un pendiente espera, su presión sube (más rápido si es A). Se ve como un color que se intensifica. No es castigo: es la señal de que esa tarea pide ser mirada. Vencerla da un bono por resistencia.</dd>
+    <dt>Aspectos</dt><dd>Tus facetas. Cada una con sus tareas, su color y su historia. El <b>Gran Espíritu Asignador</b> reparte pendientes entre ellas.</dd>
+    <dt>Lluvia de ideas</dt><dd>Un lugar para vaciar la cabeza sin ordenar. Después se asigna.</dd>
+    <dt>Zazen · $D</dt><dd>Meditación con su propia medida, Dhana ($D), aparte de los Pv.</dd>
+    <dt>Mara · Ego Sombra</dt><dd>Registro de distracciones: ver cuándo y cómo se va tu atención, sin culpa.</dd>
+    <dt>Mu</dt><dd>La moneda de los universos: abre portales y cruza mundos.</dd>
+    <dt>Huevo Cósmico</dt><dd>El archivo <b>.cegg</b>: el respaldo completo de tus aspectos. Guárdalo de vez en cuando.</dd>
+    <dt>✶ Conexiones</dt><dd>En Herramientas: el eneagrama de los universos (Musicosmos, Planeta Funk, Mundo Interior…). Cada uno se abre en su propia ventana.</dd>
+  </dl>
+
+  <h3>Para que te sirva</h3>
+  <ul>
+    <li>Pocas tareas A por día. Si todo es urgente, nada lo es.</li>
+    <li>Divide lo grande: «escribir la tesis» no se puede iniciar; «abrir el documento y escribir un párrafo», sí.</li>
+    <li>Si un día no hiciste nada, no hay deuda. Vuelve a empezar por una tarea de dos minutos.</li>
+    <li>KP son ruedas chicas: entrenan la voluntad para que algún día no las necesites.</li>
+  </ul>
+
+  <h3>Tus datos</h3>
+  <p>Todo lo que haces en Killer Pendiente se guarda <b>en tu computador</b>, en la carpeta donde se instaló. Nadie más lo ve. La sincronización con la nube y el celular todavía no está abierta al público.</p>
+  <p><b>Actualizar:</b> descarga el instalador nuevo e instálalo encima; tus datos se conservan. <b>Desinstalar:</b> desde Configuración de Windows → Aplicaciones. Tus datos quedan en la carpeta por si vuelves; bórrala a mano si quieres eliminarlos.</p>
+</section>
+
+<!-- ═══════════════ EPOPEYA ═══════════════ -->
+<section id="epopeya" class="panel texto epopeya">
+  <h2>La epopeya</h2>
+  <p class="sub" style="font-family:system-ui,sans-serif;font-size:16px">Lo que esta herramienta es, contado dos veces: como mito y como ciencia.</p>
+
+  <p class="capitular">Toda gran historia empieza con algo que no se ha hecho. Un llamado. A veces llega como una carta, otras como una voz; casi siempre, como un pendiente: ese correo, esa conversación, ese capítulo, esa llamada al médico, ese proyecto de años. Joseph Campbell llamó a esto <em>la llamada a la aventura</em>. Killer Pendiente parte de una idea sencilla: tu lista de pendientes es tu mapa del héroe.</p>
+
+  <h3><span class="estacion"><i>I</i>La llamada</span></h3>
+  <p>Cada pendiente es una puerta. No importa su tamaño: lavar la loza y escribir una sinfonía comparten la misma física interna. Algo en ti sabe que debe hacerse y algo en ti se resiste. Esa tensión no es un defecto; es el comienzo de todos los relatos.</p>
+
+  <h3><span class="estacion"><i>II</i>El rechazo de la llamada</span></h3>
+  <p>En el mito, el héroe casi siempre dice que no al principio. Campbell lo vio en todas las culturas: el rechazo de la llamada. En la vida lo llamamos procrastinación. No es pereza: es una forma de protegerse del miedo, de la incomodidad, de la posibilidad de fallar. Por eso Killer Pendiente no castiga el retraso. Castigar al que posterga es darle más razones al miedo.</p>
+
+  <h3><span class="estacion"><i>III</i>El umbral</span></h3>
+  <p>Entre el mundo conocido y la aventura hay un umbral, y en el umbral hay un guardián. Lo sabe cualquiera que haya mirado una tarea durante horas: lo difícil no es hacerla, es <em>empezarla</em>. Por eso aquí se premia el cruce. Iniciar el timer ya es una victoria. Una vez adentro, el guardián se encoge.</p>
+
+  <h3><span class="estacion"><i>IV</i>Los aliados y el mentor</span></h3>
+  <p>Nadie cruza solo. En la historia de Killer Pendiente hay un mensajero que viene del año 2044, Jyörg, que envía esta herramienta hacia atrás en el tiempo; hay consejos, palabras de aliento que unos aspectos le dejan a otros, y un Gran Espíritu Asignador que reparte el trabajo. Son imágenes de algo real: las partes de ti que ya saben cuidarte.</p>
+
+  <h3><span class="estacion"><i>V</i>La sombra</span></h3>
+  <p>Carl Jung llamó <em>sombra</em> a lo que no queremos ver de nosotros. En Killer Pendiente la sombra tiene dos rostros. Uno es <b>Mara</b>, el tentador que, según la tradición, intentó distraer al Buda la noche de su despertar: tus distracciones, registradas sin juicio para que puedas verlas. El otro es <b>Ego Sombra</b>: la voz que exige sin descanso, la culpa que no admite perdón, el juez interno que confunde exigencia con valor. Ego Sombra no se vence peleando; se vence no obedeciéndole. Por eso la herramienta no grita, no humilla y no lleva cuentas de tus fracasos.</p>
+  <blockquote>La sombra no es el enemigo. El enemigo es la voz que te dice que no mereces descanso.</blockquote>
+
+  <h3><span class="estacion"><i>VI</i>Los aspectos</span></h3>
+  <p>Jung observó que la psique no es un bloque: está habitada por complejos, figuras con voluntad propia que a veces toman el mando. Killer Pendiente te invita a darles nombre. La que estudia, la que crea, la que sostiene a otros. Cada aspecto tiene sus tareas, su color y su ritmo. No se trata de fundirlos ni de que uno gane: cada uno madura a su manera y, juntos, saben que son parte de algo mayor. Jung lo llamó el <em>Sí-mismo</em>, el Self: un todo que es más que la suma de sus partes.</p>
+
+  <h3><span class="estacion"><i>VII</i>La prueba y la recompensa</span></h3>
+  <p>El timer es la prueba. Los Puntos de Voluntad son la recompensa, y el Sol de la Voluntad crece con ellos. Los pendientes viejos no se pudren: ganan presión, como una piedra que se calienta, y vencerlos da más. La tarea que llevas meses evitando es exactamente la que más voluntad libera.</p>
+
+  <h3><span class="estacion"><i>VIII</i>El regreso con el elixir</span></h3>
+  <p>El héroe no se queda en el mundo especial: vuelve a casa con algo para los suyos. En Killer Pendiente, el elixir es lo hecho en la vida. Por eso existe la opción «hecho en mi vida»: lo que lograste fuera de la pantalla también cuenta. Y por eso la herramienta se piensa como unas <b>ruedas chicas</b>: un entrenamiento para que un día, simplemente, empieces sin necesitarla.</p>
+
+  <h3><span class="estacion"><i>IX</i>El individuo</span></h3>
+  <p>Jung llamó <em>individuación</em> al camino de volverse quien uno es. No un ideal heredado, no un deber ser impuesto, sino la forja de valores propios. Killer Pendiente es un taller para eso: un espacio donde la responsabilidad deja de ser un mandato y se vuelve un acto creativo hacia uno mismo.</p>
+
+  <div class="ciencia">
+    <h2 style="font-family:var(--serif)">Lo que dice la ciencia</h2>
+    <p class="sub">El mito orienta; la evidencia ajusta. Estas son las ideas en las que se apoya el diseño, con sus límites.</p>
+
+    <div class="item"><b>La procrastinación es regulación emocional, no pereza.</b> La teoría de la motivación temporal (Steel, 2007) muestra que postergamos más cuando la tarea es aversiva, la recompensa está lejos y somos más impulsivos. Por eso KP acerca la recompensa (empezar ya puntúa) y achica la tarea (dividir lo grande).</div>
+
+    <div class="item"><b>Las intenciones de implementación funcionan.</b> Decidir de antemano <em>qué</em>, <em>cuándo</em> y <em>cuánto</em> aumenta de forma consistente la probabilidad de actuar; el metanálisis de Gollwitzer y Sheeran (2006) encontró un efecto de tamaño medio a grande. Cada tarea en KP lleva prioridad, tiempo y valor: es una intención concreta, no un deseo.</div>
+
+    <div class="item"><b>La activación conductual.</b> Programar y cumplir actividades valiosas, una por una, es un tratamiento con evidencia para la depresión (Jacobson y cols., 1996; Dimidjian y cols., 2006). KP no es una terapia, pero toma ese principio: la acción pequeña y registrada cambia el ánimo antes que el ánimo cambie la acción.</div>
+
+    <div class="item"><b>Lo inconcluso pide volver.</b> Bluma Zeigarnik observó en 1927 que las tareas interrumpidas ocupan la mente. La investigación posterior matiza el efecto de memoria, pero confirma una tendencia a retomar lo que quedó abierto (efecto Ovsiankina). La presión de KP hace visible ese tirón en vez de dejarlo como ruido de fondo.</div>
+
+    <div class="item"><b>El cerebro aprende de la sorpresa.</b> Las neuronas dopaminérgicas responden al error de predicción de recompensa: a lo que resultó mejor de lo esperado (Schultz, Dayan y Montague, 1997). Premiar el inicio, y no solo el final, pone la señal de aprendizaje justo donde está la resistencia.</div>
+
+    <div class="item"><b>La autocompasión ayuda más que la autocrítica.</b> Las personas que se tratan con más amabilidad procrastinan menos, en parte porque sienten menos estrés frente a la tarea (Sirois, 2014). De ahí que KP no castigue el retraso y que su antagonista sea, precisamente, el juez interno.</div>
+
+    <div class="item"><b>Cuidado con los premios.</b> Las recompensas externas pueden debilitar la motivación propia cuando controlan en vez de informar (Deci, Koestner y Ryan, 1999). Por eso los Pv se piensan como un espejo de tu esfuerzo y no como un salario, y por eso KP aspira a dejar de ser necesaria.</div>
+
+    <h3>Referencias</h3>
+    <ul class="referencias">
+      <li>Campbell, J. (1949). <em>El héroe de las mil caras</em>.</li>
+      <li>Jung, C. G. (1951). <em>Aion</em>; (1928) <em>Las relaciones entre el yo y el inconsciente</em>.</li>
+      <li>Steel, P. (2007). The nature of procrastination. <em>Psychological Bulletin, 133</em>(1), 65–94.</li>
+      <li>Gollwitzer, P. M., y Sheeran, P. (2006). Implementation intentions and goal achievement: a meta-analysis. <em>Advances in Experimental Social Psychology, 38</em>, 69–119.</li>
+      <li>Jacobson, N. S., y cols. (1996). A component analysis of cognitive-behavioral treatment for depression. <em>J. Consulting and Clinical Psychology, 64</em>(2), 295–304.</li>
+      <li>Dimidjian, S., y cols. (2006). Randomized trial of behavioral activation, cognitive therapy, and antidepressant medication. <em>J. Consulting and Clinical Psychology, 74</em>(4), 658–670.</li>
+      <li>Zeigarnik, B. (1927). Das Behalten erledigter und unerledigter Handlungen. <em>Psychologische Forschung, 9</em>, 1–85.</li>
+      <li>Schultz, W., Dayan, P., y Montague, P. R. (1997). A neural substrate of prediction and reward. <em>Science, 275</em>, 1593–1599.</li>
+      <li>Sirois, F. M. (2014). Procrastination and stress: exploring the role of self-compassion. <em>Self and Identity, 13</em>(2), 128–145.</li>
+      <li>Deci, E. L., Koestner, R., y Ryan, R. M. (1999). A meta-analytic review of experiments examining the effects of extrinsic rewards on intrinsic motivation. <em>Psychological Bulletin, 125</em>(6), 627–668.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══════════════ CONDICIONES Y UMBRAL ═══════════════ -->
+<section id="condiciones" class="panel texto cond">
+  <h2>Condiciones de uso</h2>
+  <p class="sub">Léelas con calma. Están escritas para cuidarte, no para esconder nada.</p>
+
+  <h3>1 · Qué es y qué no es</h3>
+  <p>Killer Pendiente es una herramienta de organización personal con elementos de juego y de narrativa simbólica. <b>No es un dispositivo médico, no diagnostica, no trata ninguna condición de salud y no reemplaza a un profesional.</b> Si estás en tratamiento, puedes usarla como apoyo conversándolo con quien te atiende.</p>
+
+  <h3>2 · Riesgos que conviene conocer</h3>
+  <ul>
+    <li><b>Presión y autoexigencia.</b> Ver pendientes acumulados, colores de presión y puntajes puede aumentar la ansiedad o alimentar la autocrítica en personas perfeccionistas.</li>
+    <li><b>Absorción.</b> Los sistemas de puntos pueden volverse compulsivos y desplazar el sueño, el descanso o los vínculos.</li>
+    <li><b>Narrativa simbólica.</b> KP usa imágenes arquetípicas: aspectos, sombra, mensajes desde el futuro. Son metáforas. En personas con tendencia a vivir experiencias inusuales de la realidad, este tipo de contenido podría confundir o intensificar esas vivencias.</li>
+    <li><b>Ánimo muy bajo.</b> En una depresión importante, una lista larga de pendientes puede sentirse como una acusación. En ese momento lo primero es pedir ayuda, no optimizar tareas.</li>
+  </ul>
+
+  <h3>3 · Usarla bien</h3>
+  <ul>
+    <li>Si la herramienta te hace sentir peor de forma sostenida, déjala. Eso también es cuidarte.</li>
+    <li>No la uses para castigarte. Si notas que el juez interno toma el control, detente.</li>
+    <li>Respeta el sueño, las pausas y a las personas. Ninguna tarea vale más que eso.</li>
+  </ul>
+
+  <h3>4 · Edad</h3>
+  <p>Killer Pendiente es para <b>personas mayores de 18 años</b>.</p>
+
+  <h3>5 · Tus datos</h3>
+  <p>La versión para Windows guarda todo en tu computador. Este sitio no recoge tus datos: el cuestionario de abajo se calcula en tu navegador, <b>no se envía ni se guarda</b>; solo se recuerda en este dispositivo si lo completaste y su resultado general.</p>
+
+  <h3>6 · Sin garantías</h3>
+  <p>Killer Pendiente se entrega gratis y «tal cual», sin garantías de ningún tipo. En la medida en que la ley lo permita, Chamalnquimyst Labs no se hace responsable de daños derivados de su uso. Al descargarla aceptas usarla bajo tu propia responsabilidad.</p>
+
+  <h3>7 · Autoría</h3>
+  <p>Killer Pendiente, su historia y sus universos son creación de Andrés Prado Ceroni · Chamalnquimyst Labs. Las obras de terceros incluidas se usan con permiso de sus autores.</p>
+
+  <h3>8 · Cambios</h3>
+  <p>Estas condiciones pueden actualizarse con nuevas versiones. La versión vigente está siempre en esta página.</p>
+
+  <div class="ayuda" id="ayuda">
+    <b>Si estás pasando por un momento muy difícil o tienes pensamientos de hacerte daño</b>, no estás solo ni sola. En Chile puedes llamar gratis, las 24 horas, a la línea de prevención del suicidio del Ministerio de Salud:
+    <div class="tel">*4141</div>
+    Si hay peligro inmediato, llama al <b>131</b> (SAMU) o acude a la urgencia más cercana. Fuera de Chile: <a href="https://findahelpline.com/es-419" target="_blank" rel="noopener">findahelpline.com</a> muestra la línea de tu país.
+  </div>
+
+  <!-- ── El Umbral ── -->
+  <div class="umbral" id="umbral">
+    <h2>El Umbral</h2>
+    <p>Antes de descargar, unas preguntas breves. No es un diagnóstico: es una pausa para mirar cómo estás y si este es un buen momento para una herramienta como esta. Responde con honestidad; nadie más verá tus respuestas.</p>
+    <p class="privado">Incluye el PHQ-4 (Kroenke y cols., 2009), un cribado breve de ánimo y ansiedad de uso libre, una pregunta de seguridad del PHQ-9 y preguntas orientativas propias de Chamalnquimyst Labs (no validadas como instrumento).</p>
+
+    <form id="cuestionario" novalidate>
+      <div class="bloque-q">
+        <div class="tit">Durante las últimas 2 semanas, ¿con qué frecuencia te han molestado estos problemas?</div>
+        <div id="q-phq"></div>
+      </div>
+      <div class="bloque-q">
+        <div class="tit">Preguntas orientativas</div>
+        <div id="q-si-no"></div>
+      </div>
+      <div class="bloque-q">
+        <label class="acepto"><input type="checkbox" id="c-edad"> <span>Tengo 18 años o más.</span></label>
+        <label class="acepto"><input type="checkbox" id="c-acepto"> <span>Leí y acepto las condiciones de uso, y entiendo que Killer Pendiente no reemplaza la atención profesional.</span></label>
+      </div>
+      <div class="faltan" id="faltan"></div>
+      <button type="submit" class="boton primario">Cruzar el umbral</button>
+    </form>
+
+    <div class="resultado" id="resultado" role="status" aria-live="polite"></div>
+  </div>
+</section>
+
+</main>
+
+<footer>Killer Pendiente · Chamalnquimyst Labs · por Andrés Prado Ceroni</footer>
+
+<script>
+(() => {
+  'use strict';
+  // ── Dónde está el instalador (GitHub Releases: siempre la última versión) ──
+  const DESCARGA = 'https://github.com/durirock/killer-pendiente/releases/latest/download/KillerPendiente-Setup.exe';
+  const CLAVE = 'kp_umbral_v1';
+  const VIGENCIA_DIAS = 90, PAUSA_DIAS = 7;
+  const $ = (s) => document.querySelector(s), $$ = (s) => [...document.querySelectorAll(s)];
+
+  // ── pestañas ──
+  const PANELES = ['descargar', 'instrucciones', 'epopeya', 'condiciones'];
+  function ir(p, ancla) {
+    if (!PANELES.includes(p)) p = 'descargar';
+    $$('section.panel').forEach((s) => s.classList.toggle('activa', s.id === p));
+    $$('nav.pestanas button').forEach((b) => b.classList.toggle('activa', b.dataset.p === p));
+    if (location.hash !== '#' + p) history.replaceState(null, '', '#' + p);
+    if (ancla) setTimeout(() => $(ancla).scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+    else window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }
+  $$('nav.pestanas button').forEach((b) => b.onclick = () => ir(b.dataset.p));
+  $$('[data-ir]').forEach((a) => a.onclick = (e) => { e.preventDefault(); ir(a.dataset.ir, '#umbral'); });
+  window.addEventListener('hashchange', () => ir(location.hash.slice(1)));
+  ir(location.hash.slice(1) || 'descargar');
+
+  // ── cuestionario ──
+  const FREC = ['Nunca', 'Varios días', 'Más de la mitad de los días', 'Casi todos los días'];
+  const PHQ = [
+    { id: 'p1', t: 'Poco interés o placer en hacer las cosas', g: 'dep' },
+    { id: 'p2', t: 'Sentirte desanimado/a, deprimido/a o sin esperanza', g: 'dep' },
+    { id: 'p3', t: 'Sentirte nervioso/a, ansioso/a o con los nervios de punta', g: 'ans' },
+    { id: 'p4', t: 'No poder dejar de preocuparte o no poder controlar la preocupación', g: 'ans' },
+    { id: 'p9', t: 'Pensamientos de que estarías mejor muerto/a o de hacerte daño de alguna manera', g: 'seg' },
+  ];
+  const SINO = [
+    { id: 'psi', t: '¿Has tenido experiencias que otras personas no comparten, como oír voces que otros no oyen, o sentir que mensajes ocultos (en la TV, en números, en coincidencias) van dirigidos especialmente a ti?', n: 'pausa' },
+    { id: 'man', t: 'En el último año, ¿tuviste varios días seguidos con tanta energía que casi no necesitabas dormir, y otras personas notaron que estabas muy distinto/a de lo habitual?', n: 'pausa' },
+    { id: 'dis', t: '¿Te ocurre con frecuencia sentirte desconectado/a de ti mismo/a o de tu cuerpo, como si observaras tu vida desde afuera?', n: 'ambar' },
+    { id: 'aut', t: 'Cuando no cumples algo, ¿te tratas con una dureza que te hace daño (insultos internos, castigos, horas de culpa)?', n: 'ambar' },
+    { id: 'com', t: '¿Alguna app, juego o sistema de puntos te ha absorbido al punto de descuidar el sueño, el trabajo o a las personas?', n: 'ambar' },
+    { id: 'sus', t: 'En el último mes, ¿has usado alcohol u otras sustancias para poder funcionar o para dejar de sentir?', n: 'ambar' },
+    { id: 'tra', t: '¿Estás en tratamiento psiquiátrico o psicológico, o estuviste hospitalizado/a por salud mental en los últimos 12 meses?', n: 'ambar' },
+  ];
+  const radio = (id, i, txt) => `<label><input type="radio" name="${id}" value="${i}"><span>${txt}</span></label>`;
+  $('#q-phq').innerHTML = PHQ.map((q) => `<div class="preg"><div class="p">${q.t}</div><div class="opciones">${FREC.map((f, i) => radio(q.id, i, f)).join('')}</div></div>`).join('');
+  $('#q-si-no').innerHTML = SINO.map((q) => `<div class="preg"><div class="p">${q.t}</div><div class="opciones">${radio(q.id, 1, 'Sí')}${radio(q.id, 0, 'No')}</div></div>`).join('');
+
+  const valor = (id) => { const r = document.querySelector(`input[name="${id}"]:checked`); return r ? +r.value : null; };
+
+  function evaluar() {
+    const v = {}; [...PHQ, ...SINO].forEach((q) => { v[q.id] = valor(q.id); });
+    const faltan = Object.values(v).filter((x) => x === null).length;
+    if (faltan) return { error: `Faltan ${faltan} ${faltan === 1 ? 'respuesta' : 'respuestas'}.` };
+    if (!$('#c-edad').checked) return { error: 'Killer Pendiente es solo para mayores de 18 años.', menor: true };
+    if (!$('#c-acepto').checked) return { error: 'Para continuar, acepta las condiciones de uso.' };
+    const dep = v.p1 + v.p2, ans = v.p3 + v.p4, total = dep + ans;   // PHQ-4: 0–12
+    const motivos = [];
+    let nivel = 'verde';
+    const subir = (n) => { if (n === 'pausa' || (n === 'ambar' && nivel === 'verde')) nivel = n; };
+    if (v.p9 > 0) { subir('pausa'); motivos.push('seg'); }
+    if (total >= 9) { subir('pausa'); motivos.push('phq-alto'); }
+    else if (total >= 6 || dep >= 3 || ans >= 3) { subir('ambar'); motivos.push('phq-medio'); }
+    SINO.forEach((q) => { if (v[q.id] === 1) { subir(q.n); motivos.push(q.id); } });
+    return { nivel, motivos, total, dep, ans };
+  }
+
+  const TXT_MOTIVO = {
+    'phq-medio': 'Tus respuestas muestran ánimo bajo o ansiedad en un nivel que vale la pena mirar.',
+    dis: 'Mencionas sentirte desconectado/a de ti: la narrativa de aspectos y sombra puede intensificar eso.',
+    aut: 'Mencionas una autocrítica dura: la presión y los puntajes podrían alimentarla.',
+    com: 'Mencionas que los sistemas de puntos te han absorbido antes: pon límites de uso desde el inicio.',
+    sus: 'Mencionas usar sustancias para funcionar o dejar de sentir: eso merece atención propia.',
+    tra: 'Estás en tratamiento o lo estuviste hace poco: conversa con quien te atiende antes de usarla.',
+  };
+
+  function pintarResultado(r) {
+    const box = $('#resultado');
+    box.className = 'resultado ver ' + r.nivel;
+    if (r.nivel === 'verde') {
+      box.innerHTML = `<h3>El camino está abierto</h3>
+        <p>Nada en tus respuestas sugiere que este sea un mal momento para usar Killer Pendiente. Recuerda: si en algún momento te hace sentir peor, déjala.</p>
+        <a class="boton-grande" href="${DESCARGA}" id="b-bajar"><span class="flecha">↓</span>Descargar para Windows</a>`;
+    } else if (r.nivel === 'ambar') {
+      const items = r.motivos.map((m) => TXT_MOTIVO[m]).filter(Boolean).map((t) => `<li>${t}</li>`).join('');
+      box.innerHTML = `<h3>Puedes usarla, con acompañamiento</h3>
+        <ul>${items}</ul>
+        <p>Te sugerimos: conversarlo con un/a profesional de salud mental, empezar con pocas tareas, no usar la presión como exigencia y detenerte si te hace sentir peor.</p>
+        <a class="boton-grande" href="${DESCARGA}" id="b-bajar"><span class="flecha">↓</span>Entiendo, descargar</a>`;
+    } else {
+      const seg = r.motivos.includes('seg');
+      box.innerHTML = `<h3>Ahora es momento de pausa</h3>
+        <p>${seg ? 'Nos dijiste que has tenido pensamientos de hacerte daño o de que estarías mejor muerto/a. Eso importa mucho, y mereces apoyo ahora, no una lista de tareas.' :
+          'Tus respuestas sugieren que hoy una herramienta de exigencia y narrativa simbólica podría hacerte más mal que bien.'}</p>
+        <p>Te recomendamos <b>conversar primero con un/a profesional de salud mental</b>. Killer Pendiente seguirá aquí: puedes volver a responder en ${PAUSA_DIAS} días.</p>
+        <div class="ayuda" style="margin-bottom:0"><b>Línea de prevención del suicidio (Chile), gratis las 24 horas:</b><div class="tel">*4141</div>
+        Peligro inmediato: <b>131</b> o la urgencia más cercana. Otro país: <a href="https://findahelpline.com/es-419" target="_blank" rel="noopener">findahelpline.com</a></div>`;
+    }
+    const b = $('#b-bajar'); if (b) b.onclick = () => setTimeout(() => ir('instrucciones'), 400);
+  }
+
+  function guardar(nivel) { try { localStorage.setItem(CLAVE, JSON.stringify({ nivel, fecha: Date.now() })); } catch (e) { } }
+  function leer() {
+    try {
+      const g = JSON.parse(localStorage.getItem(CLAVE) || 'null');
+      if (!g) return null;
+      const dias = (Date.now() - g.fecha) / 864e5;
+      if (g.nivel === 'pausa' ? dias > PAUSA_DIAS : dias > VIGENCIA_DIAS) return null;
+      return g;
+    } catch (e) { return null; }
+  }
+
+  function pintarPortada() {
+    const g = leer(), b = $('#b-descargar'), e = $('#estado-umbral');
+    e.className = 'estado-umbral';
+    if (g && g.nivel !== 'pausa') {
+      b.href = DESCARGA; b.dataset.libre = '1';
+      e.classList.add(g.nivel); e.textContent = g.nivel === 'verde' ? '◆ Umbral cruzado' : '◆ Umbral cruzado · úsala con acompañamiento';
+    } else if (g && g.nivel === 'pausa') {
+      b.href = '#condiciones'; b.dataset.libre = '';
+      e.classList.add('pausa'); e.textContent = 'Momento de pausa · mira la sección Condiciones';
+    } else {
+      b.href = '#condiciones'; b.dataset.libre = '';
+      e.textContent = 'Antes de descargar: cruzar «El Umbral» (3 minutos)';
+    }
+  }
+  $('#b-descargar').onclick = (ev) => {
+    if (ev.currentTarget.dataset.libre === '1') { setTimeout(() => ir('instrucciones'), 400); return; }
+    ev.preventDefault(); ir('condiciones', '#umbral');
+    const g = leer(); if (g && g.nivel === 'pausa') pintarResultado({ nivel: 'pausa', motivos: [] });
+  };
+
+  $('#cuestionario').onsubmit = (ev) => {
+    ev.preventDefault();
+    const r = evaluar();
+    if (r.error) { $('#faltan').textContent = r.error; return; }
+    $('#faltan').textContent = '';
+    guardar(r.nivel); pintarResultado(r); pintarPortada();
+    setTimeout(() => $('#resultado').scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+  };
+
+  pintarPortada();
+})();
+</script>
+</body>
+</html>
