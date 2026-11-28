@@ -167,7 +167,8 @@ footer { border-top: 1px solid var(--borde); color: var(--apagado); font-size: 1
     <h1>Killer Pendiente</h1>
     <p class="lema">Para cruzar el umbral de lo que postergas. Un taller de la voluntad que premia empezar, no castiga el retraso, y refleja lo que haces sin juzgarte.</p>
     <a id="b-descargar" class="boton-grande" href="#condiciones"><span class="flecha">↓</span><span id="b-descargar-txt">Descargar para Windows</span></a>
-    <div class="bajo-boton">Windows 10 / 11 · 64 bits · gratis · <span id="version">versión 8.31</span></div>
+    <div class="bajo-boton">Windows 10 / 11 · 64 bits · gratis · <span id="version">versión 8.32</span></div>
+    <div class="bajo-boton"><a id="b-mac" href="#condiciones">¿Mac? Descargar para Mac (chip Apple, M1 o posterior)</a></div>
     <div id="estado-umbral" class="estado-umbral">Antes de descargar: cruzar «El Umbral» (3 minutos)</div>
   </div>
 
@@ -190,6 +191,13 @@ footer { border-top: 1px solid var(--borde); color: var(--apagado); font-size: 1
     <li>Ábrelo. Como Killer Pendiente es nuevo y aún no tiene firma digital, Windows puede mostrar <b>«Windows protegió su PC»</b>: toca <b>Más información</b> → <b>Ejecutar de todas formas</b>.</li>
     <li>Lee y acepta las condiciones, elige si quieres un acceso en el escritorio y pulsa <b>Instalar</b>. No pide permisos de administrador: se instala en tu carpeta de usuario.</li>
     <li>La primera vez, Windows puede preguntar si KP puede usar la red: elige <b>Permitir</b> en redes privadas. KP abre una conexión local para hablar con sus universos.</li>
+  </ol>
+
+  <h3>En Mac</h3>
+  <ol class="pasos">
+    <li>Descarga <b>KillerPendiente-Mac.dmg</b> (Mac con chip Apple: M1 o posterior), ábrelo y arrastra <b>Killer Pendiente</b> a <b>Aplicaciones</b>.</li>
+    <li>La primera vez, macOS dirá que no puede verificar al desarrollador. Abre <b>Configuración del Sistema → Privacidad y seguridad</b>, baja hasta el aviso de Killer Pendiente y pulsa <b>Abrir igualmente</b>. Solo se pide una vez.</li>
+    <li>Tus datos se guardan en tu carpeta de usuario: <kbd>Librería/Application Support/Killer Pendiente</kbd>.</li>
   </ol>
 
   <h3>Tu primera tarea</h3>
@@ -375,6 +383,8 @@ footer { border-top: 1px solid var(--borde); color: var(--apagado); font-size: 1
   'use strict';
   // ── Dónde está el instalador (GitHub Releases: siempre la última versión) ──
   const DESCARGA = 'https://github.com/durirock/killer-pendiente/releases/latest/download/KillerPendiente-Setup.exe';
+  const DESCARGA_MAC = 'https://github.com/durirock/killer-pendiente/releases/latest/download/KillerPendiente-Mac.dmg';
+  const ES_MAC = /Mac/i.test(navigator.platform || navigator.userAgent) && !/iPhone|iPad/i.test(navigator.userAgent);
   const CLAVE = 'kp_umbral_v1';
   const VIGENCIA_DIAS = 90, PAUSA_DIAS = 7;
   const $ = (s) => document.querySelector(s), $$ = (s) => [...document.querySelectorAll(s)];
@@ -450,13 +460,15 @@ footer { border-top: 1px solid var(--borde); color: var(--apagado); font-size: 1
     if (r.nivel === 'verde') {
       box.innerHTML = `<h3>El camino está abierto</h3>
         <p>Nada en tus respuestas sugiere que este sea un mal momento para usar Killer Pendiente. Recuerda: si en algún momento te hace sentir peor, déjala.</p>
-        <a class="boton-grande" href="${DESCARGA}" id="b-bajar"><span class="flecha">↓</span>Descargar para Windows</a>`;
+        <a class="boton-grande" href="${ES_MAC ? DESCARGA_MAC : DESCARGA}" id="b-bajar"><span class="flecha">↓</span>Descargar para ${ES_MAC ? 'Mac' : 'Windows'}</a>
+        <div class="bajo-boton"><a href="${ES_MAC ? DESCARGA : DESCARGA_MAC}">o para ${ES_MAC ? 'Windows' : 'Mac (chip Apple)'}</a></div>`;
     } else if (r.nivel === 'ambar') {
       const items = r.motivos.map((m) => TXT_MOTIVO[m]).filter(Boolean).map((t) => `<li>${t}</li>`).join('');
       box.innerHTML = `<h3>Puedes usarla, con acompañamiento</h3>
         <ul>${items}</ul>
         <p>Te sugerimos: conversarlo con un/a profesional de salud mental, empezar con pocas tareas, no usar la presión como exigencia y detenerte si te hace sentir peor.</p>
-        <a class="boton-grande" href="${DESCARGA}" id="b-bajar"><span class="flecha">↓</span>Entiendo, descargar</a>`;
+        <a class="boton-grande" href="${ES_MAC ? DESCARGA_MAC : DESCARGA}" id="b-bajar"><span class="flecha">↓</span>Entiendo, descargar</a>
+        <div class="bajo-boton"><a href="${ES_MAC ? DESCARGA : DESCARGA_MAC}">o para ${ES_MAC ? 'Windows' : 'Mac (chip Apple)'}</a></div>`;
     } else {
       const seg = r.motivos.includes('seg');
       box.innerHTML = `<h3>Ahora es momento de pausa</h3>
@@ -483,8 +495,10 @@ footer { border-top: 1px solid var(--borde); color: var(--apagado); font-size: 1
   function pintarPortada() {
     const g = leer(), b = $('#b-descargar'), e = $('#estado-umbral');
     e.className = 'estado-umbral';
+    const m = $('#b-mac');
+    m.href = g && g.nivel !== 'pausa' ? DESCARGA_MAC : '#condiciones'; m.dataset.libre = g && g.nivel !== 'pausa' ? '1' : '';
     if (g && g.nivel !== 'pausa') {
-      b.href = DESCARGA; b.dataset.libre = '1';
+      b.href = ES_MAC ? DESCARGA_MAC : DESCARGA; b.dataset.libre = '1';
       e.classList.add(g.nivel); e.textContent = g.nivel === 'verde' ? '◆ Umbral cruzado' : '◆ Umbral cruzado · úsala con acompañamiento';
     } else if (g && g.nivel === 'pausa') {
       b.href = '#condiciones'; b.dataset.libre = '';
@@ -494,6 +508,11 @@ footer { border-top: 1px solid var(--borde); color: var(--apagado); font-size: 1
       e.textContent = 'Antes de descargar: cruzar «El Umbral» (3 minutos)';
     }
   }
+  $('#b-mac').onclick = (ev) => {
+    if (ev.currentTarget.dataset.libre === '1') { setTimeout(() => ir('instrucciones'), 400); return; }
+    ev.preventDefault(); ir('condiciones', '#umbral');
+  };
+  if (ES_MAC) $('#b-descargar-txt').textContent = 'Descargar para Mac';
   $('#b-descargar').onclick = (ev) => {
     if (ev.currentTarget.dataset.libre === '1') { setTimeout(() => ir('instrucciones'), 400); return; }
     ev.preventDefault(); ir('condiciones', '#umbral');
